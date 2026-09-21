@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neko - Chăm sóc thú cưng</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/header.css">
+    <link rel="stylesheet" href="css/footer.css">
+    <link rel="stylesheet" href="css/home.css">
+</head>
+<body>
+<header class="header">
+    <div class="container nav-container">
+        <a class="logo" href="index.html">🐾 NEKO</a>
+        <nav class="menu">
+            <a href="index.html">Trang chủ</a>
+            <a href="#">Thú cưng</a>
+            <a href="#">Lịch chăm sóc</a>
+            <a href="#">Đặt lịch</a>
+            <a href="pages/login.html">Đăng nhập</a>
+        </nav>
+    </div>
+</header>
+
+<main>
+    <section class="hero container">
+        <div>
+            <p class="eyebrow">🐾 NEKO PET CARE</p>
+            <h1>Chăm sóc thú cưng tận tâm</h1>
+            <p>Quản lý thú cưng và lịch chăm sóc đơn giản, tiện lợi.</p>
+            <a class="btn" href="pages/login.html">Đăng nhập ngay</a>
+        </div>
+    </section>
+
+    <section class="container section">
+        <h2>Tổng quan</h2>
+        <div class="statistics">
+            <div class="stat-card">
+                <span class="stat-icon">🐶</span>
+                <div>
+                    <strong id="totalPets">0</strong>
+                    <p>Tổng số thú cưng</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-icon">📅</span>
+                <div>
+                    <strong id="totalSchedules">0</strong>
+                    <p>Lịch chăm sóc sắp tới</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="container section">
+        <div class="section-heading">
+            <h2>Lịch chăm sóc sắp tới</h2>
+        </div>
+        <div id="scheduleList" class="schedule-list"></div>
+    </section>
+</main>
+
+<footer class="footer">
+    <div class="container footer-container">
+        <div>
+            <h3>🐾 NEKO</h3>
+            <p>Hệ thống chăm sóc thú cưng.</p>
+        </div>
+        <div>
+            <h3>Liên hệ</h3>
+            <p>📞 0123 456 789</p>
+            <p>📧 neko@gmail.com</p>
+        </div>
+        <div>
+            <h3>Địa chỉ</h3>
+            <p>Hà Nội, Việt Nam</p>
+        </div>
+    </div>
+    <p class="copyright">© 2026 Neko Pet Care</p>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>

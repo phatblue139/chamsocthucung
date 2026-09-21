@@ -1,0 +1,9 @@
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f6f9fc;color:#1f2937;line-height:1.6}
+a{text-decoration:none;color:inherit}
+.container{width:min(1120px,92%);margin:auto}
+.section{padding:48px 0}
+h1{font-size:42px;line-height:1.15;margin-bottom:16px}
+h2{font-size:28px;margin-bottom:22px}
+.btn{display:inline-block;border:0;border-radius:10px;background:#2563eb;color:#fff;padding:12px 22px;cursor:pointer;font-weight:700;transition:.2s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 18px #0002}
