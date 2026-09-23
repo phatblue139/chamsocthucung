@@ -1,4 +1,5 @@
 import './style.css'
+import { initAdminUI } from './adminUI.js'
 
 const navToggle = document.querySelector('#navToggle')
 const nav = document.querySelector('#nav')
@@ -32,3 +33,5 @@ if (form && note) {
     form.reset()
   })
 }
+
+initAdminUI()
