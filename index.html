@@ -20,6 +20,7 @@
             <a href="/about.html" class="nav-link">Giới thiệu</a>
             <a href="#services" class="nav-link">Dịch vụ</a>
             <a href="#pricing" class="nav-link">Bảng giá</a>
+            <button type="button" class="nav-btn-login" id="loginBtn">Đăng nhập</button>
             <a href="#contact" class="btn btn-primary nav-cta">Đặt lịch ngay</a>
           </nav>
           <button class="nav-toggle" id="navToggle" aria-label="Mở menu" aria-expanded="false">
@@ -304,6 +305,23 @@
         </div>
       </footer>
     </div>
+
+    <dialog id="loginDialog" class="login-dialog" aria-labelledby="loginTitle">
+      <form id="loginForm" novalidate>
+        <h2 id="loginTitle">Đăng nhập</h2>
+        <p class="login-sub">Đăng nhập để quản lý lịch chăm sóc.</p>
+        <label for="loginUsername">Tên đăng nhập</label>
+        <input type="text" id="loginUsername" name="username" placeholder="admin" autocomplete="username" required>
+        <label for="loginPassword">Mật khẩu</label>
+        <input type="password" id="loginPassword" name="password" placeholder="••••••" autocomplete="current-password" required>
+        <p class="login-error" id="loginError" hidden>Sai tên đăng nhập hoặc mật khẩu!</p>
+        <div class="login-actions">
+          <button type="button" class="btn btn-outline" id="loginCancelBtn">Hủy</button>
+          <button type="submit" class="btn btn-primary">Đăng nhập</button>
+        </div>
+      </form>
+    </dialog>
+
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
