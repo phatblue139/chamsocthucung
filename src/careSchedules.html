@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý lịch chăm sóc</title>
+    <link rel="stylesheet" href="./style.css">
+    <script>
+        if (localStorage.getItem("neko:admin") !== "true") {
+            location.replace("/");
+        }
+    </script>
+</head>
+
+<body>
+
+    <main class="care-page">
+
+        <div class="container">
+
+            <div class="care-topbar">
+                <button type="button" class="care-btn care-btn-reset" id="logoutBtn">Đăng xuất</button>
+            </div>
+
+            <h1 class="care-title">QUẢN LÝ LỊCH CHĂM SÓC</h1>
+
+            <!-- Form thêm / sửa -->
+            <form id="careForm" class="care-form">
+
+                <input type="hidden" id="id">
+
+                <div class="care-form-group">
+                    <label for="petName">Thú cưng</label>
+                    <input type="text" id="petName" placeholder="Tên thú cưng" required>
+                </div>
+
+                <div class="care-form-group">
+                    <label for="careType">Loại chăm sóc</label>
+                    <select id="careType" required>
+                        <option value="">-- Chọn loại chăm sóc --</option>
+                        <option value="Cho ăn">Cho ăn</option>
+                        <option value="Tắm">Tắm</option>
+                        <option value="Đi dạo">Đi dạo</option>
+                        <option value="Tiêm phòng">Tiêm phòng</option>
+                        <option value="Cắt móng">Cắt móng</option>
+                    </select>
+                </div>
+
+                <div class="care-form-group">
+                    <label for="date">Ngày</label>
+                    <input type="date" id="date" required>
+                </div>
+
+                <div class="care-form-group">
+                    <label for="time">Giờ</label>
+                    <input type="time" id="time" required>
+                </div>
+
+                <div class="care-form-group">
+                    <label for="note">Ghi chú</label>
+                    <input type="text" id="note" placeholder="Ghi chú">
+                </div>
+
+                <div class="care-form-actions">
+                    <button type="submit" class="care-btn care-btn-add" id="saveBtn">Lưu lịch</button>
+                    <button type="button" class="care-btn care-btn-cancel" id="cancelBtn">Hủy</button>
+                </div>
+
+            </form>
+
+            <!-- Tìm kiếm + công cụ -->
+            <div class="care-toolbar">
+
+                <input
+                    type="text"
+                    id="searchInput"
+                    class="care-search"
+                    placeholder="Tìm theo tên thú cưng hoặc loại chăm sóc..."
+                >
+
+                <span class="care-count" id="careCount"></span>
+
+            </div>
+
+            <!-- Danh sách -->
+            <h2>Danh sách lịch chăm sóc</h2>
+
+            <div class="care-table-wrapper">
+
+                <table class="care-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Thú cưng</th>
+                            <th>Loại chăm sóc</th>
+                            <th>Ngày</th>
+                            <th>Giờ</th>
+                            <th>Ghi chú</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="careList"></tbody>
+                </table>
+
+            </div>
+
+            <p id="emptyMsg" class="care-empty" hidden>
+                Không có lịch chăm sóc nào.
+            </p>
+
+        </div>
+
+    </main>
+
+    <script type="module" src="./careSchedules.js"></script>
+
+</body>
+</html>
