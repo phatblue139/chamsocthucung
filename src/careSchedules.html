@@ -19,7 +19,6 @@
     <main class="care-page">
       <div class="container">
         <div class="care-topbar">
-          <a href="/" class="care-back">← Về trang chủ</a>
           <button type="button" class="care-btn care-btn-reset" id="logoutBtn">Đăng xuất</button>
         </div>
 
@@ -86,6 +85,29 @@
             placeholder="Tìm theo tên, tài khoản, số điện thoại hoặc loại chăm sóc..."
           />
           <span class="care-count" id="careCount"></span>
+        </div>
+
+        <div class="care-stats" id="careStats" role="group" aria-label="Lọc và thống kê theo trạng thái">
+          <button type="button" class="care-stat is-all" data-status="" aria-pressed="true">
+            <span class="care-stat-label">Tất cả</span>
+            <strong class="care-stat-value" data-stat="all">0</strong>
+          </button>
+          <button type="button" class="care-stat is-pending" data-status="pending" aria-pressed="false">
+            <span class="care-stat-label">Pending <em>(Chờ xác nhận)</em></span>
+            <strong class="care-stat-value" data-stat="pending">0</strong>
+          </button>
+          <button type="button" class="care-stat is-confirmed" data-status="confirmed" aria-pressed="false">
+            <span class="care-stat-label">Confirmed <em>(Đã xác nhận)</em></span>
+            <strong class="care-stat-value" data-stat="confirmed">0</strong>
+          </button>
+          <button type="button" class="care-stat is-completed" data-status="completed" aria-pressed="false">
+            <span class="care-stat-label">Completed <em>(Đã hoàn thành)</em></span>
+            <strong class="care-stat-value" data-stat="completed">0</strong>
+          </button>
+          <button type="button" class="care-stat is-cancelled" data-status="cancelled" aria-pressed="false">
+            <span class="care-stat-label">Cancelled <em>(Đã hủy)</em></span>
+            <strong class="care-stat-value" data-stat="cancelled">0</strong>
+          </button>
         </div>
 
         <h2>Danh sách lịch chăm sóc</h2>

@@ -27,6 +27,32 @@ function initUserView(user) {
 
   if (greeting) greeting.textContent = user.fullName || user.username;
 
+  const dateInput = form?.elements.namedItem("date");
+  const timeInput = form?.elements.namedItem("time");
+  applyScheduleLimits();
+
+  dateInput?.addEventListener("change", () => {
+    if (timeInput) {
+      if (dateInput.value === dateInput.min) timeInput.min = currentTime();
+      else timeInput.removeAttribute("min");
+    }
+  });
+
+  function currentDate() {
+    const now = new Date();
+    return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  }
+
+  function currentTime() {
+    const now = new Date();
+    return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  }
+
+  function applyScheduleLimits() {
+    if (dateInput) dateInput.min = currentDate();
+    if (timeInput) timeInput.removeAttribute("min");
+  }
+
   logoutBtn?.addEventListener("click", () => {
     logoutUser();
     location.replace("/");
@@ -40,6 +66,12 @@ function initUserView(user) {
     }
 
     const formData = new FormData(form);
+    const today = currentDate();
+    if (String(formData.get("date") || "") < today) {
+      showMessage("Bạn không thể chọn ngày đã qua. Vui lòng chọn từ hôm nay trở đi.", "error");
+      return;
+    }
+
     const latestSchedules = loadSchedules();
     const schedule = {
       id: getNextScheduleId(latestSchedules),
@@ -69,6 +101,7 @@ function initUserView(user) {
 
     schedules = nextSchedules;
     form.reset();
+    applyScheduleLimits();
     render();
     showMessage("Đã gửi lịch chăm sóc tới NEKO. Chúng tôi sẽ liên hệ xác nhận sớm nhất.", "success");
   });
