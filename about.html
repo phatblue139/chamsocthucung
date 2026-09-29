@@ -20,7 +20,11 @@
             <a href="/about.html" class="nav-link active">Giới thiệu</a>
             <a href="/#services" class="nav-link">Dịch vụ</a>
             <a href="/#pricing" class="nav-link">Bảng giá</a>
+            <a href="/user.html" class="nav-link user-link" hidden>Vào trang của tôi</a>
+            <a href="/src/careSchedules.html" class="nav-link admin-link" hidden>Quản lý lịch</a>
             <button type="button" class="nav-btn-login" id="loginBtn">Đăng nhập</button>
+            <button type="button" class="nav-btn-register" id="registerBtn">Đăng ký</button>
+            <button type="button" class="nav-btn-login nav-btn-logout" id="logoutBtn" hidden>Đăng xuất</button>
             <a href="/#contact" class="btn btn-primary nav-cta">Đặt lịch ngay</a>
           </nav>
           <button class="nav-toggle" id="navToggle" aria-label="Mở menu" aria-expanded="false">
@@ -196,15 +200,37 @@
     <dialog id="loginDialog" class="login-dialog" aria-labelledby="loginTitle">
       <form id="loginForm" novalidate>
         <h2 id="loginTitle">Đăng nhập</h2>
-        <p class="login-sub">Đăng nhập để quản lý lịch chăm sóc.</p>
+        <p class="login-sub">Đăng nhập để đặt lịch và theo dõi lịch chăm sóc.</p>
         <label for="loginUsername">Tên đăng nhập</label>
-        <input type="text" id="loginUsername" name="username" placeholder="admin" autocomplete="username" required>
+        <input type="text" id="loginUsername" name="username" placeholder="Nhập tên đăng nhập" autocomplete="username" required>
         <label for="loginPassword">Mật khẩu</label>
         <input type="password" id="loginPassword" name="password" placeholder="••••••" autocomplete="current-password" required>
-        <p class="login-error" id="loginError" hidden>Sai tên đăng nhập hoặc mật khẩu!</p>
+        <p class="login-error" id="loginError" data-auth-error hidden>Sai tên đăng nhập hoặc mật khẩu!</p>
         <div class="login-actions">
-          <button type="button" class="btn btn-outline" id="loginCancelBtn">Hủy</button>
+          <button type="button" class="btn btn-outline" id="loginCancelBtn" data-close-dialog>Hủy</button>
           <button type="submit" class="btn btn-primary">Đăng nhập</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="registerDialog" class="login-dialog" aria-labelledby="registerTitle">
+      <form id="registerForm" novalidate>
+        <h2 id="registerTitle">Đăng ký tài khoản</h2>
+        <p class="login-sub">Tạo tài khoản để đăng ký lịch chăm sóc cho thú cưng.</p>
+        <label for="registerUsername">Tên đăng nhập</label>
+        <input type="text" id="registerUsername" name="username" placeholder="Ví dụ: minh.an" autocomplete="username" required>
+        <label for="registerFullName">Họ và tên</label>
+        <input type="text" id="registerFullName" name="fullName" placeholder="Nguyễn Văn A" autocomplete="name" required>
+        <label for="registerPhone">Số điện thoại</label>
+        <input type="tel" id="registerPhone" name="phone" placeholder="090 123 4567" autocomplete="tel" required>
+        <label for="registerPassword">Mật khẩu</label>
+        <input type="password" id="registerPassword" name="password" placeholder="Ít nhất 6 ký tự" autocomplete="new-password" required>
+        <label for="registerConfirmPassword">Xác nhận mật khẩu</label>
+        <input type="password" id="registerConfirmPassword" name="confirmPassword" placeholder="Nhập lại mật khẩu" autocomplete="new-password" required>
+        <p class="login-error" id="registerError" data-auth-error hidden></p>
+        <div class="login-actions">
+          <button type="button" class="btn btn-outline" id="registerCancelBtn" data-close-dialog>Hủy</button>
+          <button type="submit" class="btn btn-primary">Tạo tài khoản</button>
         </div>
       </form>
     </dialog>

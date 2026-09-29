@@ -1034,6 +1034,343 @@ ul { margin: 0; padding: 0; list-style: none; }
     }
 
     .care-table {
-        min-width: 750px;
+        min-width: 1050px;
     }
+}
+
+.nav-btn-register {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--primary);
+  border: 1.5px solid var(--primary);
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.nav-btn-register:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.user-header {
+  background: var(--ink);
+  color: #fff;
+}
+
+.user-header-inner {
+  min-height: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.user-header .logo {
+  color: #fff;
+}
+
+.user-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.user-header-actions .care-back {
+  color: #fff;
+}
+
+.user-header-actions .care-btn-reset {
+  padding: 9px 16px;
+}
+
+.user-main {
+  min-height: calc(100vh - 74px);
+  padding: 60px 0 90px;
+  background:
+    radial-gradient(800px 420px at 90% 0%, rgba(255, 178, 125, 0.22), transparent 65%),
+    var(--bg);
+}
+
+.user-welcome {
+  max-width: 700px;
+  margin: 0 auto 38px;
+  text-align: center;
+}
+
+.user-welcome h1 {
+  font-size: clamp(34px, 5vw, 52px);
+  margin-bottom: 14px;
+}
+
+.user-welcome p:last-child {
+  color: var(--muted);
+  font-size: 17px;
+}
+
+.user-content-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.user-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 30px;
+}
+
+.user-panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 26px;
+}
+
+.user-panel-heading h2 {
+  font-size: 28px;
+}
+
+.user-panel-badge {
+  flex: none;
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.user-schedule-form {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  grid-template-columns: 1fr 1fr;
+}
+
+.user-schedule-form .care-form-group textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  font-size: 15px;
+  font-family: inherit;
+  background: #fff;
+  color: var(--ink);
+}
+
+.user-schedule-form .care-form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(255, 140, 66, 0.15);
+}
+
+.user-form-full {
+  grid-column: 1 / -1;
+}
+
+.user-form-message {
+  min-height: 22px;
+  margin-top: 18px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.user-form-message.success {
+  color: var(--accent);
+}
+
+.user-form-message.error {
+  color: #c0392b;
+}
+
+.user-schedule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.user-schedule-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  background: #fff;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.user-schedule-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+}
+
+.user-schedule-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.user-schedule-card-heading h3 {
+  font-size: 18px;
+}
+
+.user-schedule-status {
+  flex: none;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.user-schedule-status.pending {
+  background: #fff3d6;
+  color: #a66a00;
+}
+
+.user-schedule-status.confirmed {
+  background: #e2f6ef;
+  color: #168269;
+}
+
+.user-schedule-status.completed {
+  background: #e8eef8;
+  color: #4266a5;
+}
+
+.user-schedule-details {
+  margin-top: 8px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.user-schedule-note {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+@media (max-width: 900px) {
+  .user-content-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .nav-btn-login,
+  .nav-btn-register {
+    justify-content: flex-start;
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+  }
+
+  .user-header-inner,
+  .user-header-actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .user-header-inner {
+    padding: 18px 0;
+  }
+
+  .user-header-actions {
+    width: 100%;
+    gap: 10px;
+  }
+
+  .user-header-actions .care-btn-reset,
+  .user-header-actions .care-back {
+    width: 100%;
+    text-align: center;
+  }
+
+  .user-main {
+    padding: 42px 0 60px;
+  }
+
+  .user-panel {
+    padding: 22px 18px;
+  }
+
+  .user-panel-heading {
+    flex-direction: column;
+  }
+
+  .user-schedule-form {
+    grid-template-columns: 1fr;
+  }
+
+  .user-form-full {
+    grid-column: auto;
+  }
+}
+
+.care-form-full {
+  grid-column: 1 / -1;
+}
+
+.care-table {
+  min-width: 1250px;
+}
+
+.care-table td {
+  vertical-align: top;
+}
+
+.care-actions {
+  display: flex;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.care-status-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.care-status-badge.pending,
+.user-schedule-status.pending {
+  background: #fff3d6;
+  color: #a66a00;
+}
+
+.care-status-badge.confirmed,
+.user-schedule-status.confirmed {
+  background: #e2f6ef;
+  color: #168269;
+}
+
+.care-status-badge.completed,
+.user-schedule-status.completed {
+  background: #e8eef8;
+  color: #4266a5;
+}
+
+.care-status-badge.cancelled,
+.user-schedule-status.cancelled {
+  background: #ffe8e8;
+  color: #c0392b;
 }

@@ -8,6 +8,7 @@ export default defineConfig({
         main: resolve(import.meta.dirname, 'index.html'),
         about: resolve(import.meta.dirname, 'about.html'),
         careSchedules: resolve(import.meta.dirname, 'src/careSchedules.html'),
+        user: resolve(import.meta.dirname, 'user.html'),
       },
     },
   },
