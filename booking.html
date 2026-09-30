@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Đặt lịch chăm sóc thú cưng tại NEKO - gửi yêu cầu và nhận tư vấn miễn phí trong 24 giờ." />
+    <title>Đặt Lịch | NEKO Chăm Sóc Thú Cưng</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="site-header">
+        <div class="container header-inner">
+          <a href="/" class="logo" aria-label="NEKO - Trang chủ">
+            <span class="logo-mark">🐾</span>
+            <span>NEKO<span class="logo-dot">.</span></span>
+          </a>
+          <nav class="nav" id="nav" aria-label="Điều hướng chính">
+            <a href="/" class="nav-link">Trang chủ</a>
+            <a href="/about.html" class="nav-link">Giới thiệu</a>
+            <a href="/services.html" class="nav-link">Dịch vụ</a>
+            <a href="/pricing.html" class="nav-link">Bảng giá</a>
+            <a href="/user.html" class="nav-link user-link" hidden>Vào trang của tôi</a>
+            <a href="/src/careSchedules.html" class="nav-link admin-link" hidden>Quản lý lịch</a>
+            <button type="button" class="nav-btn-login" id="loginBtn">Đăng nhập</button>
+            <button type="button" class="nav-btn-register" id="registerBtn">Đăng ký</button>
+            <button type="button" class="nav-btn-login nav-btn-logout" id="logoutBtn" hidden>Đăng xuất</button>
+            <a href="/booking.html" class="btn btn-primary nav-cta active">Đặt lịch ngay</a>
+          </nav>
+          <button class="nav-toggle" id="navToggle" aria-label="Mở menu" aria-expanded="false">
+            <span></span><span></span><span></span>
+          </button>
+        </div>
+      </header>
+
+      <main>
+        <section class="page-hero">
+          <div class="container page-hero-inner">
+            <p class="eyebrow">🐾 Đặt lịch</p>
+            <h1>Sẵn sàng cho <span class="accent-text">bé yêu</span> của bạn?</h1>
+            <p class="page-hero-desc">
+              Gửi yêu cầu ngay hôm nay để được tư vấn miễn phí và đặt lịch chăm
+              sóc. NEKO phản hồi trong vòng 24 giờ.
+            </p>
+          </div>
+        </section>
+
+        <section class="contact" id="contact">
+          <div class="container contact-inner">
+            <div class="contact-content">
+              <h2>Thông tin liên hệ</h2>
+              <p>Bạn có thể đến trực tiếp, gọi điện hoặc gửi yêu cầu qua biểu mẫu bên cạnh.</p>
+              <ul class="contact-list">
+                <li>📍 13 Trịnh Văn Bô, Hà Nội</li>
+                <li>📞 1900 6688</li>
+                <li>✉️ hello@neko.vn</li>
+                <li>🕗 7:00 – 21:00 (Thứ 2 – CN)</li>
+              </ul>
+              <p class="section-desc">
+                Nếu bạn đã có tài khoản, hãy
+                <a href="/user.html" class="nav-link">vào trang của tôi</a> để theo dõi
+                lịch chăm sóc của riêng bạn.
+              </p>
+            </div>
+            <form class="contact-form" id="contactForm">
+              <h3>Đặt lịch ngay</h3>
+              <label>Họ tên
+                <input type="text" name="name" placeholder="Nguyễn Văn A" required />
+              </label>
+              <label>Số điện thoại
+                <input type="tel" name="phone" placeholder="090 123 4567" required />
+              </label>
+              <label>Dịch vụ
+                <select name="service" required>
+                  <option value="">Chọn dịch vụ</option>
+                  <option>Trông giữ tại nhà</option>
+                  <option>Spa &amp; Grooming</option>
+                  <option>Khám &amp; Tư vấn sức khỏe</option>
+                  <option>Huấn luyện thú cưng</option>
+                  <option>Cứu hộ khẩn cấp</option>
+                </select>
+              </label>
+              <button type="submit" class="btn btn-primary">Gửi yêu cầu 🐾</button>
+              <p class="form-note" id="formNote"></p>
+            </form>
+          </div>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <div class="container footer-grid">
+          <div class="footer-brand">
+            <a href="/" class="logo"><span class="logo-mark">🐾</span><span>NEKO<span class="logo-dot">.</span></span></a>
+            <p>Đồng hành cùng bạn nuôi dạy những bé thú cưng khỏe mạnh và hạnh phúc nhất.</p>
+          </div>
+          <div class="footer-col">
+            <h4>Dịch vụ</h4>
+            <a href="/services.html#services">Trông giữ thú cưng</a>
+            <a href="/services.html#services">Spa &amp; Grooming</a>
+            <a href="/services.html#services">Khám sức khỏe</a>
+            <a href="/services.html#services">Huấn luyện</a>
+          </div>
+          <div class="footer-col">
+            <h4>Công ty</h4>
+            <a href="/about.html">Giới thiệu</a>
+            <a href="/about.html#team">Đội ngũ</a>
+            <a href="/about.html#values">Giá trị</a>
+            <a href="/booking.html">Liên hệ</a>
+          </div>
+          <div class="footer-col">
+            <h4>Kết nối</h4>
+            <a href="#">Facebook</a>
+            <a href="#">Instagram</a>
+            <a href="#">TikTok</a>
+            <a href="#">YouTube</a>
+          </div>
+        </div>
+        <div class="container footer-bottom">
+          <p>© <span id="year"></span> NEKO Pet Care. Made with 💛 for pets.</p>
+        </div>
+      </footer>
+    </div>
+
+    <dialog id="loginDialog" class="login-dialog" aria-labelledby="loginTitle">
+      <form id="loginForm" novalidate>
+        <h2 id="loginTitle">Đăng nhập</h2>
+        <p class="login-sub">Đăng nhập để đặt lịch và theo dõi lịch chăm sóc.</p>
+        <label for="loginUsername">Tên đăng nhập</label>
+        <input type="text" id="loginUsername" name="username" placeholder="Nhập tên đăng nhập" autocomplete="username" required>
+        <label for="loginPassword">Mật khẩu</label>
+        <input type="password" id="loginPassword" name="password" placeholder="••••••" autocomplete="current-password" required>
+        <p class="login-error" id="loginError" data-auth-error hidden>Sai tên đăng nhập hoặc mật khẩu!</p>
+        <div class="login-actions">
+          <button type="button" class="btn btn-outline" id="loginCancelBtn" data-close-dialog>Hủy</button>
+          <button type="submit" class="btn btn-primary">Đăng nhập</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="registerDialog" class="login-dialog" aria-labelledby="registerTitle">
+      <form id="registerForm" novalidate>
+        <h2 id="registerTitle">Đăng ký tài khoản</h2>
+        <p class="login-sub">Tạo tài khoản để đăng ký lịch chăm sóc cho thú cưng.</p>
+        <label for="registerUsername">Tên đăng nhập</label>
+        <input type="text" id="registerUsername" name="username" placeholder="Ví dụ: minh.an" autocomplete="username" required>
+        <label for="registerFullName">Họ và tên</label>
+        <input type="text" id="registerFullName" name="fullName" placeholder="Nguyễn Văn A" autocomplete="name" required>
+        <label for="registerPhone">Số điện thoại</label>
+        <input type="tel" id="registerPhone" name="phone" placeholder="090 123 4567" autocomplete="tel" required>
+        <label for="registerPassword">Mật khẩu</label>
+        <input type="password" id="registerPassword" name="password" placeholder="Ít nhất 6 ký tự" autocomplete="new-password" required>
+        <label for="registerConfirmPassword">Xác nhận mật khẩu</label>
+        <input type="password" id="registerConfirmPassword" name="confirmPassword" placeholder="Nhập lại mật khẩu" autocomplete="new-password" required>
+        <p class="login-error" id="registerError" data-auth-error hidden></p>
+        <div class="login-actions">
+          <button type="button" class="btn btn-outline" id="registerCancelBtn" data-close-dialog>Hủy</button>
+          <button type="submit" class="btn btn-primary">Tạo tài khoản</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
