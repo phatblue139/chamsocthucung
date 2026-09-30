@@ -1,0 +1,6 @@
+[
+  { "id": 1, "name": "Milu", "species": "Chó", "breed": "Corgi", "age": 3, "owner": "Nguyễn Minh Anh", "status": "Đang chăm sóc" },
+  { "id": 2, "name": "Misa", "species": "Mèo", "breed": "Anh lông ngắn", "age": 2, "owner": "Trần Thu Hà", "status": "Đang chăm sóc" },
+  { "id": 3, "name": "Lucky", "species": "Chó", "breed": "Golden Retriever", "age": 5, "owner": "Lê Hoàng Nam", "status": "Chờ lịch" },
+  { "id": 4, "name": "Bông", "species": "Mèo", "breed": "Mèo mướp", "age": 1, "owner": "Phạm Ngọc Lan", "status": "Đang chăm sóc" }
+]

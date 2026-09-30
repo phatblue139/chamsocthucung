@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quản lý thú cưng | NEKO</title>
+    <link rel="stylesheet" href="./style.css" />
+    <script>
+      try {
+        if (localStorage.getItem("neko:admin") !== "true") location.replace("/");
+      } catch (error) {
+        location.replace("/");
+      }
+    </script>
+  </head>
+  <body>
+    <main class="care-page admin-page">
+      <div class="container">
+        <header class="admin-topbar">
+          <a class="admin-brand" href="/src/admin.html">NEKO <span>ADMIN</span></a>
+          <nav class="admin-nav" aria-label="Quản trị">
+            <a href="/src/admin.html">Tổng quan</a>
+            <a class="is-current" href="/src/adminPets.html" aria-current="page">Thú cưng</a>
+            <a href="/src/careSchedules.html">Lịch chăm sóc</a>
+          </nav>
+          <button type="button" class="care-btn care-btn-reset" id="logoutBtn">Đăng xuất</button>
+        </header>
+
+        <section class="admin-heading">
+          <p class="admin-kicker">NEKO · QUẢN TRỊ</p>
+          <h1>Thú cưng</h1>
+          <p id="petCount">0 hồ sơ</p>
+        </section>
+
+        <form id="petForm" class="care-form admin-pet-form">
+          <input type="hidden" id="petId" />
+          <div class="care-form-group">
+            <label for="petName">Tên thú cưng</label>
+            <input id="petName" name="name" required maxlength="60" />
+          </div>
+          <div class="care-form-group">
+            <label for="petSpecies">Loài</label>
+            <select id="petSpecies" name="species" required>
+              <option value="Chó">Chó</option>
+              <option value="Mèo">Mèo</option>
+            </select>
+          </div>
+          <div class="care-form-group">
+            <label for="petBreed">Giống</label>
+            <input id="petBreed" name="breed" maxlength="80" />
+          </div>
+          <div class="care-form-group">
+            <label for="petAge">Tuổi</label>
+            <input id="petAge" name="age" type="number" min="0" max="40" step="1" required />
+          </div>
+          <div class="care-form-group">
+            <label for="petOwner">Chủ nuôi</label>
+            <input id="petOwner" name="owner" maxlength="80" />
+          </div>
+          <div class="care-form-group">
+            <label for="petStatus">Trạng thái</label>
+            <select id="petStatus" name="status" required>
+              <option>Đang chăm sóc</option>
+              <option>Chờ lịch</option>
+            </select>
+          </div>
+          <div class="care-form-actions">
+            <button type="submit" class="care-btn care-btn-add" id="petSaveButton">Thêm thú cưng</button>
+            <button type="button" class="care-btn care-btn-cancel" id="petCancelButton" hidden>Hủy sửa</button>
+          </div>
+        </form>
+        <p id="petMessage" class="user-form-message" role="status" aria-live="polite"></p>
+
+        <div class="admin-pet-toolbar">
+          <input id="petSearch" class="care-search" type="search" placeholder="Tìm thú cưng theo tên..." aria-label="Tìm theo tên" />
+          <label class="sr-only" for="speciesFilter">Lọc theo loài</label>
+          <select id="speciesFilter" class="care-search species-filter">
+            <option value="">Tất cả loài</option>
+            <option value="Chó">Chó</option>
+            <option value="Mèo">Mèo</option>
+          </select>
+        </div>
+
+        <div class="care-table-wrapper">
+          <table class="care-table admin-pet-table">
+            <thead><tr><th>Tên</th><th>Loài</th><th>Giống</th><th>Tuổi</th><th>Chủ nuôi</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+            <tbody id="petList"></tbody>
+          </table>
+        </div>
+        <p id="petEmpty" class="care-empty" hidden>Không tìm thấy thú cưng phù hợp.</p>
+      </div>
+    </main>
+    <script type="module" src="./adminPets.js"></script>
+  </body>
+</html>

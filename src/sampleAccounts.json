@@ -1,0 +1,18 @@
+[
+  {
+    "id": "demo-admin",
+    "username": "admin",
+    "password": "123456",
+    "fullName": "Quản trị viên NEKO",
+    "phone": "",
+    "role": "admin"
+  },
+  {
+    "id": "demo-user",
+    "username": "sample",
+    "password": "123456",
+    "fullName": "Nguyễn Minh Anh",
+    "phone": "0901234567",
+    "role": "user"
+  }
+]

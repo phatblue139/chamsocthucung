@@ -1501,3 +1501,193 @@ ul { margin: 0; padding: 0; list-style: none; }
   gap: 18px;
   flex-wrap: wrap;
 }
+/* ===== Admin dashboard and pet management ===== */
+.admin-page {
+  min-height: 100vh;
+  background: #f7f8f5;
+}
+
+.admin-topbar {
+  max-width: 1080px;
+  margin: 0 auto 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-brand {
+  color: var(--ink);
+  font-size: 21px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.admin-brand span {
+  margin-left: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 1px;
+  vertical-align: middle;
+}
+
+.admin-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.admin-nav a {
+  padding: 8px 12px;
+  border-radius: 7px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.admin-nav a:hover,
+.admin-nav a.is-current {
+  background: #e7efe9;
+  color: #23694f;
+}
+
+.admin-heading {
+  max-width: 1080px;
+  margin: 0 auto 28px;
+}
+
+.admin-kicker {
+  margin-bottom: 8px;
+  color: #168269;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-heading h1 {
+  font-size: 36px;
+  line-height: 1.2;
+}
+
+.admin-heading > p:last-child {
+  margin-top: 8px;
+  color: var(--muted);
+}
+
+.admin-metrics {
+  max-width: 1080px;
+  margin: 0 auto 28px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.admin-metric {
+  min-height: 164px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 20px 22px;
+  border: 1px solid var(--border);
+  border-left: 4px solid #3ec6a0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.admin-metric.metric-open { border-left-color: #ff8c42; }
+.admin-metric.metric-done { border-left-color: #5877b8; }
+
+.admin-metric > span {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.admin-metric strong {
+  margin: 6px 0 4px;
+  color: var(--ink);
+  font-size: 36px;
+  line-height: 1.1;
+}
+
+.admin-metric a {
+  margin-top: auto;
+  color: #23694f;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.admin-shortcuts {
+  max-width: 1080px;
+  margin: 0 auto;
+  border-top: 1px solid var(--border);
+}
+
+.admin-shortcuts > a {
+  min-height: 76px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.shortcut-mark {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: #e4f4ed;
+  color: #168269;
+  font-weight: 800;
+}
+
+.shortcut-schedule { background: #fff0e4; color: #b65d1f; }
+.admin-shortcuts strong, .admin-shortcuts small { display: block; }
+.admin-shortcuts strong { color: var(--ink); font-size: 14px; }
+.admin-shortcuts small { margin-top: 3px; color: var(--muted); font-size: 12px; }
+.admin-shortcuts > a > span:last-child { color: var(--muted); }
+
+.admin-pet-form {
+  max-width: 1080px;
+  margin-bottom: 10px;
+  padding: 22px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.admin-pet-toolbar {
+  max-width: 1080px;
+  margin: 24px auto 14px;
+  display: flex;
+  gap: 10px;
+}
+
+.admin-pet-toolbar .care-search { min-width: 0; }
+.admin-pet-toolbar input { flex: 1; }
+.species-filter { width: 180px; }
+.admin-pet-table { min-width: 850px; }
+.admin-pet-table th, .admin-pet-table td { padding: 12px 14px; }
+.admin-page > .container > .user-form-message { max-width: 1080px; margin: 0 auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+@media (max-width: 760px) {
+  .admin-topbar { align-items: flex-start; flex-wrap: wrap; margin-bottom: 36px; }
+  .admin-nav { order: 3; width: 100%; justify-content: flex-start; overflow-x: auto; }
+  .admin-nav a { white-space: nowrap; }
+  .admin-metrics { grid-template-columns: 1fr; gap: 10px; }
+  .admin-metric { min-height: 138px; }
+  .admin-pet-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 520px) {
+  .admin-heading h1 { font-size: 30px; }
+  .admin-pet-form { grid-template-columns: 1fr; }
+  .admin-pet-toolbar { align-items: stretch; flex-direction: column; }
+  .species-filter { width: 100%; }
+  .admin-brand { margin-right: auto; }
+  .admin-topbar > .care-btn-reset { padding: 9px 12px; }
+}

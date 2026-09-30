@@ -68,7 +68,7 @@ export function initAdminUI() {
         return;
       }
       if (role === "admin") {
-        location.href = "/src/careSchedules.html";
+        location.href = "/src/admin.html";
         return;
       }
       resetDialog(loginDialog);
@@ -126,7 +126,7 @@ export function initAdminUI() {
       }
 
       loginDialog?.close();
-      location.href = getCurrentRole() === "admin" ? "/src/careSchedules.html" : "/user.html";
+      location.href = getCurrentRole() === "admin" ? "/src/admin.html" : "/user.html";
     });
   }
 
