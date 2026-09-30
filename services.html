@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="NEKO - Trung tâm chăm sóc thú cưng chuyên nghiệp: trông giữ, spa grooming, khám chữa bệnh và huấn luyện cho mèo & chó." />
-    <title>NEKO | Chăm Sóc Thú Cưng</title>
+    <meta name="description" content="Dịch vụ chăm sóc thú cưng tại NEKO: trông giữ, spa grooming, khám chữa bệnh, huấn luyện, đưa đón và cứu hộ khẩn cấp." />
+    <title>Dịch Vụ | NEKO Chăm Sóc Thú Cưng</title>
   </head>
   <body>
     <div id="app">
@@ -16,9 +16,9 @@
             <span>NEKO<span class="logo-dot">.</span></span>
           </a>
           <nav class="nav" id="nav" aria-label="Điều hướng chính">
-            <a href="/" class="nav-link active">Trang chủ</a>
+            <a href="/" class="nav-link">Trang chủ</a>
             <a href="/about.html" class="nav-link">Giới thiệu</a>
-            <a href="/services.html" class="nav-link">Dịch vụ</a>
+            <a href="/services.html" class="nav-link active">Dịch vụ</a>
             <a href="/pricing.html" class="nav-link">Bảng giá</a>
             <a href="/user.html" class="nav-link user-link" hidden>Vào trang của tôi</a>
             <a href="/src/careSchedules.html" class="nav-link admin-link" hidden>Quản lý lịch</a>
@@ -34,42 +34,59 @@
       </header>
 
       <main>
-        <section class="hero">
-          <div class="container hero-inner">
-            <div class="hero-content">
-              <p class="eyebrow">🐱 Người bạn thân của thú cưng</p>
-              <h1>Chăm sóc thú cưng<br />tận <span class="accent-text">tâm yêu</span>,<br />đậm tình thương</h1>
-              <p class="hero-desc">
-                NEKO mang đến dịch vụ trông giữ, spa grooming, khám sức khỏe và
-                huấn luyện chuyên nghiệp — để bé mèo 🐾 bé cún 🐶 của bạn luôn
-                khỏe mạnh và hạnh phúc.
-              </p>
-              <div class="hero-actions">
-                <a href="/booking.html" class="btn btn-primary">Đặt lịch chăm sóc</a>
-                <a href="/about.html" class="btn btn-outline">Câu chuyện NEKO</a>
-              </div>
-              <ul class="hero-trust">
-                <li>✅ 10+ năm kinh nghiệm</li>
-                <li>⭐ 4.9/5 từ 2.000+ khách hàng</li>
-              </ul>
-            </div>
-            <div class="hero-visual">
-              <div class="hero-circles">
-                <div class="hero-emoji hero-cat">🐱</div>
-                <div class="hero-emoji hero-dog">🐶</div>
-                <div class="hero-emoji hero-paw">🐾</div>
-                <div class="hero-emoji hero-heart">💖</div>
-              </div>
-            </div>
+        <section class="page-hero">
+          <div class="container page-hero-inner">
+            <p class="eyebrow">🐾 Dịch vụ của chúng tôi</p>
+            <h1>Chăm sóc trọn gói cho <span class="accent-text">bé yêu</span></h1>
+            <p class="page-hero-desc">
+              Đội ngũ NEKO đồng hành từ khâu chăm sóc hằng ngày đến lúc bé cần
+              đến phòng khám — một trạm dừng cho mọi nhu cầu của thú cưng.
+            </p>
           </div>
         </section>
 
-        <section class="stats">
-          <div class="container stats-grid">
-            <div class="stat"><strong>10+</strong><span>Năm kinh nghiệm</span></div>
-            <div class="stat"><strong>5.000+</strong><span>Thú cưng được chăm sóc</span></div>
-            <div class="stat"><strong>30+</strong><span>Nhân viên tận tâm</span></div>
-            <div class="stat"><strong>24/7</strong><span>Hỗ trợ khẩn cấp</span></div>
+        <section class="services" id="services">
+          <div class="container">
+            <div class="section-head">
+              <p class="eyebrow">Danh mục dịch vụ</p>
+              <h2>Mọi dịch vụ dưới một mái nhà</h2>
+              <p class="section-desc">
+                Chọn dịch vụ phù hợp với bé của bạn, hoặc đặt gói trọn vẹn để được
+                chăm sóc toàn diện cả tháng.
+              </p>
+            </div>
+            <div class="service-grid">
+              <article class="service-card">
+                <div class="service-icon">🏠</div>
+                <h3>Trông giữ tại nhà</h3>
+                <p>Chăm sóc, cho ăn và vui đùa cùng bé khi bạn đi vắng, với camera 24/7.</p>
+              </article>
+              <article class="service-card">
+                <div class="service-icon">🛁</div>
+                <h3>Spa &amp; Grooming</h3>
+                <p>Tắm, cắt tỉa lông, vệ sinh tai móng bằng sản phẩm an toàn cho da thú cưng.</p>
+              </article>
+              <article class="service-card">
+                <div class="service-icon">🩺</div>
+                <h3>Khám &amp; Tư vấn sức khỏe</h3>
+                <p>Kiểm tra định kỳ, tiêm phòng và tư vấn dinh dưỡng từ bác sĩ thú y.</p>
+              </article>
+              <article class="service-card">
+                <div class="service-icon">🎾</div>
+                <h3>Huấn luyện thú cưng</h3>
+                <p>Huấn luyện vệ sinh, lệnh cơ bản và sửa những thói quen chưa tốt.</p>
+              </article>
+              <article class="service-card">
+                <div class="service-icon">🚗</div>
+                <h3>Đưa đón tận nơi</h3>
+                <p>Xe dịch vụ thân thiện thú cưng, đưa đón bé an toàn mọi quãng đường.</p>
+              </article>
+              <article class="service-card">
+                <div class="service-icon">⚡</div>
+                <h3>Cứu hộ khẩn cấp</h3>
+                <p>Đường dây nóng 24/7 và đội cấp cứu sẵn sàng xử lý trong 30 phút.</p>
+              </article>
+            </div>
           </div>
         </section>
 
@@ -115,45 +132,10 @@
           </div>
         </section>
 
-        <section class="testimonials">
-          <div class="container">
-            <div class="section-head">
-              <p class="eyebrow">Khách hàng nói gì</p>
-              <h2>Yêu thương từ những người nuôi</h2>
-            </div>
-            <div class="testi-grid">
-              <article class="testi-card">
-                <div class="testi-stars">⭐⭐⭐⭐⭐</div>
-                <p>"Bé Milo nhà mình vốn nhát, vậy mà ở NEKO chơi vui hơn cả ở nhà. Nhân viên cực kỳ tận tình, gửi ảnh cho mình liên tục."</p>
-                <div class="testi-user">
-                  <span class="testi-avatar">👩</span>
-                  <div><strong>Thu Hà</strong><em>Mẹ của Milo (Chó Poodle)</em></div>
-                </div>
-              </article>
-              <article class="testi-card">
-                <div class="testi-stars">⭐⭐⭐⭐⭐</div>
-                <p>"Lịch spa grooming rất linh hoạt, bé Miu lúc nào ra khỏi NEKO cũng thơm phức và lông mượt. Phí hợp lý, tư vấn chu đáo."</p>
-                <div class="testi-user">
-                  <span class="testi-avatar">🧑</span>
-                  <div><strong>Minh Quân</strong><em>Bố của Miu (Mèo Anh lông ngắn)</em></div>
-                </div>
-              </article>
-              <article class="testi-card">
-                <div class="testi-stars">⭐⭐⭐⭐⭐</div>
-                <p>"Đội cấp cứu 24/7 của NEKO đã cứu bé Bông kịp thời lúc nửa đêm. Mình thực sự biết ơn và tin tưởng đội ngũ ở đây."</p>
-                <div class="testi-user">
-                  <span class="testi-avatar">👩</span>
-                  <div><strong>Ngọc Anh</strong><em>Mẹ của Bông (Chó Corgi)</em></div>
-                </div>
-              </article>
-            </div>
-          </div>
-        </section>
-
         <section class="cta-band">
           <div class="container cta-inner">
-            <h2>Trở thành một phần của gia đình NEKO</h2>
-            <p>Hãy để chúng tôi đồng hành cùng bé yêu của bạn.</p>
+            <h2>Đã chọn dịch vụ? Đặt lịch ngay thôi!</h2>
+            <p>Đội ngũ NEKO sẽ liên hệ để xác nhận lịch trong thời gian sớm nhất.</p>
             <a href="/booking.html" class="btn btn-primary btn-lg">Đặt lịch ngay 🐾</a>
           </div>
         </section>
@@ -167,10 +149,10 @@
           </div>
           <div class="footer-col">
             <h4>Dịch vụ</h4>
-            <a href="/services.html#services">Trông giữ thú cưng</a>
-            <a href="/services.html#services">Spa &amp; Grooming</a>
-            <a href="/services.html#services">Khám sức khỏe</a>
-            <a href="/services.html#services">Huấn luyện</a>
+            <a href="#services">Trông giữ thú cưng</a>
+            <a href="#services">Spa &amp; Grooming</a>
+            <a href="#services">Khám sức khỏe</a>
+            <a href="#services">Huấn luyện</a>
           </div>
           <div class="footer-col">
             <h4>Công ty</h4>
