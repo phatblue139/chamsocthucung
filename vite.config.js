@@ -7,6 +7,8 @@ export default defineConfig({
       input: {
         main: resolve(import.meta.dirname, 'index.html'),
         about: resolve(import.meta.dirname, 'about.html'),
+        admin: resolve(import.meta.dirname, 'src/admin.html'),
+        adminPets: resolve(import.meta.dirname, 'src/adminPets.html'),
         careSchedules: resolve(import.meta.dirname, 'src/careSchedules.html'),
         user: resolve(import.meta.dirname, 'user.html'),
       },
