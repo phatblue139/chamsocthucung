@@ -1,218 +1,529 @@
 <!doctype html>
 <html lang="vi">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Dịch vụ chăm sóc thú cưng tại NEKO: trông giữ, spa grooming, khám chữa bệnh, huấn luyện, đưa đón và cứu hộ khẩn cấp." />
-    <title>Dịch Vụ | NEKO Chăm Sóc Thú Cưng</title>
-  </head>
-  <body>
-    <div id="app">
-      <header class="site-header">
-        <div class="container header-inner">
-          <a href="/" class="logo" aria-label="NEKO - Trang chủ">
-            <span class="logo-mark">🐾</span>
-            <span>NEKO<span class="logo-dot">.</span></span>
-          </a>
-          <nav class="nav" id="nav" aria-label="Điều hướng chính">
-            <a href="/" class="nav-link">Trang chủ</a>
-            <a href="/about.html" class="nav-link">Giới thiệu</a>
-            <a href="/services.html" class="nav-link active">Dịch vụ</a>
-            <a href="/pricing.html" class="nav-link">Bảng giá</a>
-            <a href="/user.html" class="nav-link user-link" hidden>Vào trang của tôi</a>
-            <a href="/src/careSchedules.html" class="nav-link admin-link" hidden>Quản lý lịch</a>
-            <button type="button" class="nav-btn-login" id="loginBtn">Đăng nhập</button>
-            <button type="button" class="nav-btn-register" id="registerBtn">Đăng ký</button>
-            <button type="button" class="nav-btn-login nav-btn-logout" id="logoutBtn" hidden>Đăng xuất</button>
-            <a href="/booking.html" class="btn btn-primary nav-cta">Đặt lịch ngay</a>
-          </nav>
-          <button class="nav-toggle" id="navToggle" aria-label="Mở menu" aria-expanded="false">
-            <span></span><span></span><span></span>
-          </button>
-        </div>
-      </header>
 
-      <main>
-        <section class="page-hero">
-          <div class="container page-hero-inner">
-            <p class="eyebrow">🐾 Dịch vụ của chúng tôi</p>
-            <h1>Chăm sóc trọn gói cho <span class="accent-text">bé yêu</span></h1>
-            <p class="page-hero-desc">
-              Đội ngũ NEKO đồng hành từ khâu chăm sóc hằng ngày đến lúc bé cần
-              đến phòng khám — một trạm dừng cho mọi nhu cầu của thú cưng.
-            </p>
-          </div>
-        </section>
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        <section class="services" id="services">
-          <div class="container">
-            <div class="section-head">
-              <p class="eyebrow">Danh mục dịch vụ</p>
-              <h2>Mọi dịch vụ dưới một mái nhà</h2>
-              <p class="section-desc">
-                Chọn dịch vụ phù hợp với bé của bạn, hoặc đặt gói trọn vẹn để được
-                chăm sóc toàn diện cả tháng.
-              </p>
-            </div>
-            <div class="service-grid">
-              <article class="service-card">
-                <div class="service-icon">🏠</div>
-                <h3>Trông giữ tại nhà</h3>
-                <p>Chăm sóc, cho ăn và vui đùa cùng bé khi bạn đi vắng, với camera 24/7.</p>
-              </article>
-              <article class="service-card">
-                <div class="service-icon">🛁</div>
-                <h3>Spa &amp; Grooming</h3>
-                <p>Tắm, cắt tỉa lông, vệ sinh tai móng bằng sản phẩm an toàn cho da thú cưng.</p>
-              </article>
-              <article class="service-card">
-                <div class="service-icon">🩺</div>
-                <h3>Khám &amp; Tư vấn sức khỏe</h3>
-                <p>Kiểm tra định kỳ, tiêm phòng và tư vấn dinh dưỡng từ bác sĩ thú y.</p>
-              </article>
-              <article class="service-card">
-                <div class="service-icon">🎾</div>
-                <h3>Huấn luyện thú cưng</h3>
-                <p>Huấn luyện vệ sinh, lệnh cơ bản và sửa những thói quen chưa tốt.</p>
-              </article>
-              <article class="service-card">
-                <div class="service-icon">🚗</div>
-                <h3>Đưa đón tận nơi</h3>
-                <p>Xe dịch vụ thân thiện thú cưng, đưa đón bé an toàn mọi quãng đường.</p>
-              </article>
-              <article class="service-card">
-                <div class="service-icon">⚡</div>
-                <h3>Cứu hộ khẩn cấp</h3>
-                <p>Đường dây nóng 24/7 và đội cấp cứu sẵn sàng xử lý trong 30 phút.</p>
-              </article>
-            </div>
-          </div>
-        </section>
+  <meta
+    name="description"
+    content="Dịch vụ chăm sóc thú cưng NEKO">
 
-        <section class="why" id="why">
-          <div class="container why-inner">
-            <div class="why-visual">
-              <div class="why-box">🐕</div>
-            </div>
-            <div class="why-content">
-              <p class="eyebrow">Tại sao chọn NEKO?</p>
-              <h2>Nơi bé được yêu như ở nhà</h2>
-              <ul class="why-list">
-                <li>
-                  <span class="why-check">✔</span>
-                  <div>
-                    <strong>Nhân viên được đào tạo chuẩn</strong>
-                    <p>Bác sĩ thú y và groomer có chứng chỉ quốc tế.</p>
-                  </div>
-                </li>
-                <li>
-                  <span class="why-check">✔</span>
-                  <div>
-                    <strong>Không gian sạch, an toàn</strong>
-                    <p>Khu vực vệ sinh khử khuẩn mỗi ngày, riêng cho mèo &amp; chó.</p>
-                  </div>
-                </li>
-                <li>
-                  <span class="why-check">✔</span>
-                  <div>
-                    <strong>Cập nhật bé mỗi ngày</strong>
-                    <p>Ảnh và video gửi về cho bạn qua ứng dụng NEKO.</p>
-                  </div>
-                </li>
-                <li>
-                  <span class="why-check">✔</span>
-                  <div>
-                    <strong>Bảo hiểm thú cưng</strong>
-                    <p>Mọi sự cố đều được chi trả theo hợp đồng rõ ràng.</p>
-                  </div>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </section>
+  <title>Dịch vụ | NEKO Pet Care</title>
+</head>
 
-        <section class="cta-band">
-          <div class="container cta-inner">
-            <h2>Đã chọn dịch vụ? Đặt lịch ngay thôi!</h2>
-            <p>Đội ngũ NEKO sẽ liên hệ để xác nhận lịch trong thời gian sớm nhất.</p>
-            <a href="/booking.html" class="btn btn-primary btn-lg">Đặt lịch ngay 🐾</a>
-          </div>
-        </section>
-      </main>
+<body>
 
-      <footer class="site-footer">
-        <div class="container footer-grid">
-          <div class="footer-brand">
-            <a href="/" class="logo"><span class="logo-mark">🐾</span><span>NEKO<span class="logo-dot">.</span></span></a>
-            <p>Đồng hành cùng bạn nuôi dạy những bé thú cưng khỏe mạnh và hạnh phúc nhất.</p>
-          </div>
-          <div class="footer-col">
-            <h4>Dịch vụ</h4>
-            <a href="#services">Trông giữ thú cưng</a>
-            <a href="#services">Spa &amp; Grooming</a>
-            <a href="#services">Khám sức khỏe</a>
-            <a href="#services">Huấn luyện</a>
-          </div>
-          <div class="footer-col">
-            <h4>Công ty</h4>
-            <a href="/about.html">Giới thiệu</a>
-            <a href="/about.html#team">Đội ngũ</a>
-            <a href="/about.html#values">Giá trị</a>
-            <a href="/booking.html">Liên hệ</a>
-          </div>
-          <div class="footer-col">
-            <h4>Kết nối</h4>
-            <a href="#">Facebook</a>
-            <a href="#">Instagram</a>
-            <a href="#">TikTok</a>
-            <a href="#">YouTube</a>
-          </div>
-        </div>
-        <div class="container footer-bottom">
-          <p>© <span id="year"></span> NEKO Pet Care. Made with 💛 for pets.</p>
-        </div>
-      </footer>
+<div id="app">
+
+  <!-- HEADER -->
+  <header class="site-header">
+
+    <div class="container header-inner">
+
+      <a href="/" class="logo">
+
+        <span class="logo-mark">
+          🐾
+        </span>
+
+        <span>
+          NEKO<span class="logo-dot">.</span>
+        </span>
+
+      </a>
+
+
+      <nav class="nav" id="nav">
+
+        <a href="/" class="nav-link">
+          Trang chủ
+        </a>
+
+        <a href="/about.html" class="nav-link">
+          Giới thiệu
+        </a>
+
+        <a
+          href="/services.html"
+          class="nav-link active">
+          Dịch vụ
+        </a>
+
+        <a href="/pricing.html" class="nav-link">
+          Bảng giá
+        </a>
+
+        <a
+          href="/user.html"
+          class="nav-link user-link"
+          hidden>
+          Vào trang của tôi
+        </a>
+
+        <a
+          href="/src/careSchedules.html"
+          class="nav-link admin-link"
+          hidden>
+          Quản lý lịch
+        </a>
+
+        <button
+          type="button"
+          class="nav-btn-login"
+          id="loginBtn">
+          Đăng nhập
+        </button>
+
+        <button
+          type="button"
+          class="nav-btn-register"
+          id="registerBtn">
+          Đăng ký
+        </button>
+
+        <a
+          href="/booking.html"
+          class="btn btn-primary nav-cta">
+          Đặt lịch ngay
+        </a>
+
+        <button
+          type="button"
+          class="nav-btn-login nav-btn-logout"
+          id="logoutBtn"
+          hidden>
+          Đăng xuất
+        </button>
+
+      </nav>
+
+
+      <button
+        class="nav-toggle"
+        id="navToggle"
+        aria-label="Mở menu">
+
+        <span></span>
+        <span></span>
+        <span></span>
+
+      </button>
+
     </div>
 
-    <dialog id="loginDialog" class="login-dialog" aria-labelledby="loginTitle">
-      <form id="loginForm" novalidate>
-        <h2 id="loginTitle">Đăng nhập</h2>
-        <p class="login-sub">Đăng nhập để đặt lịch và theo dõi lịch chăm sóc.</p>
-        <label for="loginUsername">Tên đăng nhập</label>
-        <input type="text" id="loginUsername" name="username" placeholder="Nhập tên đăng nhập" autocomplete="username" required>
-        <label for="loginPassword">Mật khẩu</label>
-        <input type="password" id="loginPassword" name="password" placeholder="••••••" autocomplete="current-password" required>
-        <p class="login-error" id="loginError" data-auth-error hidden>Sai tên đăng nhập hoặc mật khẩu!</p>
-        <div class="login-actions">
-          <button type="button" class="btn btn-outline" id="loginCancelBtn" data-close-dialog>Hủy</button>
-          <button type="submit" class="btn btn-primary">Đăng nhập</button>
-        </div>
-      </form>
-    </dialog>
+  </header>
 
-    <dialog id="registerDialog" class="login-dialog" aria-labelledby="registerTitle">
-      <form id="registerForm" novalidate>
-        <h2 id="registerTitle">Đăng ký tài khoản</h2>
-        <p class="login-sub">Tạo tài khoản để đăng ký lịch chăm sóc cho thú cưng.</p>
-        <label for="registerUsername">Tên đăng nhập</label>
-        <input type="text" id="registerUsername" name="username" placeholder="Ví dụ: minh.an" autocomplete="username" required>
-        <label for="registerFullName">Họ và tên</label>
-        <input type="text" id="registerFullName" name="fullName" placeholder="Nguyễn Văn A" autocomplete="name" required>
-        <label for="registerPhone">Số điện thoại</label>
-        <input type="tel" id="registerPhone" name="phone" placeholder="090 123 4567" autocomplete="tel" required>
-        <label for="registerPassword">Mật khẩu</label>
-        <input type="password" id="registerPassword" name="password" placeholder="Ít nhất 6 ký tự" autocomplete="new-password" required>
-        <label for="registerConfirmPassword">Xác nhận mật khẩu</label>
-        <input type="password" id="registerConfirmPassword" name="confirmPassword" placeholder="Nhập lại mật khẩu" autocomplete="new-password" required>
-        <p class="login-error" id="registerError" data-auth-error hidden></p>
-        <div class="login-actions">
-          <button type="button" class="btn btn-outline" id="registerCancelBtn" data-close-dialog>Hủy</button>
-          <button type="submit" class="btn btn-primary">Tạo tài khoản</button>
-        </div>
-      </form>
-    </dialog>
 
-    <script type="module" src="/src/main.js"></script>
-  </body>
+  <main>
+
+    <!-- HERO -->
+    <section class="page-hero">
+
+      <div class="container page-hero-inner">
+
+        <p class="eyebrow">
+          🐾 Dịch vụ của chúng tôi
+        </p>
+
+        <h1>
+          Chăm sóc trọn gói cho
+          <span class="accent-text">
+            bé yêu
+          </span>
+        </h1>
+
+        <p class="page-hero-desc">
+          NEKO cung cấp các dịch vụ chăm sóc thú cưng từ cơ bản
+          đến chuyên nghiệp.
+        </p>
+
+      </div>
+
+    </section>
+
+
+    <!-- SERVICES -->
+    <section
+      class="services"
+      id="services">
+
+      <div class="container">
+
+        <div class="section-head">
+
+          <p class="eyebrow">
+            Danh mục dịch vụ
+          </p>
+
+          <h2>
+            Mọi dịch vụ dưới một mái nhà
+          </h2>
+
+          <p class="section-desc">
+            Chọn dịch vụ phù hợp với nhu cầu của thú cưng.
+          </p>
+
+        </div>
+
+
+        <div class="service-grid">
+
+          <article class="service-card">
+
+            <div class="service-icon">
+              🏠
+            </div>
+
+            <h3>
+              Trông giữ thú cưng
+            </h3>
+
+            <p>
+              Chăm sóc, cho ăn và vui chơi cùng bé khi bạn đi vắng.
+            </p>
+
+          </article>
+
+
+          <article class="service-card">
+
+            <div class="service-icon">
+              🛁
+            </div>
+
+            <h3>
+              Spa & Grooming
+            </h3>
+
+            <p>
+              Tắm, cắt tỉa lông và vệ sinh tai móng cho thú cưng.
+            </p>
+
+          </article>
+
+
+          <article class="service-card">
+
+            <div class="service-icon">
+              🩺
+            </div>
+
+            <h3>
+              Khám sức khỏe
+            </h3>
+
+            <p>
+              Kiểm tra sức khỏe, tiêm phòng và tư vấn dinh dưỡng.
+            </p>
+
+          </article>
+
+
+          <article class="service-card">
+
+            <div class="service-icon">
+              🎾
+            </div>
+
+            <h3>
+              Huấn luyện
+            </h3>
+
+            <p>
+              Huấn luyện vệ sinh, lệnh cơ bản và điều chỉnh hành vi.
+            </p>
+
+          </article>
+
+
+          <article class="service-card">
+
+            <div class="service-icon">
+              🚗
+            </div>
+
+            <h3>
+              Đưa đón tận nơi
+            </h3>
+
+            <p>
+              Đưa đón thú cưng an toàn đến và rời khỏi NEKO.
+            </p>
+
+          </article>
+
+
+          <article class="service-card">
+
+            <div class="service-icon">
+              ⚡
+            </div>
+
+            <h3>
+              Cứu hộ khẩn cấp
+            </h3>
+
+            <p>
+              Hỗ trợ trong những trường hợp thú cưng cần chăm sóc khẩn cấp.
+            </p>
+
+          </article>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- WHY -->
+    <section class="why">
+
+      <div class="container why-inner">
+
+        <div class="why-visual">
+
+          <div class="why-box">
+            🐕
+          </div>
+
+        </div>
+
+
+        <div class="why-content">
+
+          <p class="eyebrow">
+            Tại sao chọn NEKO?
+          </p>
+
+          <h2>
+            Nơi bé được yêu như ở nhà
+          </h2>
+
+          <ul class="why-list">
+
+            <li>
+
+              <span class="why-check">
+                ✔
+              </span>
+
+              <div>
+
+                <strong>
+                  Nhân viên tận tâm
+                </strong>
+
+                <p>
+                  Luôn quan tâm đến sức khỏe và cảm xúc của thú cưng.
+                </p>
+
+              </div>
+
+            </li>
+
+
+            <li>
+
+              <span class="why-check">
+                ✔
+              </span>
+
+              <div>
+
+                <strong>
+                  Không gian sạch sẽ
+                </strong>
+
+                <p>
+                  Khu vực chăm sóc được vệ sinh thường xuyên.
+                </p>
+
+              </div>
+
+            </li>
+
+
+            <li>
+
+              <span class="why-check">
+                ✔
+              </span>
+
+              <div>
+
+                <strong>
+                  Theo dõi thường xuyên
+                </strong>
+
+                <p>
+                  Cập nhật tình trạng của bé trong quá trình chăm sóc.
+                </p>
+
+              </div>
+
+            </li>
+
+
+            <li>
+
+              <span class="why-check">
+                ✔
+              </span>
+
+              <div>
+
+                <strong>
+                  Dịch vụ đa dạng
+                </strong>
+
+                <p>
+                  Nhiều lựa chọn phù hợp với nhu cầu của từng bé.
+                </p>
+
+              </div>
+
+            </li>
+
+          </ul>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- CTA -->
+    <section class="cta-band">
+
+      <div class="container cta-inner">
+
+        <h2>
+          Bạn đã chọn được dịch vụ?
+        </h2>
+
+        <p>
+          Đặt lịch ngay để NEKO tư vấn cho bạn.
+        </p>
+
+        <a
+          href="/booking.html"
+          class="btn btn-primary btn-lg">
+          Đặt lịch ngay 🐾
+        </a>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+
+    <div class="container footer-grid">
+
+      <div class="footer-brand">
+
+        <a href="/" class="logo">
+
+          <span class="logo-mark">
+            🐾
+          </span>
+
+          <span>
+            NEKO<span class="logo-dot">.</span>
+          </span>
+
+        </a>
+
+        <p>
+          Đồng hành cùng bạn nuôi dạy những bé thú cưng khỏe mạnh
+          và hạnh phúc nhất.
+        </p>
+
+      </div>
+
+
+      <div class="footer-col">
+
+        <h4>Dịch vụ</h4>
+
+        <a href="/services.html#services">
+          Trông giữ thú cưng
+        </a>
+
+        <a href="/services.html#services">
+          Spa &amp; Grooming
+        </a>
+
+        <a href="/services.html#services">
+          Khám sức khỏe
+        </a>
+
+        <a href="/services.html#services">
+          Huấn luyện
+        </a>
+
+      </div>
+
+
+      <div class="footer-col">
+
+        <h4>Công ty</h4>
+
+        <a href="/about.html">
+          Giới thiệu
+        </a>
+
+        <a href="/about.html#team">
+          Đội ngũ
+        </a>
+
+        <a href="/about.html#values">
+          Giá trị
+        </a>
+
+        <a href="/booking.html">
+          Liên hệ
+        </a>
+
+      </div>
+
+
+      <div class="footer-col">
+
+        <h4>Kết nối</h4>
+
+        <a href="#">Facebook</a>
+        <a href="#">Instagram</a>
+        <a href="#">TikTok</a>
+        <a href="#">YouTube</a>
+
+      </div>
+
+    </div>
+
+
+    <div class="container footer-bottom">
+
+      <p>
+        © <span id="year"></span>
+        NEKO Pet Care. Made with 💛 for pets.
+      </p>
+
+    </div>
+
+  </footer>
+
+</div>
+
+
+<script type="module" src="/src/main.js"></script>
+
+</body>
 </html>

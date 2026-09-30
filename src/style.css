@@ -1493,3 +1493,11 @@ ul { margin: 0; padding: 0; list-style: none; }
   background: #ffe8e8;
   color: #c0392b;
 }
+
+.cta-band .hero-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
