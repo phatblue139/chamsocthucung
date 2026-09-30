@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Khu vực người dùng NEKO - đăng ký và theo dõi lịch chăm sóc thú cưng." />
+    <title>Khu vực người dùng | NEKO</title>
+  </head>
+  <body class="user-page">
+    <header class="user-header">
+      <div class="container user-header-inner">
+        <a href="/" class="logo" aria-label="NEKO - Trang chủ">
+          <span class="logo-mark">🐾</span>
+          <span>NEKO<span class="logo-dot">.</span></span>
+        </a>
+        <div class="user-header-actions">
+          <button type="button" class="care-btn care-btn-reset" id="userLogoutBtn">Đăng xuất</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="user-main">
+      <div class="container">
+        <section class="user-welcome">
+          <p class="eyebrow">Không gian của bạn</p>
+          <h1>Xin chào, <span class="accent-text" id="userGreeting">bạn</span></h1>
+          <p>Đăng ký lịch chăm sóc cho bé yêu và theo dõi các yêu cầu của bạn tại đây.</p>
+        </section>
+
+        <div class="user-content-grid">
+          <section class="user-panel">
+            <div class="user-panel-heading">
+              <div>
+                <p class="eyebrow">Tạo yêu cầu mới</p>
+                <h2>Đăng ký lịch chăm sóc</h2>
+              </div>
+              <span class="user-panel-badge">Gửi tới NEKO</span>
+            </div>
+            <form id="userScheduleForm" class="care-form user-schedule-form">
+              <div class="care-form-group">
+                <label for="userPetName">Tên thú cưng</label>
+                <input type="text" id="userPetName" name="petName" placeholder="Ví dụ: Miu" required />
+              </div>
+              <div class="care-form-group">
+                <label for="userCareType">Loại chăm sóc</label>
+                <select id="userCareType" name="careType" required>
+                  <option value="">-- Chọn loại chăm sóc --</option>
+                  <option value="Cho ăn">Cho ăn</option>
+                  <option value="Tắm">Tắm</option>
+                  <option value="Đi dạo">Đi dạo</option>
+                  <option value="Tiêm phòng">Tiêm phòng</option>
+                  <option value="Cắt móng">Cắt móng</option>
+                  <option value="Khám sức khỏe">Khám sức khỏe</option>
+                </select>
+              </div>
+              <div class="care-form-group">
+                <label for="userScheduleDate">Ngày</label>
+                <input type="date" id="userScheduleDate" name="date" required />
+              </div>
+              <div class="care-form-group">
+                <label for="userScheduleTime">Giờ</label>
+                <input type="time" id="userScheduleTime" name="time" required />
+              </div>
+              <div class="care-form-group user-form-full">
+                <label for="userScheduleNote">Ghi chú</label>
+                <textarea id="userScheduleNote" name="note" rows="3" maxlength="500" placeholder="Thông tin thêm cho NEKO..."></textarea>
+              </div>
+              <div class="care-form-actions">
+                <button type="submit" class="care-btn care-btn-add">Đăng ký lịch</button>
+              </div>
+            </form>
+            <p class="user-form-message" id="userScheduleMessage" role="status" aria-live="polite"></p>
+          </section>
+
+          <section class="user-panel user-history-panel">
+            <div class="user-panel-heading">
+              <div>
+                <p class="eyebrow">Theo dõi</p>
+                <h2>Lịch của tôi</h2>
+              </div>
+              <span class="care-count" id="userScheduleCount"></span>
+            </div>
+            <div class="user-schedule-list" id="userScheduleList"></div>
+            <p class="care-empty" id="userScheduleEmpty" hidden>
+              Bạn chưa có lịch chăm sóc nào. Hãy đăng ký lịch đầu tiên nhé!
+            </p>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <script type="module" src="/src/user.js"></script>
+  </body>
+</html>
