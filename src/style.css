@@ -24,6 +24,9 @@
 
 * { box-sizing: border-box; }
 
+/* Author `display` rules outrank the UA [hidden] rule, so enforce it here. */
+[hidden] { display: none !important; }
+
 html { scroll-behavior: smooth; }
 
 body {
@@ -146,12 +149,19 @@ ul { margin: 0; padding: 0; list-style: none; }
 }
 .logo-dot { color: var(--primary); }
 
-.nav { display: flex; align-items: center; gap: 26px; }
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
 .nav-link {
   position: relative;
   font-weight: 600;
   color: var(--text);
   transition: color 0.2s;
+  white-space: nowrap;
 }
 .nav-link:hover { color: var(--primary-dark); }
 .nav-link.active { color: var(--primary-dark); }
@@ -489,6 +499,200 @@ ul { margin: 0; padding: 0; list-style: none; }
 }
 .form-note { font-size: 14px; font-weight: 600; color: var(--accent); min-height: 20px; }
 
+/* ===== Register page ===== */
+.register-main { padding: 80px 0; background: var(--primary-soft); }
+.register-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  align-items: center;
+}
+.register-intro h1 { margin-bottom: 18px; }
+.register-intro > p:not(.eyebrow) { margin-bottom: 28px; }
+.register-perks {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.register-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 36px;
+}
+.register-card h2 { margin-bottom: 6px; }
+.register-card label {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.register-card input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  font-size: 15px;
+  font-family: inherit;
+  margin-bottom: 16px;
+  color: var(--ink);
+}
+.register-card input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(255, 140, 66, 0.15);
+}
+.register-submit { width: 100%; }
+.register-switch {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 15px;
+  color: var(--muted);
+}
+.register-switch a {
+  color: var(--primary-dark);
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .register-inner { grid-template-columns: 1fr; gap: 40px; }
+}
+@media (max-width: 640px) {
+  .register-main { padding: 48px 0; }
+  .register-card { padding: 24px; }
+}
+
+/* ===== Customer booking ===== */
+.booking { padding: 96px 0; background: var(--bg); }
+.booking-page .booking { background: var(--primary-soft); }
+.booking-page .booking-head h1 { margin-bottom: 12px; }
+.booking-head { margin-bottom: 36px; }
+.booking-head h2 { margin-bottom: 12px; }
+.booking-head > p:last-child { color: var(--text); }
+
+.booking-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: start;
+}
+
+.booking-form {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 36px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+.booking-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.booking-field-full,
+.booking-actions,
+.booking-message { grid-column: 1 / -1; }
+.booking-field label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.booking-field input,
+.booking-field select,
+.booking-field textarea {
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  font-size: 15px;
+  font-family: inherit;
+  background: #fff;
+  color: var(--ink);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.booking-field textarea { resize: vertical; }
+.booking-field input:focus,
+.booking-field select:focus,
+.booking-field textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(255, 140, 66, 0.15);
+}
+.booking-actions { display: flex; }
+.booking-actions .btn { width: 100%; }
+.booking-message { font-size: 14px; font-weight: 600; color: var(--accent); min-height: 20px; }
+.booking-message-error { color: #c0392b; }
+
+.booking-history {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 36px;
+}
+.booking-history-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.booking-count { font-size: 14px; font-weight: 700; color: var(--muted); }
+.booking-list { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+.booking-item {
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 18px;
+}
+.booking-item-main {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.booking-item-main strong { color: var(--ink); }
+.booking-item-main span { font-size: 14px; font-weight: 700; color: var(--primary-dark); }
+.booking-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.booking-status {
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+.booking-item-note {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--text);
+}
+.booking-empty {
+  text-align: center;
+  padding: 30px;
+  color: var(--muted);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .booking-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .booking { padding: 64px 0; }
+  .booking-form { grid-template-columns: 1fr; padding: 24px; }
+  .booking-history { padding: 24px; }
+}
+
 /* ===== Footer ===== */
 .site-footer { background: var(--ink); color: #d4cac4; padding: 64px 0 0; }
 .footer-grid {
@@ -683,9 +887,8 @@ ul { margin: 0; padding: 0; list-style: none; }
   .hero-visual, .why-visual { order: -1; }
   .contact-inner { grid-template-columns: 1fr; }
   .testi-grid { grid-template-columns: repeat(2, 1fr); }
-}
 
-@media (max-width: 640px) {
+  /* Menu thu gọn sớm hơn: thanh ngang chỉ hiện khi còn đủ chỗ. */
   .nav-toggle { display: flex; }
   .nav {
     position: fixed;
@@ -705,7 +908,20 @@ ul { margin: 0; padding: 0; list-style: none; }
   .nav-link, .nav-cta { padding: 12px 14px; border-radius: 12px; }
   .nav-link.active { background: var(--primary-soft); }
   .nav-link.active::after { display: none; }
+  .nav-user {
+    padding: 12px 14px;
+    max-width: none;
+    font-size: 16px;
+  }
+  .nav-btn-login {
+    justify-content: flex-start;
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+  }
+}
 
+@media (max-width: 640px) {
   .service-grid, .price-grid, .team-grid, .testi-grid, .mission-grid, .value-grid { grid-template-columns: 1fr; }
   .footer-grid { grid-template-columns: 1fr; gap: 28px; }
 
@@ -930,6 +1146,14 @@ ul { margin: 0; padding: 0; list-style: none; }
   transition: background 0.2s, color 0.2s;
 }
 .nav-btn-login:hover { background: var(--primary-soft); }
+.nav-btn-register {
+  border-color: var(--border);
+  color: var(--muted);
+}
+.nav-btn-register:hover {
+  background: #f0e7df;
+  color: var(--ink);
+}
 .nav-btn-logout {
   border-color: var(--border);
   color: var(--muted);
@@ -938,6 +1162,24 @@ ul { margin: 0; padding: 0; list-style: none; }
   background: #f0e7df;
   color: var(--ink);
 }
+.nav-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  min-width: 0;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nav-user::before {
+  content: '👋';
+  font-size: 17px;
+  flex: none;
+}
 
 .login-dialog {
   border: none;
@@ -945,6 +1187,8 @@ ul { margin: 0; padding: 0; list-style: none; }
   box-shadow: var(--shadow);
   padding: 32px;
   width: min(92%, 380px);
+  max-height: 90vh;
+  overflow-y: auto;
 }
 .login-dialog::backdrop {
   background: rgba(43, 35, 32, 0.5);
@@ -989,15 +1233,6 @@ ul { margin: 0; padding: 0; list-style: none; }
   justify-content: flex-end;
   gap: 10px;
   margin-top: 4px;
-}
-
-@media (max-width: 640px) {
-  .nav-btn-login {
-    justify-content: flex-start;
-    width: 100%;
-    padding: 12px 14px;
-    border-radius: 12px;
-  }
 }
 
 /* ===== Care Schedule topbar ===== */

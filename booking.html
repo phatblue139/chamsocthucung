@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Đặt lịch chăm sóc thú cưng tại NEKO và theo dõi các lịch của bạn." />
+    <title>Đặt Lịch Chăm Sóc | NEKO</title>
+    <script>
+      if (localStorage.getItem("neko:admin") === "true" || !localStorage.getItem("neko:user")) {
+        location.replace("/");
+      }
+    </script>
+  </head>
+  <body class="booking-page">
+    <div id="app">
+      <header class="site-header">
+        <div class="container header-inner">
+          <a href="/" class="logo" aria-label="NEKO - Trang chủ">
+            <span class="logo-mark">🐾</span>
+            <span>NEKO<span class="logo-dot">.</span></span>
+          </a>
+          <nav class="nav" id="nav" aria-label="Điều hướng chính">
+            <a href="/" class="nav-link">Trang chủ</a>
+            <a href="/about.html" class="nav-link">Giới thiệu</a>
+            <a href="/#services" class="nav-link">Dịch vụ</a>
+            <a href="/#pricing" class="nav-link">Bảng giá</a>
+            <a href="/booking.html" class="nav-link user-link active">Đặt lịch</a>
+            <a href="/src/careSchedules.html" class="nav-link admin-link" hidden>Quản lý lịch</a>
+            <span class="nav-user" data-user-name hidden></span>
+            <button type="button" class="nav-btn-login" id="loginBtn" hidden>Đăng nhập</button>
+            <a href="/register.html" class="nav-btn-login nav-btn-register" id="registerBtn" hidden>Đăng ký</a>
+            <button type="button" class="nav-btn-login nav-btn-logout" id="logoutBtn" hidden>Đăng xuất</button>
+            <a href="/#contact" class="btn btn-primary nav-cta" id="navCta" hidden>Đặt lịch ngay</a>
+          </nav>
+          <button class="nav-toggle" id="navToggle" aria-label="Mở menu" aria-expanded="false">
+            <span></span><span></span><span></span>
+          </button>
+        </div>
+      </header>
+
+      <main class="booking booking-page-main">
+        <div class="container">
+          <div class="booking-head">
+            <p class="eyebrow">Không gian của bạn</p>
+            <h1>Xin chào, <span class="accent-text" data-user-greeting>bạn</span></h1>
+            <p>Đăng ký lịch chăm sóc cho bé yêu và theo dõi các yêu cầu của bạn tại đây.</p>
+          </div>
+
+          <div class="booking-grid">
+            <form class="booking-form" id="bookingForm" novalidate>
+              <div class="booking-field">
+                <label for="bookingPetName">Tên thú cưng</label>
+                <input type="text" id="bookingPetName" name="petName" placeholder="Ví dụ: Miu" required />
+              </div>
+              <div class="booking-field">
+                <label for="bookingCareType">Loại chăm sóc</label>
+                <select id="bookingCareType" name="careType" required>
+                  <option value="">-- Chọn loại chăm sóc --</option>
+                </select>
+              </div>
+              <div class="booking-field">
+                <label for="bookingDate">Ngày</label>
+                <input type="date" id="bookingDate" name="date" required />
+              </div>
+              <div class="booking-field">
+                <label for="bookingTime">Giờ</label>
+                <input type="time" id="bookingTime" name="time" required />
+              </div>
+              <div class="booking-field booking-field-full">
+                <label for="bookingNote">Ghi chú</label>
+                <textarea id="bookingNote" name="note" rows="3" maxlength="500" placeholder="Thông tin thêm cho NEKO..."></textarea>
+              </div>
+              <div class="booking-actions">
+                <button type="submit" class="btn btn-primary">Đăng ký lịch 🐾</button>
+              </div>
+              <p class="booking-message" id="bookingMessage" role="status" aria-live="polite"></p>
+            </form>
+
+            <div class="booking-history">
+              <div class="booking-history-head">
+                <h3>Lịch của tôi</h3>
+                <span class="booking-count" id="bookingCount"></span>
+              </div>
+              <ul class="booking-list" id="bookingList"></ul>
+              <p class="booking-empty" id="bookingEmpty" hidden>
+                Bạn chưa có lịch chăm sóc nào. Hãy đăng ký lịch đầu tiên nhé!
+              </p>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <footer class="site-footer">
+        <div class="container footer-bottom">
+          <p>© <span id="year"></span> NEKO Pet Care. Made with 💛 for pets.</p>
+        </div>
+      </footer>
+    </div>
+
+    <script type="module" src="/src/booking.js"></script>
+  </body>
+</html>

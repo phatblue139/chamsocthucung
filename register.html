@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Đăng ký tài khoản NEKO để đặt lịch và theo dõi lịch chăm sóc thú cưng." />
+    <title>Đăng Ký | NEKO Chăm Sóc Thú Cưng</title>
+  </head>
+  <body class="register-page">
+    <div id="app">
+      <header class="site-header">
+        <div class="container header-inner">
+          <a href="/" class="logo" aria-label="NEKO - Trang chủ">
+            <span class="logo-mark">🐾</span>
+            <span>NEKO<span class="logo-dot">.</span></span>
+          </a>
+          <nav class="nav" id="nav" aria-label="Điều hướng chính">
+            <a href="/" class="nav-link">Trang chủ</a>
+            <a href="/about.html" class="nav-link">Giới thiệu</a>
+            <a href="/#services" class="nav-link">Dịch vụ</a>
+            <a href="/#pricing" class="nav-link">Bảng giá</a>
+            <a href="/" class="btn btn-outline">Về trang chủ</a>
+          </nav>
+          <button class="nav-toggle" id="navToggle" aria-label="Mở menu" aria-expanded="false">
+            <span></span><span></span><span></span>
+          </button>
+        </div>
+      </header>
+
+      <main class="register-main">
+        <div class="container register-inner">
+          <div class="register-intro">
+            <p class="eyebrow">Chào mừng bạn</p>
+            <h1>Tạo tài khoản <span class="accent-text">miễn phí</span></h1>
+            <p>
+              Đăng ký một tài khoản để đặt lịch chăm sóc cho bé yêu và theo dõi
+              toàn bộ yêu cầu của bạn trong cùng một chỗ.
+            </p>
+            <ul class="register-perks">
+              <li>🐾 Đặt lịch chăm sóc chỉ với vài giây</li>
+              <li>📅 Xem lại toàn bộ lịch của bạn</li>
+              <li>🎉 Nhận ưu đãi dành riêng cho khách hàng</li>
+            </ul>
+          </div>
+
+          <form class="register-card" id="registerForm" novalidate>
+            <h2>Đăng ký tài khoản</h2>
+            <p class="login-sub">Điền thông tin bên dưới để bắt đầu.</p>
+
+            <label for="registerFullName">Họ và tên</label>
+            <input type="text" id="registerFullName" name="fullName" placeholder="Nguyễn Văn A" autocomplete="name" required>
+
+            <label for="registerUsername">Tên đăng nhập</label>
+            <input type="text" id="registerUsername" name="username" placeholder="3 - 30 ký tự" autocomplete="username" required>
+
+            <label for="registerPhone">Số điện thoại</label>
+            <input type="tel" id="registerPhone" name="phone" placeholder="090 123 4567" autocomplete="tel" required>
+
+            <label for="registerPassword">Mật khẩu</label>
+            <input type="password" id="registerPassword" name="password" placeholder="Ít nhất 6 ký tự" autocomplete="new-password" required>
+
+            <label for="registerConfirmPassword">Xác nhận mật khẩu</label>
+            <input type="password" id="registerConfirmPassword" name="confirmPassword" placeholder="••••••" autocomplete="new-password" required>
+
+            <p class="login-error" id="registerError" hidden></p>
+
+            <button type="submit" class="btn btn-primary register-submit">Đăng ký ngay</button>
+
+            <p class="register-switch">
+              Đã có tài khoản? <a href="/#login">Đăng nhập tại trang chủ</a>
+            </p>
+          </form>
+        </div>
+      </main>
+
+      <footer class="site-footer">
+        <div class="container footer-bottom">
+          <p>© <span id="year"></span> NEKO Pet Care. Made with 💛 for pets.</p>
+        </div>
+      </footer>
+    </div>
+
+    <script type="module" src="/src/register.js"></script>
+  </body>
+</html>
