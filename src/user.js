@@ -1,11 +1,14 @@
 import "./style.css";
-import { getCurrentUser, logoutUser } from "./auth.js";
+import { getCurrentUser } from "./auth.js";
+import { initSiteHeader } from "./siteHeader.js";
 import {
   SCHEDULE_STORAGE_KEY,
   getNextScheduleId,
   loadSchedules,
   saveSchedules,
 } from "./careScheduleData.js";
+
+initSiteHeader();
 
 const currentUser = getCurrentUser();
 
@@ -16,7 +19,6 @@ if (!currentUser) {
 }
 
 function initUserView(user) {
-  const logoutBtn = document.getElementById("userLogoutBtn");
   const greeting = document.getElementById("userGreeting");
   const form = document.getElementById("userScheduleForm");
   const message = document.getElementById("userScheduleMessage");
@@ -52,11 +54,6 @@ function initUserView(user) {
     if (dateInput) dateInput.min = currentDate();
     if (timeInput) timeInput.removeAttribute("min");
   }
-
-  logoutBtn?.addEventListener("click", () => {
-    logoutUser();
-    location.replace("/");
-  });
 
   form?.addEventListener("submit", (event) => {
     event.preventDefault();
