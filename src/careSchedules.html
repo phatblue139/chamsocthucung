@@ -1,118 +1,147 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản lý lịch chăm sóc</title>
-    <link rel="stylesheet" href="./style.css">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quản lý lịch chăm sóc | NEKO</title>
+    <link rel="stylesheet" href="./style.css" />
     <script>
+      try {
         if (localStorage.getItem("neko:admin") !== "true") {
-            location.replace("/");
+          location.replace("/");
         }
+      } catch (error) {
+        location.replace("/");
+      }
     </script>
-</head>
-
-<body>
-
+  </head>
+  <body>
     <main class="care-page">
+      <div class="container">
+        <header class="admin-topbar">
+          <a class="admin-brand" href="/src/admin.html">NEKO <span>ADMIN</span></a>
+          <nav class="admin-nav" aria-label="Quản trị">
+            <a href="/src/admin.html">Tổng quan</a>
+            <a href="/src/adminPets.html">Thú cưng</a>
+            <a class="is-current" href="/src/careSchedules.html" aria-current="page">Lịch chăm sóc</a>
+          </nav>
+          <button type="button" class="care-btn care-btn-reset" id="logoutBtn">Đăng xuất</button>
+        </header>
 
-        <div class="container">
+        <h1 class="care-title">QUẢN LÝ LỊCH CHĂM SÓC</h1>
 
-            <div class="care-topbar">
-                <button type="button" class="care-btn care-btn-reset" id="logoutBtn">Đăng xuất</button>
-            </div>
+        <form id="careForm" class="care-form">
+          <input type="hidden" id="id" />
 
-            <h1 class="care-title">QUẢN LÝ LỊCH CHĂM SÓC</h1>
+          <div class="care-form-group">
+            <label for="petName">Thú cưng</label>
+            <input type="text" id="petName" placeholder="Tên thú cưng" required />
+          </div>
 
-            <!-- Form thêm / sửa -->
-            <form id="careForm" class="care-form">
+          <div class="care-form-group">
+            <label for="careType">Loại chăm sóc</label>
+            <select id="careType" required>
+              <option value="">-- Chọn loại chăm sóc --</option>
+              <option value="Cho ăn">Cho ăn</option>
+              <option value="Tắm">Tắm</option>
+              <option value="Đi dạo">Đi dạo</option>
+              <option value="Tiêm phòng">Tiêm phòng</option>
+              <option value="Cắt móng">Cắt móng</option>
+              <option value="Khám sức khỏe">Khám sức khỏe</option>
+            </select>
+          </div>
 
-                <input type="hidden" id="id">
+          <div class="care-form-group">
+            <label for="date">Ngày</label>
+            <input type="date" id="date" required />
+          </div>
 
-                <div class="care-form-group">
-                    <label for="petName">Thú cưng</label>
-                    <input type="text" id="petName" placeholder="Tên thú cưng" required>
-                </div>
+          <div class="care-form-group">
+            <label for="time">Giờ</label>
+            <input type="time" id="time" required />
+          </div>
 
-                <div class="care-form-group">
-                    <label for="careType">Loại chăm sóc</label>
-                    <select id="careType" required>
-                        <option value="">-- Chọn loại chăm sóc --</option>
-                        <option value="Cho ăn">Cho ăn</option>
-                        <option value="Tắm">Tắm</option>
-                        <option value="Đi dạo">Đi dạo</option>
-                        <option value="Tiêm phòng">Tiêm phòng</option>
-                        <option value="Cắt móng">Cắt móng</option>
-                    </select>
-                </div>
+          <div class="care-form-group">
+            <label for="status">Trạng thái</label>
+            <select id="status" required>
+              <option value="Chờ xác nhận">Chờ xác nhận</option>
+              <option value="Đã xác nhận">Đã xác nhận</option>
+              <option value="Đã hoàn thành">Đã hoàn thành</option>
+              <option value="Đã hủy">Đã hủy</option>
+            </select>
+          </div>
 
-                <div class="care-form-group">
-                    <label for="date">Ngày</label>
-                    <input type="date" id="date" required>
-                </div>
+          <div class="care-form-group care-form-full">
+            <label for="note">Ghi chú</label>
+            <input type="text" id="note" placeholder="Ghi chú" maxlength="500" />
+          </div>
 
-                <div class="care-form-group">
-                    <label for="time">Giờ</label>
-                    <input type="time" id="time" required>
-                </div>
+          <div class="care-form-actions">
+            <button type="submit" class="care-btn care-btn-add" id="saveBtn">Lưu lịch</button>
+            <button type="button" class="care-btn care-btn-cancel" id="cancelBtn">Hủy</button>
+          </div>
+        </form>
+        <p id="careFormMessage" class="user-form-message" role="status" aria-live="polite"></p>
 
-                <div class="care-form-group">
-                    <label for="note">Ghi chú</label>
-                    <input type="text" id="note" placeholder="Ghi chú">
-                </div>
-
-                <div class="care-form-actions">
-                    <button type="submit" class="care-btn care-btn-add" id="saveBtn">Lưu lịch</button>
-                    <button type="button" class="care-btn care-btn-cancel" id="cancelBtn">Hủy</button>
-                </div>
-
-            </form>
-
-            <!-- Tìm kiếm + công cụ -->
-            <div class="care-toolbar">
-
-                <input
-                    type="text"
-                    id="searchInput"
-                    class="care-search"
-                    placeholder="Tìm theo tên thú cưng hoặc loại chăm sóc..."
-                >
-
-                <span class="care-count" id="careCount"></span>
-
-            </div>
-
-            <!-- Danh sách -->
-            <h2>Danh sách lịch chăm sóc</h2>
-
-            <div class="care-table-wrapper">
-
-                <table class="care-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Thú cưng</th>
-                            <th>Loại chăm sóc</th>
-                            <th>Ngày</th>
-                            <th>Giờ</th>
-                            <th>Ghi chú</th>
-                            <th>Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody id="careList"></tbody>
-                </table>
-
-            </div>
-
-            <p id="emptyMsg" class="care-empty" hidden>
-                Không có lịch chăm sóc nào.
-            </p>
-
+        <div class="care-toolbar">
+          <input
+            type="text"
+            id="searchInput"
+            class="care-search"
+            placeholder="Tìm theo tên, tài khoản, số điện thoại hoặc loại chăm sóc..."
+          />
+          <span class="care-count" id="careCount"></span>
         </div>
 
+        <div class="care-stats" id="careStats" role="group" aria-label="Lọc và thống kê theo trạng thái">
+          <button type="button" class="care-stat is-all" data-status="" aria-pressed="true">
+            <span class="care-stat-label">Tất cả</span>
+            <strong class="care-stat-value" data-stat="all">0</strong>
+          </button>
+          <button type="button" class="care-stat is-pending" data-status="pending" aria-pressed="false">
+            <span class="care-stat-label">Pending <em>(Chờ xác nhận)</em></span>
+            <strong class="care-stat-value" data-stat="pending">0</strong>
+          </button>
+          <button type="button" class="care-stat is-confirmed" data-status="confirmed" aria-pressed="false">
+            <span class="care-stat-label">Confirmed <em>(Đã xác nhận)</em></span>
+            <strong class="care-stat-value" data-stat="confirmed">0</strong>
+          </button>
+          <button type="button" class="care-stat is-completed" data-status="completed" aria-pressed="false">
+            <span class="care-stat-label">Completed <em>(Đã hoàn thành)</em></span>
+            <strong class="care-stat-value" data-stat="completed">0</strong>
+          </button>
+          <button type="button" class="care-stat is-cancelled" data-status="cancelled" aria-pressed="false">
+            <span class="care-stat-label">Cancelled <em>(Đã hủy)</em></span>
+            <strong class="care-stat-value" data-stat="cancelled">0</strong>
+          </button>
+        </div>
+
+        <h2>Danh sách lịch chăm sóc</h2>
+
+        <div class="care-table-wrapper">
+          <table class="care-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Người đặt</th>
+                <th>Điện thoại</th>
+                <th>Thú cưng</th>
+                <th>Loại chăm sóc</th>
+                <th>Ngày</th>
+                <th>Giờ</th>
+                <th>Ghi chú</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="careList"></tbody>
+          </table>
+        </div>
+
+        <p id="emptyMsg" class="care-empty" hidden>Không có lịch chăm sóc nào.</p>
+      </div>
     </main>
 
     <script type="module" src="./careSchedules.js"></script>
-
-</body>
+  </body>
 </html>

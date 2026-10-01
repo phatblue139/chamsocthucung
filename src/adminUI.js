@@ -3,6 +3,7 @@ import {
   getCurrentUser,
   login,
   logout,
+  registerUser,
 } from "./auth.js";
 
 function getField(form, name) {
@@ -30,12 +31,15 @@ function setError(element, message) {
 
 export function initAdminUI() {
   const loginDialog = document.getElementById("loginDialog");
+  const registerDialog = document.getElementById("registerDialog");
   const loginBtn = document.getElementById("loginBtn");
   const registerBtn = document.getElementById("registerBtn");
   const logoutBtn = document.getElementById("logoutBtn");
   const navCta = document.getElementById("navCta");
   const loginForm = document.getElementById("loginForm");
+  const registerForm = document.getElementById("registerForm");
   const loginError = document.getElementById("loginError");
+  const registerError = document.getElementById("registerError");
   const adminLinks = document.querySelectorAll(".admin-link");
   const userLinks = document.querySelectorAll(".user-link");
   const userGreeting = document.querySelector("[data-user-greeting]");
@@ -61,36 +65,47 @@ export function initAdminUI() {
 
     if (userName) {
       userName.hidden = !isLoggedIn;
-      if (isLoggedIn) {
-        userName.textContent = currentUser
-          ? currentUser.fullName
-          : "Quản trị viên";
-      } else {
-        userName.textContent = "";
-      }
+      userName.textContent = isLoggedIn
+        ? (currentUser ? currentUser.fullName : "Quản trị viên")
+        : "";
     }
-
-    window.dispatchEvent(new CustomEvent("neko:authchange", { detail: { role, currentUser } }));
   }
 
   if (loginBtn) {
     loginBtn.addEventListener("click", () => {
+      const role = getCurrentRole();
+      if (role === "user") {
+        location.href = "/user.html";
+        return;
+      }
+      if (role === "admin") {
+        location.href = "/src/admin.html";
+        return;
+      }
       resetDialog(loginDialog);
       openDialog(loginDialog);
       getField(loginForm, "username")?.focus();
     });
   }
 
+  if (registerBtn) {
+    registerBtn.addEventListener("click", () => {
+      resetDialog(registerDialog);
+      openDialog(registerDialog);
+      getField(registerForm, "fullName")?.focus();
+    });
+  }
+
   if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
       logout();
-      window.location.href = "/";
+      location.href = "/";
     });
   }
 
   const closeButtons = [
     ...document.querySelectorAll("[data-close-dialog]"),
-    ...[loginDialog]
+    ...[loginDialog, registerDialog]
       .filter(Boolean)
       .map((dialog) => dialog.querySelector("[data-close-dialog]"))
       .filter(Boolean),
@@ -102,12 +117,13 @@ export function initAdminUI() {
     });
   });
 
-  [loginDialog].forEach((dialog) => {
+  [loginDialog, registerDialog].forEach((dialog) => {
     if (!dialog) return;
     dialog.addEventListener("click", (event) => {
       if (event.target === dialog) dialog.close();
     });
   });
+
   if (loginForm) {
     loginForm.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -125,11 +141,51 @@ export function initAdminUI() {
 
       // Khách đăng nhập vẫn ở lại trang hiện tại, chỉ cập nhật giao diện.
       if (getCurrentRole() === "admin") {
-        window.location.href = "/src/careSchedules.html";
+        location.href = "/src/admin.html";
         return;
       }
 
       updateAuthUI();
+    });
+  }
+
+  if (registerForm) {
+    registerForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const fullName = getField(registerForm, "fullName")?.value.trim() || "";
+      const username = getField(registerForm, "username")?.value.trim() || "";
+      const phone = getField(registerForm, "phone")?.value.trim() || "";
+      const password = getField(registerForm, "password")?.value || "";
+      const confirmPassword = getField(registerForm, "confirmPassword")?.value || "";
+
+      if (!fullName || !username || !phone || !password) {
+        setError(registerError, "Vui lòng điền đầy đủ thông tin đăng ký.");
+        return;
+      }
+
+      if (password.length < 6) {
+        setError(registerError, "Mật khẩu phải có ít nhất 6 ký tự.");
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        setError(registerError, "Mật khẩu xác nhận không khớp.");
+        return;
+      }
+
+      const result = registerUser({ fullName, username, phone, password });
+      if (!result.success) {
+        setError(registerError, result.error);
+        return;
+      }
+
+      if (!login(username, password)) {
+        setError(registerError, "Tài khoản đã tạo nhưng chưa đăng nhập được. Vui lòng thử đăng nhập lại.");
+        return;
+      }
+
+      registerDialog?.close();
+      location.href = "/user.html";
     });
   }
 

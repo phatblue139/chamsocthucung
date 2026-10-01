@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard Admin | NEKO</title>
+    <link rel="stylesheet" href="./style.css" />
+    <script>
+      try {
+        if (localStorage.getItem("neko:admin") !== "true") location.replace("/");
+      } catch (error) {
+        location.replace("/");
+      }
+    </script>
+  </head>
+  <body>
+    <main class="care-page admin-page">
+      <div class="container">
+        <header class="admin-topbar">
+          <a class="admin-brand" href="/src/admin.html">NEKO <span>ADMIN</span></a>
+          <nav class="admin-nav" aria-label="Quản trị">
+            <a class="is-current" href="/src/admin.html" aria-current="page">Tổng quan</a>
+            <a href="/src/adminPets.html">Thú cưng</a>
+            <a href="/src/careSchedules.html">Lịch chăm sóc</a>
+          </nav>
+          <button type="button" class="care-btn care-btn-reset" id="logoutBtn">Đăng xuất</button>
+        </header>
+
+        <section class="admin-heading">
+          <p class="admin-kicker">NEKO · QUẢN TRỊ</p>
+          <h1>Dashboard</h1>
+          <p>Tổng quan hoạt động chăm sóc thú cưng.</p>
+        </section>
+
+        <section class="admin-metrics" aria-label="Thống kê tổng quan">
+          <article class="admin-metric metric-pets">
+            <span>Tổng thú cưng</span>
+            <strong id="totalPets">0</strong>
+            <a href="/src/adminPets.html">Quản lý danh sách <span aria-hidden="true">→</span></a>
+          </article>
+          <article class="admin-metric metric-open">
+            <span>Lịch chưa hoàn thành</span>
+            <strong id="unfinishedSchedules">0</strong>
+            <a href="/src/careSchedules.html">Xem lịch chăm sóc <span aria-hidden="true">→</span></a>
+          </article>
+          <article class="admin-metric metric-done">
+            <span>Lịch đã hoàn thành</span>
+            <strong id="completedSchedules">0</strong>
+            <a href="/src/careSchedules.html">Xem lịch chăm sóc <span aria-hidden="true">→</span></a>
+          </article>
+        </section>
+
+        <section class="admin-shortcuts" aria-label="Truy cập nhanh">
+          <a href="/src/adminPets.html"><span class="shortcut-mark">P</span><span><strong>Danh sách thú cưng</strong><small>Tìm kiếm, lọc và cập nhật hồ sơ</small></span><span aria-hidden="true">→</span></a>
+          <a href="/src/careSchedules.html"><span class="shortcut-mark shortcut-schedule">L</span><span><strong>Lịch chăm sóc</strong><small>Theo dõi, xác nhận và hoàn tất lịch</small></span><span aria-hidden="true">→</span></a>
+        </section>
+      </div>
+    </main>
+    <script type="module" src="./admin.js"></script>
+  </body>
+</html>
