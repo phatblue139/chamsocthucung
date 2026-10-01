@@ -4,14 +4,16 @@ import {
     loadSchedules,
     saveSchedules,
 } from "./careScheduleData.js";
-import { isAdminLoggedIn, logout } from "./auth.js";
+import { isAdminLoggedIn } from "./auth.js";
+import { initSiteHeader } from "./siteHeader.js";
+
+initSiteHeader();
 
 if (!isAdminLoggedIn()) {
     location.replace("/");
     throw new Error("Không có quyền truy cập trang này");
 }
 
-const logoutBtn = document.getElementById("logoutBtn");
 const form = document.getElementById("careForm");
 const careList = document.getElementById("careList");
 const emptyMsg = document.getElementById("emptyMsg");
@@ -35,11 +37,6 @@ const STATUS_PENDING = "Chờ xác nhận";
 const STATUS_CONFIRMED = "Đã xác nhận";
 const STATUS_COMPLETED = "Đã hoàn thành";
 const STATUS_CANCELLED = "Đã hủy";
-
-logoutBtn?.addEventListener("click", () => {
-    logout();
-    location.replace("/");
-});
 
 form?.addEventListener("submit", (event) => {
     event.preventDefault();
