@@ -1,7 +1,10 @@
 import {
     SCHEDULE_STORAGE_KEY,
+    SCHEDULE_STATUS,
     getNextScheduleId,
+    getScheduleStatusClass,
     loadSchedules,
+    resolveScheduleStatus,
     saveSchedules,
 } from "./careScheduleData.js";
 import { isAdminLoggedIn, logout } from "./auth.js";
@@ -31,10 +34,10 @@ const careStats = document.getElementById("careStats");
 let schedules = loadSchedules();
 let searchKeyword = "";
 let statusFilter = "";
-const STATUS_PENDING = "Chờ xác nhận";
-const STATUS_CONFIRMED = "Đã xác nhận";
-const STATUS_COMPLETED = "Đã hoàn thành";
-const STATUS_CANCELLED = "Đã hủy";
+const STATUS_PENDING = SCHEDULE_STATUS.PENDING;
+const STATUS_CONFIRMED = SCHEDULE_STATUS.CONFIRMED;
+const STATUS_COMPLETED = SCHEDULE_STATUS.COMPLETED;
+const STATUS_CANCELLED = SCHEDULE_STATUS.CANCELLED;
 
 logoutBtn?.addEventListener("click", () => {
     logout();
@@ -44,9 +47,9 @@ logoutBtn?.addEventListener("click", () => {
 form?.addEventListener("submit", (event) => {
     event.preventDefault();
 
-    if (!dateInput.value.trim()) {
+    if (!dateInput?.value.trim()) {
         showMessage("Ngày chăm sóc không được để trống.", "error");
-        dateInput.focus();
+        dateInput?.focus();
         return;
     }
 
@@ -55,8 +58,8 @@ form?.addEventListener("submit", (event) => {
         return;
     }
 
-    const id = idInput.value;
-    const saved = id ? updateSchedule(Number(id)) : addSchedule();
+    const id = editingId();
+    const saved = id ? updateSchedule(id) : addSchedule();
     if (!saved) return;
 
     resetForm();
@@ -92,7 +95,10 @@ careStats?.addEventListener("click", (event) => {
     render();
 });
 
-cancelBtn?.addEventListener("click", resetForm);
+cancelBtn?.addEventListener("click", () => {
+    resetForm();
+    showMessage("", "");
+});
 window.addEventListener("storage", (event) => {
     if (event.key !== SCHEDULE_STORAGE_KEY) return;
     schedules = loadSchedules();
@@ -102,14 +108,11 @@ window.addEventListener("storage", (event) => {
 render();
 
 function getScheduleStatus(schedule) {
-    return schedule.status || (schedule.customerUsername ? STATUS_PENDING : STATUS_CONFIRMED);
+    return resolveScheduleStatus(schedule);
 }
 
 function getStatusClass(status) {
-    if (status === STATUS_CONFIRMED) return "confirmed";
-    if (status === STATUS_COMPLETED) return "completed";
-    if (status === STATUS_CANCELLED) return "cancelled";
-    return "pending";
+    return getScheduleStatusClass(status);
 }
 
 function getFiltered() {
@@ -261,7 +264,6 @@ function getFormData() {
 function addSchedule() {
     const schedule = {
         id: getNextScheduleId(schedules),
-        petId: schedules.length + 1,
         ...getFormData(),
         source: "admin",
         createdAt: new Date().toISOString(),
@@ -280,7 +282,12 @@ function addSchedule() {
 
 function updateSchedule(id) {
     const index = schedules.findIndex((schedule) => Number(schedule.id) === id);
-    if (index < 0) return false;
+    if (index < 0) {
+        resetForm();
+        showMessage(`Lịch #${id} không còn tồn tại. Vui lòng chọn lại lịch cần sửa.`, "error");
+        render();
+        return false;
+    }
 
     const nextSchedules = [...schedules];
     nextSchedules[index] = {
@@ -379,6 +386,7 @@ function deleteSchedule(id) {
     }
 
     schedules = nextSchedules;
+    if (editingId() === id) resetForm();
     showMessage("Đã xóa lịch chăm sóc.", "success");
     render();
 }
@@ -387,7 +395,10 @@ function resetForm() {
     form?.reset();
     idInput.value = "";
     if (saveBtn) saveBtn.textContent = "Lưu lịch";
-    showMessage("", "");
+}
+
+function editingId() {
+    return idInput.value ? Number(idInput.value) : null;
 }
 
 function showMessage(text, type) {

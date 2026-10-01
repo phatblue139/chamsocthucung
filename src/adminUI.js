@@ -29,6 +29,29 @@ function setError(element, message) {
   element.hidden = false;
 }
 
+let pendingAuthRedirect = null;
+let openLoginDialog = null;
+
+export function navigateWithAuth(href) {
+  const role = getCurrentRole();
+
+  if (role) {
+    location.href = role === "admin" ? "/src/admin.html" : href;
+    return;
+  }
+
+  pendingAuthRedirect = href;
+  openLoginDialog?.();
+}
+
+function postAuthRedirect() {
+  const fallback = getCurrentRole() === "admin" ? "/src/admin.html" : "/user.html";
+  const target = pendingAuthRedirect || fallback;
+
+  pendingAuthRedirect = null;
+  location.href = target;
+}
+
 export function initAdminUI() {
   const loginDialog = document.getElementById("loginDialog");
   const registerDialog = document.getElementById("registerDialog");
@@ -70,6 +93,14 @@ export function initAdminUI() {
     }
   }
 
+  function requestLogin() {
+    resetDialog(loginDialog);
+    openDialog(loginDialog);
+    getField(loginForm, "username")?.focus();
+  }
+
+  openLoginDialog = requestLogin;
+
   if (loginBtn) {
     loginBtn.addEventListener("click", () => {
       const role = getCurrentRole();
@@ -81,9 +112,7 @@ export function initAdminUI() {
         location.href = "/src/admin.html";
         return;
       }
-      resetDialog(loginDialog);
-      openDialog(loginDialog);
-      getField(loginForm, "username")?.focus();
+      requestLogin();
     });
   }
 
@@ -136,7 +165,7 @@ export function initAdminUI() {
       }
 
       loginDialog?.close();
-      location.href = getCurrentRole() === "admin" ? "/src/admin.html" : "/user.html";
+      postAuthRedirect();
     });
   }
 
@@ -176,7 +205,7 @@ export function initAdminUI() {
       }
 
       registerDialog?.close();
-      location.href = "/user.html";
+      postAuthRedirect();
     });
   }
 

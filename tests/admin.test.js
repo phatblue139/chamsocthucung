@@ -7,6 +7,12 @@ import {
   registerUser,
 } from "../src/auth.js";
 import { filterPets, getAdminStatistics } from "../src/adminData.js";
+import {
+  SCHEDULE_STATUS,
+  getScheduleStatusClass,
+  normalizeStatus,
+  resolveScheduleStatus,
+} from "../src/careScheduleData.js";
 
 class MemoryStorage {
   values = new Map();
@@ -64,4 +70,28 @@ test("dashboard statistics count pets and unfinished/completed schedules", () =>
     { status: "Đã hủy" },
   ]);
   assert.deepEqual(stats, { totalPets: 2, unfinishedSchedules: 2, completedSchedules: 1 });
+});
+
+test("schedule status is normalized from aliases and falls back by source", () => {
+  assert.equal(normalizeStatus("completed", "user"), SCHEDULE_STATUS.COMPLETED);
+  assert.equal(normalizeStatus("  CANCELLED ", "user"), SCHEDULE_STATUS.CANCELLED);
+  assert.equal(normalizeStatus("", "user"), SCHEDULE_STATUS.PENDING);
+  assert.equal(normalizeStatus("", "admin"), SCHEDULE_STATUS.CONFIRMED);
+
+  assert.equal(resolveScheduleStatus({ customerUsername: "sample" }), SCHEDULE_STATUS.PENDING);
+  assert.equal(resolveScheduleStatus({ source: "admin" }), SCHEDULE_STATUS.CONFIRMED);
+  assert.equal(resolveScheduleStatus(null), SCHEDULE_STATUS.CONFIRMED);
+
+  assert.equal(getScheduleStatusClass(SCHEDULE_STATUS.CONFIRMED), "confirmed");
+  assert.equal(getScheduleStatusClass(SCHEDULE_STATUS.CANCELLED), "cancelled");
+  assert.equal(getScheduleStatusClass("trạng thái lạ"), "pending");
+});
+
+test("dashboard statistics ignore unknown status values", () => {
+  const stats = getAdminStatistics([], [
+    { status: "completed" },
+    { status: "cancelled" },
+    { status: "không rõ" },
+  ]);
+  assert.deepEqual(stats, { totalPets: 0, unfinishedSchedules: 1, completedSchedules: 1 });
 });
