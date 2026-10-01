@@ -16,10 +16,18 @@
     </script>
   </head>
   <body>
-    <div data-site-header></div>
-
     <main class="care-page">
       <div class="container">
+        <header class="admin-topbar">
+          <a class="admin-brand" href="/src/admin.html">NEKO <span>ADMIN</span></a>
+          <nav class="admin-nav" aria-label="Quản trị">
+            <a href="/src/admin.html">Tổng quan</a>
+            <a href="/src/adminPets.html">Thú cưng</a>
+            <a class="is-current" href="/src/careSchedules.html" aria-current="page">Lịch chăm sóc</a>
+          </nav>
+          <button type="button" class="care-btn care-btn-reset" id="logoutBtn">Đăng xuất</button>
+        </header>
+
         <h1 class="care-title">QUẢN LÝ LỊCH CHĂM SÓC</h1>
 
         <form id="careForm" class="care-form">

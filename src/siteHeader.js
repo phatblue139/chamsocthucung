@@ -9,15 +9,15 @@ const NAV_ITEMS = [
 
 const ROLE_ITEMS = [
   { href: '/user.html', label: 'Vào trang của tôi', className: 'user-link' },
-  { href: '/src/careSchedules.html', label: 'Quản lý lịch', className: 'admin-link' },
+  { href: '/src/admin.html', label: 'Dashboard Admin', className: 'admin-link' },
 ]
 
 const BOOKING_ITEM = { href: '/booking.html', label: 'Đặt lịch ngay' }
 
 const AUTH_DIALOGS = `
-  <dialog id="loginDialog" class="login-dialog">
+  <dialog id="loginDialog" class="login-dialog" aria-labelledby="loginTitle">
     <form id="loginForm" novalidate>
-      <h2>Đăng nhập</h2>
+      <h2 id="loginTitle">Đăng nhập</h2>
 
       <p class="login-sub">
         Đăng nhập để đặt lịch và theo dõi lịch chăm sóc.
@@ -50,6 +50,7 @@ const AUTH_DIALOGS = `
       <p
         class="login-error"
         id="loginError"
+        data-auth-error
         hidden>
 
         Sai tên đăng nhập hoặc mật khẩu!
@@ -59,6 +60,7 @@ const AUTH_DIALOGS = `
         <button
           type="button"
           class="btn btn-outline"
+          id="loginCancelBtn"
           data-close-dialog>
 
           Hủy
@@ -74,9 +76,9 @@ const AUTH_DIALOGS = `
     </form>
   </dialog>
 
-  <dialog id="registerDialog" class="login-dialog">
+  <dialog id="registerDialog" class="login-dialog" aria-labelledby="registerTitle">
     <form id="registerForm" novalidate>
-      <h2>Đăng ký tài khoản</h2>
+      <h2 id="registerTitle">Đăng ký tài khoản</h2>
 
       <p class="login-sub">
         Tạo tài khoản để đăng ký lịch chăm sóc cho thú cưng.
@@ -145,6 +147,7 @@ const AUTH_DIALOGS = `
       <p
         class="login-error"
         id="registerError"
+        data-auth-error
         hidden>
       </p>
 
@@ -152,6 +155,7 @@ const AUTH_DIALOGS = `
         <button
           type="button"
           class="btn btn-outline"
+          id="registerCancelBtn"
           data-close-dialog>
 
           Hủy

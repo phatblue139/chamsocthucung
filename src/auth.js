@@ -1,5 +1,7 @@
+import sampleAccounts from "./sampleAccounts.json" with { type: "json" };
+
 const ADMIN_USERNAME = "admin";
-const ADMIN_PASSWORD = "123456";
+const SAMPLE_ADMIN = sampleAccounts.find((account) => account.role === "admin");
 const ADMIN_AUTH_KEY = "neko:admin";
 const USER_AUTH_KEY = "neko:user";
 const USERS_KEY = "neko:users";
@@ -17,7 +19,16 @@ function readUsers() {
   if (!storage) return [];
 
   try {
-    const users = JSON.parse(storage.getItem(USERS_KEY) || "[]");
+    const storedUsers = storage.getItem(USERS_KEY);
+    if (storedUsers === null) {
+      const sampleUsers = sampleAccounts
+        .filter((account) => account.role === "user")
+        .map(({ role, ...user }) => ({ ...user, createdAt: "2026-01-01T00:00:00.000Z" }));
+      saveUsers(sampleUsers);
+      return sampleUsers;
+    }
+
+    const users = JSON.parse(storedUsers);
     return Array.isArray(users) ? users : [];
   } catch (error) {
     return [];
@@ -63,7 +74,7 @@ export function registerUser({ username = "", password = "", fullName = "", phon
     return { success: false, error: "Mật khẩu phải có ít nhất 6 ký tự." };
   }
 
-  if (normalizedUsername === ADMIN_USERNAME) {
+  if (sampleAccounts.some((account) => account.role === "admin" && normalizeUsername(account.username) === normalizedUsername)) {
     return { success: false, error: "Tên đăng nhập này không dành cho người dùng." };
   }
 
@@ -100,7 +111,7 @@ export function login(username, password) {
   const normalizedUsername = normalizeUsername(username);
   const cleanPassword = String(password || "");
 
-  if (normalizedUsername === ADMIN_USERNAME && cleanPassword === ADMIN_PASSWORD) {
+  if (SAMPLE_ADMIN && normalizedUsername === ADMIN_USERNAME && cleanPassword === SAMPLE_ADMIN.password) {
     storage.setItem(ADMIN_AUTH_KEY, "true");
     storage.removeItem(USER_AUTH_KEY);
     return true;
