@@ -152,7 +152,7 @@ function renderStats() {
 
 function createCell(value) {
     const cell = document.createElement("td");
-    cell.textContent = value === null || value === undefined ? "" : String(value);
+    cell.textContent = value === null || value === undefined || value === "" ? "—" : String(value);
     return cell;
 }
 
@@ -161,13 +161,13 @@ function render() {
 
     careList.replaceChildren();
     const rows = getFiltered();
-    careCount.textContent = `Tổng: ${schedules.length} lịch | Đang hiển thị: ${rows.length}`;
+    careCount.textContent = `${schedules.length} lịch · ${rows.length} đang hiển thị`;
     renderStats();
 
     rows.forEach((schedule) => {
         const row = document.createElement("tr");
-        const customer = schedule.customerName || schedule.customerUsername || "Dữ liệu mẫu";
-        const phone = schedule.customerPhone || "—";
+        const customer = schedule.customerName || schedule.customerUsername;
+        const phone = schedule.customerPhone;
         const status = getScheduleStatus(schedule);
         const isCompleted = status === STATUS_COMPLETED;
         const isPending = status === STATUS_PENDING;
@@ -302,10 +302,11 @@ function editSchedule(id) {
     timeInput.value = schedule.time || "";
     statusInput.value = getScheduleStatus(schedule);
     noteInput.value = schedule.note || "";
-    saveBtn.textContent = "Cập nhật lịch";
+    saveBtn.textContent = "Lưu thay đổi";
+    if (cancelBtn) cancelBtn.hidden = false;
     showMessage("Đang chỉnh sửa lịch đã chọn.", "");
 
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    petNameInput.focus();
 }
 
 function setStatus(id, nextStatus, extra = {}) {
@@ -379,8 +380,9 @@ function deleteSchedule(id) {
 function resetForm() {
     form?.reset();
     idInput.value = "";
-    if (statusInput) statusInput.value = STATUS_CONFIRMED;
-    if (saveBtn) saveBtn.textContent = "Lưu lịch";
+    if (statusInput) statusInput.value = STATUS_PENDING;
+    if (saveBtn) saveBtn.textContent = "Thêm lịch";
+    if (cancelBtn) cancelBtn.hidden = true;
     showMessage("", "");
 }
 
