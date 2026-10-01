@@ -41,6 +41,7 @@ export function initAdminUI() {
   const registerError = document.getElementById("registerError");
   const adminLinks = document.querySelectorAll(".admin-link");
   const userLinks = document.querySelectorAll(".user-link");
+  const contactCta = document.querySelector("[data-contact-cta]");
   const userGreeting = document.querySelector("[data-user-greeting]");
 
   function updateAuthUI() {
@@ -57,7 +58,16 @@ export function initAdminUI() {
     if (loginBtn) loginBtn.hidden = isLoggedIn;
     if (registerBtn) registerBtn.hidden = isLoggedIn;
     if (logoutBtn) logoutBtn.hidden = !isLoggedIn;
-    if (userGreeting && currentUser) userGreeting.textContent = currentUser.fullName;
+    if (contactCta) contactCta.hidden = isLoggedIn;
+
+    if (userGreeting) {
+      const displayName = role === "admin"
+        ? "Quản trị viên"
+        : currentUser?.fullName || currentUser?.username || "";
+
+      userGreeting.textContent = displayName;
+      userGreeting.hidden = !displayName;
+    }
   }
 
   if (loginBtn) {

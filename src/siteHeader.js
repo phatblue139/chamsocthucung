@@ -8,11 +8,11 @@ const NAV_ITEMS = [
 ]
 
 const ROLE_ITEMS = [
-  { href: '/user.html', label: 'Vào trang của tôi', className: 'user-link' },
+  { href: '/user.html', label: 'Lịch đăng ký', className: 'user-link' },
   { href: '/src/admin.html', label: 'Dashboard Admin', className: 'admin-link' },
 ]
 
-const BOOKING_ITEM = { href: '/booking.html', label: 'Đặt lịch ngay' }
+const CONTACT_ITEM = { href: '/#contact', label: 'Liên hệ ngay' }
 
 const AUTH_DIALOGS = `
   <dialog id="loginDialog" class="login-dialog" aria-labelledby="loginTitle">
@@ -198,7 +198,6 @@ function renderNavLink({ href, label, className = '' }) {
 function renderHeaderTemplate() {
   const navLinks = NAV_ITEMS.map(renderNavLink).join('\n')
   const roleLinks = ROLE_ITEMS.map(renderNavLink).join('\n')
-  const isBookingActive = currentPath() === BOOKING_ITEM.href
 
   return `
   <header class="site-header">
@@ -228,6 +227,13 @@ ${navLinks}
 
 ${roleLinks}
 
+        <span
+          class="nav-greeting"
+          data-user-greeting
+          hidden>
+
+        </span>
+
         <button
           type="button"
           class="nav-btn-login"
@@ -243,10 +249,10 @@ ${roleLinks}
         </button>
 
         <a
-          href="${BOOKING_ITEM.href}"
-          class="btn btn-primary nav-cta${isBookingActive ? ' active' : ''}"
-          ${isBookingActive ? 'aria-current="page"' : ''}>
-          ${BOOKING_ITEM.label}
+          href="${CONTACT_ITEM.href}"
+          class="btn btn-primary nav-cta"
+          data-contact-cta>
+          ${CONTACT_ITEM.label}
         </a>
 
         <button
