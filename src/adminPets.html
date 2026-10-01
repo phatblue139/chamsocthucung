@@ -12,6 +12,13 @@
         location.replace("/");
       }
     </script>
+    <script>
+      try {
+        if (localStorage.getItem("neko:admin") !== "true") location.replace("/");
+      } catch (error) {
+        location.replace("/");
+      }
+    </script>
   </head>
   <body>
     <main class="care-page admin-page">

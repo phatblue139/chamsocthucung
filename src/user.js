@@ -4,7 +4,9 @@ import { initSiteHeader } from "./siteHeader.js";
 import {
   SCHEDULE_STORAGE_KEY,
   getNextScheduleId,
+  getScheduleStatusClass,
   loadSchedules,
+  resolveScheduleStatus,
   saveSchedules,
 } from "./careScheduleData.js";
 
@@ -135,12 +137,13 @@ function initUserView(user) {
       heading.className = "user-schedule-card-heading";
 
       const petName = document.createElement("h3");
-      petName.textContent = schedule.petName || "Thú cưng";
+petName.textContent = schedule.petName || "Thú cưng";
       heading.appendChild(petName);
 
       const status = document.createElement("span");
-      status.className = `user-schedule-status ${statusClass(schedule.status)}`;
-      status.textContent = schedule.status || "Chờ xác nhận";
+      const statusValue = resolveScheduleStatus(schedule);
+      status.className = `user-schedule-status ${getScheduleStatusClass(statusValue)}`;
+      status.textContent = statusValue;
       heading.appendChild(status);
 
       const details = document.createElement("div");
@@ -166,11 +169,4 @@ function formatDate(value) {
   if (!value) return "Chưa chọn ngày";
   const [year, month, day] = value.split("-");
   return day && month && year ? `${day}/${month}/${year}` : value;
-}
-
-function statusClass(status) {
-  if (status === "Đã xác nhận") return "confirmed";
-  if (status === "Đã hoàn thành") return "completed";
-  if (status === "Đã hủy") return "cancelled";
-  return "pending";
 }

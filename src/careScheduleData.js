@@ -78,6 +78,48 @@ const SAMPLE_SCHEDULES = [
 
 export const SCHEDULE_STORAGE_KEY = "careSchedules";
 
+export const SCHEDULE_STATUS = {
+  PENDING: "Chờ xác nhận",
+  CONFIRMED: "Đã xác nhận",
+  COMPLETED: "Đã hoàn thành",
+  CANCELLED: "Đã hủy",
+};
+
+const STATUS_ALIASES = {
+  pending: SCHEDULE_STATUS.PENDING,
+  confirmed: SCHEDULE_STATUS.CONFIRMED,
+  completed: SCHEDULE_STATUS.COMPLETED,
+  cancelled: SCHEDULE_STATUS.CANCELLED,
+};
+
+const STATUS_CLASSES = {
+  [SCHEDULE_STATUS.PENDING]: "pending",
+  [SCHEDULE_STATUS.CONFIRMED]: "confirmed",
+  [SCHEDULE_STATUS.COMPLETED]: "completed",
+  [SCHEDULE_STATUS.CANCELLED]: "cancelled",
+};
+
+export function normalizeStatus(status, source) {
+  const raw = String(status || "").trim();
+
+  return (
+    STATUS_ALIASES[raw.toLowerCase()] ||
+    raw ||
+    (source === "user" ? SCHEDULE_STATUS.PENDING : SCHEDULE_STATUS.CONFIRMED)
+  );
+}
+
+export function resolveScheduleStatus(schedule) {
+  const item = schedule && typeof schedule === "object" ? schedule : {};
+  const customer = String(item.customerUsername || item.ownerUsername || "").trim();
+
+  return normalizeStatus(item.status, item.source || (customer ? "user" : "admin"));
+}
+
+export function getScheduleStatusClass(status) {
+  return STATUS_CLASSES[String(status || "").trim()] || "pending";
+}
+
 function getStorage() {
   try {
     return typeof localStorage === "undefined" ? null : localStorage;
@@ -99,15 +141,6 @@ function normalizeSchedule(schedule) {
   const customerPhone = String(item.customerPhone || item.ownerPhone || "").trim();
   const source = String(item.source || (customerUsername ? "user" : "admin"));
 
-  const statusMap = {
-    pending: "Chờ xác nhận",
-    confirmed: "Đã xác nhận",
-    completed: "Đã hoàn thành",
-    cancelled: "Đã hủy",
-  };
-  const rawStatus = String(item.status || "").trim();
-  const status = statusMap[rawStatus.toLowerCase()] || rawStatus || (source === "user" ? "Chờ xác nhận" : "Đã xác nhận");
-
   return {
     ...item,
     id,
@@ -120,7 +153,7 @@ function normalizeSchedule(schedule) {
     customerUsername,
     customerName,
     customerPhone,
-    status,
+    status: normalizeStatus(item.status, source),
     source,
     createdAt: String(item.createdAt || ""),
   };

@@ -42,7 +42,15 @@ if (!isAdminLoggedIn()) {
       owner: ownerInput.value.trim(),
       status: statusInput.value,
     };
-    const nextPets = id ? pets.map((item) => item.id === id ? pet : item) : [...pets, pet];
+
+    if (id && !pets.some((item) => Number(item.id) === id)) {
+      resetForm();
+      showMessage("Hồ sơ thú cưng không còn tồn tại. Vui lòng chọn lại hồ sơ cần sửa.", "error");
+      render();
+      return;
+    }
+
+    const nextPets = id ? pets.map((item) => Number(item.id) === id ? pet : item) : [...pets, pet];
 
     if (!savePets(nextPets)) {
       showMessage("Không thể lưu hồ sơ thú cưng. Vui lòng thử lại.", "error");
@@ -79,6 +87,7 @@ if (!isAdminLoggedIn()) {
         return;
       }
       pets = nextPets;
+      if (Number(petIdInput.value) === Number(pet.id)) resetForm();
       render();
       showMessage("Đã xóa hồ sơ thú cưng.", "success");
     }
@@ -86,7 +95,10 @@ if (!isAdminLoggedIn()) {
 
   searchInput.addEventListener("input", render);
   speciesFilter.addEventListener("change", render);
-  cancelButton.addEventListener("click", resetForm);
+  cancelButton.addEventListener("click", () => {
+    resetForm();
+    showMessage("", "");
+  });
   window.addEventListener("storage", (event) => {
     if (event.key !== PET_STORAGE_KEY) return;
     pets = loadPets();

@@ -27,7 +27,7 @@ export function loadPets() {
     }
 
     const pets = JSON.parse(saved);
-    return Array.isArray(pets) ? pets : clonePets(samplePets);
+    return Array.isArray(pets) ? clonePets(pets) : clonePets(samplePets);
   } catch (error) {
     return clonePets(samplePets);
   }
@@ -46,6 +46,8 @@ export function savePets(pets) {
 }
 
 export function getNextPetId(pets = loadPets()) {
-  const ids = pets.map((pet) => Number(pet.id)).filter((id) => Number.isInteger(id) && id > 0);
+  const ids = (Array.isArray(pets) ? pets : [])
+    .map((pet) => Number(pet?.id))
+    .filter((id) => Number.isInteger(id) && id > 0);
   return ids.length ? Math.max(...ids) + 1 : 1;
 }

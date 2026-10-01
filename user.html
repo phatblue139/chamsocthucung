@@ -6,6 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Khu vực người dùng NEKO - đăng ký và theo dõi lịch chăm sóc thú cưng." />
     <title>Khu vực người dùng | NEKO</title>
+    <script>
+      try {
+        if (localStorage.getItem("neko:admin") === "true" || !localStorage.getItem("neko:user")) {
+          location.replace("/");
+        }
+      } catch (error) {
+        location.replace("/");
+      }
+    </script>
   </head>
   <body class="user-page">
     <div data-site-header></div>
