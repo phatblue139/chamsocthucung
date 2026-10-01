@@ -43,6 +43,13 @@ logoutBtn?.addEventListener("click", () => {
 
 form?.addEventListener("submit", (event) => {
     event.preventDefault();
+
+    if (!dateInput.value.trim()) {
+        showMessage("Ngày chăm sóc không được để trống.", "error");
+        dateInput.focus();
+        return;
+    }
+
     if (!form.checkValidity()) {
         form.reportValidity();
         return;
@@ -161,7 +168,7 @@ function render() {
 
     careList.replaceChildren();
     const rows = getFiltered();
-    careCount.textContent = `Tổng: ${schedules.length} lịch | Đang hiển thị: ${rows.length}`;
+    careCount.textContent = `${schedules.length} lịch · ${rows.length} đang hiển thị`;
     renderStats();
 
     rows.forEach((schedule) => {
@@ -379,7 +386,6 @@ function deleteSchedule(id) {
 function resetForm() {
     form?.reset();
     idInput.value = "";
-    if (statusInput) statusInput.value = STATUS_CONFIRMED;
     if (saveBtn) saveBtn.textContent = "Lưu lịch";
     showMessage("", "");
 }

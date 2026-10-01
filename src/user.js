@@ -19,15 +19,12 @@ if (!currentUser) {
 }
 
 function initUserView(user) {
-  const greeting = document.getElementById("userGreeting");
   const form = document.getElementById("userScheduleForm");
   const message = document.getElementById("userScheduleMessage");
   const list = document.getElementById("userScheduleList");
   const empty = document.getElementById("userScheduleEmpty");
   const count = document.getElementById("userScheduleCount");
   let schedules = loadSchedules();
-
-  if (greeting) greeting.textContent = user.fullName || user.username;
 
   const dateInput = form?.elements.namedItem("date");
   const timeInput = form?.elements.namedItem("time");

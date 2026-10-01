@@ -12,7 +12,7 @@ if (form && note) {
   form.addEventListener('submit', (e) => {
     e.preventDefault()
     const name = form.name?.value?.trim()
-    note.textContent = `Cảm ơn ${name || 'bạn'}! NEKO sẽ liên hệ lại sớm nhất để xác nhận lịch chăm sóc. 🐾`
+    note.textContent = `Cảm ơn ${name || 'bạn'}! NEKO đã nhận được yêu cầu liên hệ và sẽ phản hồi sớm nhất. 🐾`
     form.reset()
   })
 }
