@@ -12,6 +12,9 @@ import {
 
 initSiteHeader();
 
+const OPEN_TIME = "08:00";
+const CLOSE_TIME = "19:00";
+
 const currentUser = getCurrentUser();
 
 if (!currentUser) {
@@ -32,12 +35,8 @@ function initUserView(user) {
   const timeInput = form?.elements.namedItem("time");
   applyScheduleLimits();
 
-  dateInput?.addEventListener("change", () => {
-    if (timeInput) {
-      if (dateInput.value === dateInput.min) timeInput.min = currentTime();
-      else timeInput.removeAttribute("min");
-    }
-  });
+  dateInput?.addEventListener("change", applyTimeLimits);
+  applyTimeLimits();
 
   function currentDate() {
     const now = new Date();
@@ -49,9 +48,18 @@ function initUserView(user) {
     return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
   }
 
+  function applyTimeLimits() {
+    if (!timeInput) return;
+    timeInput.min = OPEN_TIME;
+    timeInput.max = CLOSE_TIME;
+    if (dateInput?.value === dateInput.min && currentTime() > OPEN_TIME) {
+      timeInput.min = currentTime();
+    }
+  }
+
   function applyScheduleLimits() {
     if (dateInput) dateInput.min = currentDate();
-    if (timeInput) timeInput.removeAttribute("min");
+    applyTimeLimits();
   }
 
   form?.addEventListener("submit", (event) => {
@@ -65,6 +73,16 @@ function initUserView(user) {
     const today = currentDate();
     if (String(formData.get("date") || "") < today) {
       showMessage("Bạn không thể chọn ngày đã qua. Vui lòng chọn từ hôm nay trở đi.", "error");
+      return;
+    }
+
+    const time = String(formData.get("time") || "").trim();
+    if (time && (time < OPEN_TIME || time > CLOSE_TIME)) {
+      showMessage("Thời gian đặt lịch chỉ từ 08:00 đến 19:00.", "error");
+      return;
+    }
+    if (formData.get("date") === today && time && time < currentTime()) {
+      showMessage("Thời gian phải từ 08:00 đến 19:00 và không được ở quá khứ.", "error");
       return;
     }
 
