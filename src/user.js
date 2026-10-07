@@ -50,11 +50,38 @@ function initUserView(user) {
 
   function applyTimeLimits() {
     if (!timeInput) return;
-    timeInput.min = OPEN_TIME;
-    timeInput.max = CLOSE_TIME;
-    if (dateInput?.value === dateInput.min && currentTime() > OPEN_TIME) {
-      timeInput.min = currentTime();
+    const earliest =
+      dateInput?.value === dateInput.min && currentTime() > OPEN_TIME
+        ? ceilToFiveMinutes(currentTime())
+        : OPEN_TIME;
+    const previous = timeInput.value;
+    timeInput.replaceChildren();
+    timeOptions()
+      .filter((value) => value >= earliest && value <= CLOSE_TIME)
+      .forEach((value) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        timeInput.appendChild(option);
+      });
+    if (previous && timeInput.value !== previous) timeInput.value = previous;
+    if (!timeInput.value) timeInput.selectedIndex = 0;
+  }
+
+  function timeOptions() {
+    const values = [];
+    for (let minutes = 8 * 60; minutes <= 19 * 60; minutes += 5) {
+      values.push(`${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`);
     }
+    return values;
+  }
+
+  function ceilToFiveMinutes(value) {
+    const [hour, minute] = value.split(":").map(Number);
+    const rounded = Math.ceil(minute / 5) * 5;
+    if (rounded < 60) return `${String(hour).padStart(2, "0")}:${String(rounded).padStart(2, "0")}`;
+    if (hour < 23) return `${String(hour + 1).padStart(2, "0")}:00`;
+    return CLOSE_TIME;
   }
 
   function applyScheduleLimits() {
@@ -79,6 +106,10 @@ function initUserView(user) {
     const time = String(formData.get("time") || "").trim();
     if (time && (time < OPEN_TIME || time > CLOSE_TIME)) {
       showMessage("Thời gian đặt lịch chỉ từ 08:00 đến 19:00.", "error");
+      return;
+    }
+    if (time && Number(time.split(":")[1]) % 5 !== 0) {
+      showMessage("Giờ đặt lịch chỉ chọn các mốc 00, 05, 10... phút.", "error");
       return;
     }
     if (formData.get("date") === today && time && time < currentTime()) {
