@@ -874,6 +874,29 @@ ul { margin: 0; padding: 0; list-style: none; }
     font-weight: 600;
 }
 
+  .care-btn-restore {
+    background: #e2f6ef;
+    color: #168269;
+    padding: 7px 13px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .care-btn-trash {
+    flex: 0 0 auto;
+    border: 1px solid #f3b7b3;
+    background: #ffe8e8;
+    color: #c0392b;
+  }
+
+  .care-btn-trash[aria-pressed="true"] {
+    border-color: #c0392b;
+    background: #c0392b;
+    color: #fff;
+  }
+
 .care-btn-confirm {
     background: #e2f6ef;
     color: #168269;
@@ -906,6 +929,8 @@ ul { margin: 0; padding: 0; list-style: none; }
 
 .care-btn-edit:hover,
 .care-btn-delete:hover,
+.care-btn-restore:hover,
+.care-btn-trash:hover,
 .care-btn-confirm:hover,
 .care-btn-complete:hover,
 .care-btn-undo:hover {
@@ -1374,9 +1399,27 @@ ul { margin: 0; padding: 0; list-style: none; }
 .user-schedule-hint {
   display: inline-block;
   margin-top: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--primary);
+  font: inherit;
   font-size: 13px;
   font-weight: 700;
+  cursor: pointer;
+}
+
+.user-schedule-cancel {
+  align-self: flex-start;
+  margin-top: 6px;
+  padding: 8px 14px;
+  border: 1px solid #f3b7b3;
+  border-radius: 8px;
+  background: #ffe8e8;
+  color: #c0392b;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .user-schedule-more {
@@ -1681,6 +1724,8 @@ ul { margin: 0; padding: 0; list-style: none; }
 :is(.admin-pet-table, .admin-care-table) th,
 :is(.admin-pet-table, .admin-care-table) td { padding: 12px 14px; }
 .admin-care-stats { max-width: 1080px; }
+.admin-care-stats { flex-wrap: nowrap; overflow-x: auto; }
+.admin-care-stats > button { flex: 0 0 auto; }
 .admin-page > .container > .user-form-message { max-width: 1080px; margin: 0 auto; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 

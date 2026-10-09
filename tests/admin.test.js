@@ -68,6 +68,7 @@ test("dashboard statistics count pets and unfinished/completed schedules", () =>
     { status: "Đã xác nhận" },
     { status: "Đã hoàn thành" },
     { status: "Đã hủy" },
+    { status: "Chờ xác nhận", deletedAt: "2026-10-01T00:00:00.000Z" },
   ]);
   assert.deepEqual(stats, { totalPets: 2, unfinishedSchedules: 2, completedSchedules: 1 });
 });
