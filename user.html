@@ -43,13 +43,22 @@
                 <label for="userCareType">Loại chăm sóc</label>
                 <select id="userCareType" name="careType" required>
                   <option value="">-- Chọn loại chăm sóc --</option>
-                  <option value="Tắm">Tắm</option>
-                  <option value="Cắt móng">Cắt móng</option>
-                  <option value="Tiêm phòng">Tiêm phòng</option>
-                  <option value="Tẩy giun">Tẩy giun</option>
-                  <option value="Cho ăn">Cho ăn</option>
-                  <option value="Khác">Khác</option>
+                  <option value="Tắm">Tắm - 100.000đ</option>
+                  <option value="Cắt móng">Cắt móng - 50.000đ</option>
+                  <option value="Tiêm phòng">Tiêm phòng - 200.000đ</option>
+                  <option value="Tẩy giun">Tẩy giun - 150.000đ</option>
+                  <option value="Cho ăn">Cho ăn - 50.000đ</option>
+                  <option value="Khác">Khác - theo yêu cầu</option>
                 </select>
+              </div>
+              <div class="care-form-group" id="userCareTypeOtherGroup" hidden>
+                <label for="userCareTypeOther">Tên dịch vụ khác</label>
+                <input
+                  type="text"
+                  id="userCareTypeOther"
+                  name="careTypeOther"
+                  placeholder="Nhập tên dịch vụ chăm sóc"
+                />
               </div>
               <div class="care-form-group">
                 <label for="userScheduleDate">Ngày</label>
