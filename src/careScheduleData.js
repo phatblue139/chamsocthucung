@@ -85,6 +85,61 @@ export const SCHEDULE_STATUS = {
   CANCELLED: "Đã hủy",
 };
 
+export const CARE_TYPE_OTHER = "Khác";
+
+export const CARE_TYPES = [
+  { value: "Tắm", price: 100000 },
+  { value: "Cắt móng", price: 50000 },
+  { value: "Tiêm phòng", price: 200000 },
+  { value: "Tẩy giun", price: 150000 },
+  { value: "Cho ăn", price: 50000 },
+];
+
+const CARE_TYPE_PRICES = CARE_TYPES.reduce((map, item) => {
+  map[item.value] = item.price;
+  return map;
+}, {});
+
+export function getCareTypePrice(careType) {
+  return CARE_TYPE_PRICES[String(careType || "").trim()] ?? 0;
+}
+
+export function isKnownCareType(careType) {
+  return Object.prototype.hasOwnProperty.call(CARE_TYPE_PRICES, String(careType || "").trim());
+}
+
+export function formatCurrency(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number <= 0) return "";
+  return `${number.toLocaleString("vi-VN")}đ`;
+}
+
+export const OPEN_TIME = "08:00";
+export const CLOSE_TIME = "19:00";
+export const TIME_STEP_MINUTES = 5;
+
+function timeToMinutes(value) {
+  const [hour, minute] = String(value || "").split(":").map(Number);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return NaN;
+  return hour * 60 + minute;
+}
+
+function minutesToTime(minutes) {
+  const hour = String(Math.floor(minutes / 60)).padStart(2, "0");
+  const minute = String(minutes % 60).padStart(2, "0");
+  return `${hour}:${minute}`;
+}
+
+export function getTimeOptions({ open = OPEN_TIME, close = CLOSE_TIME, step = TIME_STEP_MINUTES } = {}) {
+  const start = timeToMinutes(open);
+  const end = timeToMinutes(close);
+  const options = [];
+  for (let minutes = start; minutes <= end; minutes += step) {
+    options.push(minutesToTime(minutes));
+  }
+  return options;
+}
+
 const STATUS_ALIASES = {
   pending: SCHEDULE_STATUS.PENDING,
   confirmed: SCHEDULE_STATUS.CONFIRMED,
@@ -140,13 +195,16 @@ function normalizeSchedule(schedule) {
   const customerName = String(item.customerName || item.ownerFullName || customerUsername).trim();
   const customerPhone = String(item.customerPhone || item.ownerPhone || "").trim();
   const source = String(item.source || (customerUsername ? "user" : "admin"));
+  const careType = String(item.careType || "").trim();
+  const price = Number(item.price);
 
   return {
     ...item,
     id,
     petId: item.petId || "",
     petName: String(item.petName || "").trim(),
-    careType: String(item.careType || "").trim(),
+    careType,
+    price: Number.isFinite(price) && price > 0 ? price : getCareTypePrice(careType),
     date: String(item.date || "").trim(),
     time: String(item.time || "").trim(),
     note: String(item.note || "").trim(),
