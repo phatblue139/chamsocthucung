@@ -12,7 +12,7 @@ export function filterPets(pets, keyword = "", species = "") {
 }
 
 export function getAdminStatistics(pets, schedules) {
-  const list = Array.isArray(schedules) ? schedules : [];
+  const list = (Array.isArray(schedules) ? schedules : []).filter((schedule) => !schedule.deletedAt);
   const counts = { pending: 0, confirmed: 0, completed: 0, cancelled: 0 };
 
   list.forEach((schedule) => {

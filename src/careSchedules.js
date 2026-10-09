@@ -24,6 +24,7 @@ const form = document.getElementById("careForm");
 const careList = document.getElementById("careList");
 const emptyMsg = document.getElementById("emptyMsg");
 const searchInput = document.getElementById("searchInput");
+const deletedToggle = document.getElementById("deletedToggle");
 const careCount = document.getElementById("careCount");
 const formMessage = document.getElementById("careFormMessage");
 const saveBtn = document.getElementById("saveBtn");
@@ -41,6 +42,7 @@ const careStats = document.getElementById("careStats");
 let schedules = loadSchedules();
 let searchKeyword = "";
 let statusFilter = "";
+let showDeleted = false;
 const STATUS_PENDING = SCHEDULE_STATUS.PENDING;
 const STATUS_CONFIRMED = SCHEDULE_STATUS.CONFIRMED;
 const STATUS_COMPLETED = SCHEDULE_STATUS.COMPLETED;
@@ -86,11 +88,19 @@ careList?.addEventListener("click", (event) => {
         toggleCompleted(id);
     } else if (button.dataset.action === "delete") {
         deleteSchedule(id);
+    } else if (button.dataset.action === "restore") {
+        restoreSchedule(id);
     }
 });
 
 searchInput?.addEventListener("input", () => {
     searchKeyword = searchInput.value;
+    render();
+});
+
+deletedToggle?.addEventListener("click", () => {
+    showDeleted = !showDeleted;
+    statusFilter = "";
     render();
 });
 
@@ -130,6 +140,7 @@ function getFiltered() {
     const keyword = searchKeyword.trim().toLowerCase();
 
     return schedules.filter((schedule) => {
+        if (Boolean(schedule.deletedAt) !== showDeleted) return false;
         if (statusFilter && getStatusClass(getScheduleStatus(schedule)) !== statusFilter) {
             return false;
         }
@@ -150,7 +161,9 @@ function getFiltered() {
 
 function getCounts() {
     const counts = { all: schedules.length, pending: 0, confirmed: 0, completed: 0, cancelled: 0 };
-    schedules.forEach((schedule) => {
+    const activeSchedules = schedules.filter((schedule) => !schedule.deletedAt);
+    counts.all = activeSchedules.length;
+    activeSchedules.forEach((schedule) => {
         counts[getStatusClass(getScheduleStatus(schedule))] += 1;
     });
     return counts;
@@ -168,6 +181,7 @@ function renderStats() {
         const isActive = (button.dataset.status || "") === statusFilter;
         button.classList.toggle("is-active", isActive);
         button.setAttribute("aria-pressed", String(isActive));
+        button.hidden = showDeleted;
     });
 }
 
@@ -182,7 +196,17 @@ function render() {
 
     careList.replaceChildren();
     const rows = getFiltered();
-    careCount.textContent = `${schedules.length} lịch · ${rows.length} đang hiển thị`;
+    const deletedCount = schedules.filter((schedule) => schedule.deletedAt).length;
+    const activeCount = schedules.length - deletedCount;
+    careCount.textContent = showDeleted
+        ? `${deletedCount} lịch đã xóa · ${rows.length} đang hiển thị`
+        : `${activeCount} lịch · ${rows.length} đang hiển thị`;
+    if (deletedToggle) {
+        deletedToggle.textContent = showDeleted
+            ? "← Quay lại lịch"
+            : `Đã xóa (${deletedCount})`;
+        deletedToggle.setAttribute("aria-pressed", String(showDeleted));
+    }
     renderStats();
 
     rows.forEach((schedule) => {
@@ -190,6 +214,7 @@ function render() {
         const customer = schedule.customerName || schedule.customerUsername || "Dữ liệu mẫu";
         const phone = schedule.customerPhone || "—";
         const status = getScheduleStatus(schedule);
+        const isDeleted = Boolean(schedule.deletedAt);
         const isCompleted = status === STATUS_COMPLETED;
         const isPending = status === STATUS_PENDING;
         const priceText = formatCurrency(schedule.price) || (schedule.careType ? "Theo yêu cầu" : "");
@@ -211,46 +236,57 @@ function render() {
         const actionCell = document.createElement("td");
         const actionGroup = document.createElement("div");
         actionGroup.className = "care-actions";
-        const editButton = document.createElement("button");
-        editButton.type = "button";
-        editButton.className = "care-btn-edit";
-        editButton.dataset.action = "edit";
-        editButton.dataset.id = String(schedule.id);
-        editButton.textContent = "Sửa";
+        if (isDeleted) {
+            const restoreButton = document.createElement("button");
+            restoreButton.type = "button";
+            restoreButton.className = "care-btn-restore";
+            restoreButton.dataset.action = "restore";
+            restoreButton.dataset.id = String(schedule.id);
+            restoreButton.textContent = "Khôi phục";
+            actionGroup.appendChild(restoreButton);
+        } else {
+            const editButton = document.createElement("button");
+            editButton.type = "button";
+            editButton.className = "care-btn-edit";
+            editButton.dataset.action = "edit";
+            editButton.dataset.id = String(schedule.id);
+            editButton.textContent = "Sửa";
 
-        const confirmButton = document.createElement("button");
-        confirmButton.type = "button";
-        confirmButton.className = "care-btn-confirm";
-        confirmButton.dataset.action = "confirm";
-        confirmButton.dataset.id = String(schedule.id);
-        confirmButton.textContent = "✔ Xác nhận";
-        confirmButton.title = "Xác nhận đơn để người dùng biết đã được tiếp nhận";
-        confirmButton.hidden = !isPending;
+            const confirmButton = document.createElement("button");
+            confirmButton.type = "button";
+            confirmButton.className = "care-btn-confirm";
+            confirmButton.dataset.action = "confirm";
+            confirmButton.dataset.id = String(schedule.id);
+            confirmButton.textContent = "✔ Xác nhận";
+            confirmButton.title = "Xác nhận đơn để người dùng biết đã được tiếp nhận";
+            confirmButton.hidden = !isPending;
 
-        const completeButton = document.createElement("button");
-        completeButton.type = "button";
-        completeButton.className = isCompleted ? "care-btn-undo" : "care-btn-complete";
-        completeButton.dataset.action = "complete";
-        completeButton.dataset.id = String(schedule.id);
-        completeButton.textContent = isCompleted ? "↩ Hoàn tác" : "✔ Hoàn thành";
-        completeButton.title = isCompleted
-            ? "Bỏ đánh dấu hoàn thành"
-            : "Đánh dấu lịch đã hoàn thành";
-        completeButton.hidden = isPending || status === STATUS_CANCELLED;
+            const completeButton = document.createElement("button");
+            completeButton.type = "button";
+            completeButton.className = isCompleted ? "care-btn-undo" : "care-btn-complete";
+            completeButton.dataset.action = "complete";
+            completeButton.dataset.id = String(schedule.id);
+            completeButton.textContent = isCompleted ? "↩ Hoàn tác" : "✔ Hoàn thành";
+            completeButton.title = isCompleted
+                ? "Bỏ đánh dấu hoàn thành"
+                : "Đánh dấu lịch đã hoàn thành";
+            completeButton.hidden = isPending || status === STATUS_CANCELLED;
 
-        const deleteButton = document.createElement("button");
-        deleteButton.type = "button";
-        deleteButton.className = "care-btn-delete";
-        deleteButton.dataset.action = "delete";
-        deleteButton.dataset.id = String(schedule.id);
-        deleteButton.textContent = "Xóa";
+            const deleteButton = document.createElement("button");
+            deleteButton.type = "button";
+            deleteButton.className = "care-btn-delete";
+            deleteButton.dataset.action = "delete";
+            deleteButton.dataset.id = String(schedule.id);
+            deleteButton.textContent = "Xóa";
 
-        actionGroup.append(editButton, confirmButton, completeButton, deleteButton);
+            actionGroup.append(editButton, confirmButton, completeButton, deleteButton);
+        }
         actionCell.appendChild(actionGroup);
         row.appendChild(actionCell);
         careList.appendChild(row);
     });
 
+    emptyMsg.textContent = showDeleted ? "Thùng rác chưa có lịch nào." : "Không có lịch chăm sóc nào.";
     emptyMsg.hidden = rows.length > 0;
 }
 
@@ -441,9 +477,11 @@ function toggleCompleted(id) {
 }
 
 function deleteSchedule(id) {
-    if (!confirm("Bạn có chắc muốn xóa lịch chăm sóc này không?")) return;
+    if (!confirm("Chuyển lịch chăm sóc này vào danh sách đã xóa? Bạn có thể khôi phục sau.")) return;
 
-    const nextSchedules = schedules.filter((schedule) => Number(schedule.id) !== id);
+    const nextSchedules = schedules.map((schedule) =>
+        Number(schedule.id) === id ? { ...schedule, deletedAt: new Date().toISOString() } : schedule,
+    );
     if (!saveSchedules(nextSchedules)) {
         showMessage("Không thể xóa lịch. Vui lòng thử lại.", "error");
         return;
@@ -451,7 +489,22 @@ function deleteSchedule(id) {
 
     schedules = nextSchedules;
     if (editingId() === id) resetForm();
-    showMessage("Đã xóa lịch chăm sóc.", "success");
+    showMessage("Đã chuyển lịch vào danh sách đã xóa.", "success");
+    render();
+}
+
+function restoreSchedule(id) {
+    const nextSchedules = schedules.map((schedule) =>
+        Number(schedule.id) === id ? { ...schedule, deletedAt: "" } : schedule,
+    );
+
+    if (!saveSchedules(nextSchedules)) {
+        showMessage("Không thể khôi phục lịch. Vui lòng thử lại.", "error");
+        return;
+    }
+
+    schedules = nextSchedules;
+    showMessage(`Đã khôi phục lịch #${id}.`, "success");
     render();
 }
 

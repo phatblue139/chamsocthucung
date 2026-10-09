@@ -5,6 +5,7 @@ import {
   CARE_TYPE_OTHER,
   CLOSE_TIME,
   OPEN_TIME,
+  SCHEDULE_STATUS,
   SCHEDULE_STORAGE_KEY,
   formatCurrency,
   getCareTypePrice,
@@ -201,6 +202,48 @@ function initUserView(user) {
     message.className = `user-form-message ${type}`;
   }
 
+  function cancelUserSchedule(id) {
+    const latestSchedules = loadSchedules();
+    const schedule = latestSchedules.find((item) =>
+      Number(item.id) === Number(id) &&
+      (item.customerUsername || item.ownerUsername) === user.username &&
+      !item.deletedAt,
+    );
+
+    if (!schedule) {
+      schedules = latestSchedules;
+      render();
+      showMessage("Không tìm thấy lịch để hủy. Vui lòng tải lại trang.", "error");
+      return;
+    }
+
+    const status = resolveScheduleStatus(schedule);
+    if (![SCHEDULE_STATUS.PENDING, SCHEDULE_STATUS.CONFIRMED].includes(status)) {
+      schedules = latestSchedules;
+      render();
+      showMessage("Lịch này không thể hủy.", "error");
+      return;
+    }
+
+    if (!confirm("Bạn có chắc muốn hủy lịch chăm sóc này không?")) return;
+
+    const nextSchedules = latestSchedules.map((item) =>
+      Number(item.id) === Number(id) &&
+      (item.customerUsername || item.ownerUsername) === user.username
+        ? { ...item, status: SCHEDULE_STATUS.CANCELLED, cancelledAt: new Date().toISOString() }
+        : item,
+    );
+
+    if (!saveSchedules(nextSchedules)) {
+      showMessage("Không thể hủy lịch. Vui lòng thử lại.", "error");
+      return;
+    }
+
+    schedules = nextSchedules;
+    render();
+    showMessage("Đã hủy lịch chăm sóc.", "success");
+  }
+
   window.addEventListener("storage", (event) => {
     if (event.key !== SCHEDULE_STORAGE_KEY) return;
     schedules = loadSchedules();
@@ -211,7 +254,7 @@ function initUserView(user) {
     if (!list || !empty || !count) return;
 
     const userSchedules = schedules
-      .filter((schedule) => (schedule.customerUsername || schedule.ownerUsername) === user.username)
+      .filter((schedule) => !schedule.deletedAt && (schedule.customerUsername || schedule.ownerUsername) === user.username)
       .sort((first, second) => {
         const firstValue = `${first.date || ""} ${first.time || ""}`;
         const secondValue = `${second.date || ""} ${second.time || ""}`;
@@ -225,9 +268,6 @@ function initUserView(user) {
     userSchedules.forEach((schedule) => {
       const card = document.createElement("article");
       card.className = "user-schedule-card";
-      card.tabIndex = 0;
-      card.setAttribute("role", "button");
-      card.setAttribute("aria-expanded", "false");
 
       const heading = document.createElement("div");
       heading.className = "user-schedule-card-heading";
@@ -260,12 +300,17 @@ function initUserView(user) {
       card.appendChild(heading, details);
 
       const hint = document.createElement("span");
-      hint.className = "user-schedule-hint";
-      hint.textContent = "Xem chi tiết lịch";
-      card.appendChild(hint);
+      const toggleButton = document.createElement("button");
+      toggleButton.type = "button";
+      toggleButton.className = "user-schedule-hint";
+      toggleButton.setAttribute("aria-expanded", "false");
+      toggleButton.setAttribute("aria-controls", `userScheduleDetails-${schedule.id}`);
+      toggleButton.textContent = "Xem chi tiết lịch";
+      card.appendChild(toggleButton);
 
       const more = document.createElement("div");
       more.className = "user-schedule-more";
+      more.id = `userScheduleDetails-${schedule.id}`;
       more.hidden = true;
       more.append(
         createScheduleRow("Ngày", formatDate(schedule.date)),
@@ -275,22 +320,25 @@ function initUserView(user) {
         createScheduleRow("Trạng thái", statusValue),
         createScheduleRow("Ghi chú", schedule.note || "Không có"),
       );
+
+      if ([SCHEDULE_STATUS.PENDING, SCHEDULE_STATUS.CONFIRMED].includes(statusValue)) {
+        const cancelButton = document.createElement("button");
+        cancelButton.type = "button";
+        cancelButton.className = "user-schedule-cancel";
+        cancelButton.textContent = "Hủy lịch";
+        cancelButton.addEventListener("click", () => cancelUserSchedule(schedule.id));
+        more.appendChild(cancelButton);
+      }
       card.appendChild(more);
 
       function toggle() {
         const isOpen = card.classList.toggle("is-open");
-        card.setAttribute("aria-expanded", String(isOpen));
+        toggleButton.setAttribute("aria-expanded", String(isOpen));
         more.hidden = !isOpen;
-        hint.textContent = isOpen ? "Thu gọn" : "Xem chi tiết lịch";
+        toggleButton.textContent = isOpen ? "Thu gọn" : "Xem chi tiết lịch";
       }
 
-      card.addEventListener("click", toggle);
-      card.addEventListener("keydown", (event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          toggle();
-        }
-      });
+      toggleButton.addEventListener("click", toggle);
 
       list.appendChild(card);
     });
