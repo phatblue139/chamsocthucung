@@ -4,12 +4,15 @@ const NAV_ITEMS = [
   { href: '/', label: 'Trang chủ' },
   { href: '/about.html', label: 'Giới thiệu' },
   { href: '/services.html', label: 'Dịch vụ' },
+  { href: '/pricing.html', label: 'Bảng giá' },
 ]
 
 const ROLE_ITEMS = [
   { href: '/user.html', label: 'Lịch đăng ký', className: 'user-link' },
   { href: '/src/admin.html', label: 'Dashboard Admin', className: 'admin-link' },
 ]
+
+const CONTACT_ITEM = { href: '/#contact', label: 'Liên hệ ngay' }
 
 const AUTH_DIALOGS = `
   <dialog id="loginDialog" class="login-dialog" aria-labelledby="loginTitle">
@@ -244,6 +247,13 @@ ${roleLinks}
           id="registerBtn">
           Đăng ký
         </button>
+
+        <a
+          href="${CONTACT_ITEM.href}"
+          class="btn btn-primary nav-cta"
+          data-contact-cta>
+          ${CONTACT_ITEM.label}
+        </a>
 
         <button
           type="button"

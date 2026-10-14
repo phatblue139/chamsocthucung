@@ -150,6 +150,12 @@ export function getCurrentUser() {
   }
 }
 
+// Danh sách tài khoản công khai để quản trị viên gán thú cưng đúng chủ sở hữu.
+// Không trả mật khẩu ra giao diện.
+export function getAllUsers() {
+  return readUsers().map((user) => toPublicUser(user));
+}
+
 export function isAdminLoggedIn() {
   return getStorage()?.getItem(ADMIN_AUTH_KEY) === "true";
 }
