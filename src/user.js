@@ -5,10 +5,14 @@ import {
   CARE_TYPE_OTHER,
   CLOSE_TIME,
   OPEN_TIME,
+  PAYMENT_METHOD,
+  PAYMENT_STATUS,
   SCHEDULE_STATUS,
   SCHEDULE_STORAGE_KEY,
   formatCurrency,
   getCareTypePrice,
+  getPaymentMethodLabel,
+  getPaymentStatusLabel,
   getNextScheduleId,
   getScheduleStatusClass,
   getTimeOptions,
@@ -40,11 +44,17 @@ function initUserView(user) {
   const careTypeInput = form?.elements.namedItem("careType");
   const careTypeOtherInput = form?.elements.namedItem("careTypeOther");
   const careTypeOtherGroup = document.getElementById("userCareTypeOtherGroup");
+  const paymentMethodInput = form?.elements.namedItem("paymentMethod");
+  const paymentSummary = document.getElementById("userPaymentSummary");
   populateTimeOptions();
   applyScheduleLimits();
   syncCareTypeOther();
+  syncPaymentSummary();
 
   careTypeInput?.addEventListener("change", syncCareTypeOther);
+  careTypeInput?.addEventListener("change", syncPaymentSummary);
+  careTypeOtherInput?.addEventListener("input", syncPaymentSummary);
+  paymentMethodInput?.addEventListener("change", syncPaymentSummary);
 
   dateInput?.addEventListener("change", applyTimeLimits);
   applyTimeLimits();
@@ -131,6 +141,19 @@ function initUserView(user) {
     return selected;
   }
 
+  function syncPaymentSummary() {
+    if (!paymentSummary) return;
+    const price = getCareTypePrice(resolveCareType());
+    const method = paymentMethodInput?.value;
+    const priceText = price ? formatCurrency(price) : "NEKO sẽ báo giá sau";
+    const paymentText = method === PAYMENT_METHOD.DEMO_ONLINE
+      ? "Thanh toán mô phỏng, không phát sinh giao dịch thật."
+      : method === PAYMENT_METHOD.IN_STORE
+        ? "Bạn thanh toán tại cửa hàng sau khi NEKO xác nhận lịch."
+        : "Chọn phương thức thanh toán để xem hướng dẫn.";
+    paymentSummary.textContent = `Tạm tính: ${priceText}. ${paymentText}`;
+  }
+
   form?.addEventListener("submit", (event) => {
     event.preventDefault();
     if (!form.checkValidity()) {
@@ -161,11 +184,30 @@ function initUserView(user) {
 
     const latestSchedules = loadSchedules();
     const careType = resolveCareType();
+    const paymentMethod = String(formData.get("paymentMethod") || "");
+    const price = getCareTypePrice(careType);
+    const isDemoPayment = paymentMethod === PAYMENT_METHOD.DEMO_ONLINE;
+
+    if (isDemoPayment && !price) {
+      showMessage("Dịch vụ này chưa có giá cố định nên không thể mô phỏng thanh toán. Chọn thanh toán tại cửa hàng để NEKO báo giá.", "error");
+      return;
+    }
+
+    if (isDemoPayment && !confirm(`Xác nhận thanh toán mô phỏng ${formatCurrency(price)}? Không có tiền thật bị trừ.`)) {
+      return;
+    }
+
     const schedule = {
       id: getNextScheduleId(latestSchedules),
       petName: String(formData.get("petName") || "").trim(),
       careType,
-      price: getCareTypePrice(careType),
+      price,
+      paymentMethod,
+      paymentStatus: isDemoPayment ? PAYMENT_STATUS.DEMO_PAID : PAYMENT_STATUS.UNPAID,
+      paidAt: isDemoPayment ? new Date().toISOString() : "",
+      paymentReference: isDemoPayment
+        ? `DEMO-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`
+        : "",
       date: String(formData.get("date") || "").trim(),
       time: String(formData.get("time") || "").trim(),
       note: String(formData.get("note") || "").trim(),
@@ -192,8 +234,14 @@ function initUserView(user) {
     form.reset();
     applyScheduleLimits();
     syncCareTypeOther();
+    syncPaymentSummary();
     render();
-    showMessage("Đã gửi lịch chăm sóc tới NEKO. Chúng tôi sẽ liên hệ xác nhận sớm nhất.", "success");
+    showMessage(
+      isDemoPayment
+        ? "Đã lưu lịch và trạng thái thanh toán mô phỏng. Không có giao dịch tiền thật."
+        : "Đã gửi lịch chăm sóc. Bạn thanh toán tại cửa hàng sau khi NEKO xác nhận.",
+      "success",
+    );
   });
 
   function showMessage(text, type) {
@@ -316,7 +364,12 @@ function initUserView(user) {
         createScheduleRow("Ngày", formatDate(schedule.date)),
         createScheduleRow("Giờ đặt lịch", schedule.time || "Chưa chọn"),
         createScheduleRow("Loại chăm sóc", schedule.careType || "Chăm sóc"),
-        createScheduleRow("Giá dịch vụ", price || "Theo yêu cầu"),
+        createScheduleRow("Giá dịch vụ", price || "NEKO sẽ báo giá"),
+        createScheduleRow("Phương thức thanh toán", getPaymentMethodLabel(schedule.paymentMethod)),
+        createScheduleRow("Trạng thái thanh toán", getPaymentStatusLabel(schedule.paymentStatus)),
+        ...(schedule.paymentReference
+          ? [createScheduleRow("Mã giao dịch mô phỏng", schedule.paymentReference)]
+          : []),
         createScheduleRow("Trạng thái", statusValue),
         createScheduleRow("Ghi chú", schedule.note || "Không có"),
       );

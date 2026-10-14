@@ -87,6 +87,30 @@ export const SCHEDULE_STATUS = {
 
 export const CARE_TYPE_OTHER = "Khác";
 
+export const PAYMENT_METHOD = {
+  IN_STORE: "in_store",
+  DEMO_ONLINE: "demo_online",
+};
+
+export const PAYMENT_STATUS = {
+  UNPAID: "unpaid",
+  DEMO_PAID: "demo_paid",
+  PAID_AT_STORE: "paid_at_store",
+};
+
+export function getPaymentMethodLabel(method) {
+  if (method === PAYMENT_METHOD.IN_STORE) return "Thanh toán tại cửa hàng";
+  if (method === PAYMENT_METHOD.DEMO_ONLINE) return "Thanh toán online mô phỏng";
+  return "Chưa ghi nhận";
+}
+
+export function getPaymentStatusLabel(status) {
+  if (status === PAYMENT_STATUS.UNPAID) return "Chưa thanh toán";
+  if (status === PAYMENT_STATUS.DEMO_PAID) return "Đã thanh toán (mô phỏng)";
+  if (status === PAYMENT_STATUS.PAID_AT_STORE) return "Đã thu tại cửa hàng (demo)";
+  return "Chưa ghi nhận";
+}
+
 export const CARE_TYPES = [
   { value: "Tắm", price: 100000 },
   { value: "Cắt móng", price: 50000 },

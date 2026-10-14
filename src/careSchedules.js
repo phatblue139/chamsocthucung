@@ -1,9 +1,13 @@
 import {
     CARE_TYPE_OTHER,
+    PAYMENT_METHOD,
+    PAYMENT_STATUS,
     SCHEDULE_STORAGE_KEY,
     SCHEDULE_STATUS,
     formatCurrency,
     getCareTypePrice,
+    getPaymentMethodLabel,
+    getPaymentStatusLabel,
     getNextScheduleId,
     getScheduleStatusClass,
     getTimeOptions,
@@ -24,6 +28,7 @@ const form = document.getElementById("careForm");
 const careList = document.getElementById("careList");
 const emptyMsg = document.getElementById("emptyMsg");
 const searchInput = document.getElementById("searchInput");
+const paymentFilter = document.getElementById("paymentFilter");
 const deletedToggle = document.getElementById("deletedToggle");
 const careCount = document.getElementById("careCount");
 const formMessage = document.getElementById("careFormMessage");
@@ -90,6 +95,8 @@ careList?.addEventListener("click", (event) => {
         deleteSchedule(id);
     } else if (button.dataset.action === "restore") {
         restoreSchedule(id);
+    } else if (button.dataset.action === "mark-paid") {
+        markPaidAtStore(id);
     }
 });
 
@@ -97,6 +104,8 @@ searchInput?.addEventListener("input", () => {
     searchKeyword = searchInput.value;
     render();
 });
+
+paymentFilter?.addEventListener("change", render);
 
 deletedToggle?.addEventListener("click", () => {
     showDeleted = !showDeleted;
@@ -144,6 +153,8 @@ function getFiltered() {
         if (statusFilter && getStatusClass(getScheduleStatus(schedule)) !== statusFilter) {
             return false;
         }
+        const paymentStatus = schedule.paymentStatus || "unrecorded";
+        if (paymentFilter?.value && paymentStatus !== paymentFilter.value) return false;
 
         if (!keyword) return true;
 
@@ -154,6 +165,9 @@ function getFiltered() {
             schedule.customerPhone,
             schedule.careType,
             getScheduleStatus(schedule),
+            getPaymentMethodLabel(schedule.paymentMethod),
+            getPaymentStatusLabel(schedule.paymentStatus),
+            schedule.paymentReference,
         ];
         return values.some((value) => String(value || "").toLowerCase().includes(keyword));
     });
@@ -231,6 +245,10 @@ function render() {
             createCell(schedule.time),
             createCell(schedule.note),
             createStatusCell(status),
+            createCell([
+                `${getPaymentMethodLabel(schedule.paymentMethod)} · ${getPaymentStatusLabel(schedule.paymentStatus)}`,
+                schedule.paymentReference ? `Mã: ${schedule.paymentReference}` : "",
+            ].filter(Boolean).join(" · ")),
         );
 
         const actionCell = document.createElement("td");
@@ -280,6 +298,17 @@ function render() {
             deleteButton.textContent = "Xóa";
 
             actionGroup.append(editButton, confirmButton, completeButton, deleteButton);
+            if (schedule.paymentMethod === PAYMENT_METHOD.IN_STORE && schedule.paymentStatus === PAYMENT_STATUS.UNPAID) {
+                const paymentButton = document.createElement("button");
+                paymentButton.type = "button";
+                paymentButton.className = "care-btn-confirm";
+                paymentButton.dataset.action = "mark-paid";
+                paymentButton.dataset.id = String(schedule.id);
+                paymentButton.textContent = "Đã thu tiền";
+                paymentButton.title = "Chỉ ghi nhận trong bản demo, không xử lý giao dịch thật";
+                paymentButton.disabled = !Number(schedule.price);
+                actionGroup.appendChild(paymentButton);
+            }
         }
         actionCell.appendChild(actionGroup);
         row.appendChild(actionCell);
@@ -435,6 +464,34 @@ function setStatus(id, nextStatus, extra = {}) {
     schedules = nextSchedules;
     if (idInput && Number(idInput.value) === id) statusInput.value = nextStatus;
     return true;
+}
+
+function markPaidAtStore(id) {
+    const schedule = schedules.find((item) => Number(item.id) === id);
+    if (!schedule || schedule.paymentMethod !== PAYMENT_METHOD.IN_STORE || schedule.paymentStatus !== PAYMENT_STATUS.UNPAID) {
+        return;
+    }
+    if (!Number(schedule.price)) {
+        showMessage("Lịch chưa có giá cố định nên chưa thể ghi nhận đã thu tiền.", "error");
+        return;
+    }
+    if (!confirm(`Xác nhận đã thu ${formatCurrency(schedule.price)} cho lịch #${id}? Đây chỉ là ghi nhận demo.`)) {
+        return;
+    }
+
+    const nextSchedules = schedules.map((item) =>
+        Number(item.id) === id
+            ? { ...item, paymentStatus: PAYMENT_STATUS.PAID_AT_STORE, paidAt: new Date().toISOString() }
+            : item,
+    );
+    if (!saveSchedules(nextSchedules)) {
+        showMessage("Không thể cập nhật trạng thái thanh toán. Vui lòng thử lại.", "error");
+        return;
+    }
+
+    schedules = nextSchedules;
+    showMessage(`Đã ghi nhận thanh toán demo cho lịch #${id}.`, "success");
+    render();
 }
 
 function confirmSchedule(id) {

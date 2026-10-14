@@ -60,6 +60,17 @@
                   placeholder="Nhập tên dịch vụ chăm sóc"
                 />
               </div>
+              <div class="care-form-group user-form-full">
+                <label for="userPaymentMethod">Phương thức thanh toán</label>
+                <select id="userPaymentMethod" name="paymentMethod" required>
+                  <option value="">-- Chọn phương thức --</option>
+                  <option value="in_store">Thanh toán tại cửa hàng</option>
+                  <option value="demo_online">Thanh toán online mô phỏng</option>
+                </select>
+              </div>
+              <p class="user-payment-summary user-form-full" id="userPaymentSummary" role="status" aria-live="polite">
+                Bản demo: thanh toán online chỉ đổi trạng thái, không thu tiền thật.
+              </p>
               <div class="care-form-group">
                 <label for="userScheduleDate">Ngày</label>
                 <input type="date" id="userScheduleDate" name="date" required />

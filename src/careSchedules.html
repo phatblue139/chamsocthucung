@@ -100,6 +100,13 @@
             placeholder="Tìm theo tên, tài khoản, số điện thoại hoặc loại chăm sóc..."
             aria-label="Tìm lịch chăm sóc"
           />
+          <select id="paymentFilter" class="care-search" aria-label="Lọc theo trạng thái thanh toán">
+            <option value="">Mọi trạng thái thanh toán</option>
+            <option value="unpaid">Chưa thanh toán</option>
+            <option value="demo_paid">Đã thanh toán (mô phỏng)</option>
+            <option value="paid_at_store">Đã thu tại cửa hàng (demo)</option>
+            <option value="unrecorded">Chưa ghi nhận</option>
+          </select>
         </div>
 
         <div class="care-stats admin-care-stats" id="careStats" role="group" aria-label="Lọc và thống kê theo trạng thái">
@@ -137,6 +144,7 @@
                 <th>Giờ</th>
                 <th>Ghi chú</th>
                 <th>Trạng thái</th>
+                <th>Thanh toán</th>
                 <th>Thao tác</th>
               </tr>
             </thead>

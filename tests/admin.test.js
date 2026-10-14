@@ -9,6 +9,8 @@ import {
 import { filterPets, getAdminStatistics } from "../src/adminData.js";
 import {
   SCHEDULE_STATUS,
+  getPaymentMethodLabel,
+  getPaymentStatusLabel,
   getScheduleStatusClass,
   normalizeStatus,
   resolveScheduleStatus,
@@ -31,6 +33,15 @@ class MemoryStorage {
 }
 
 globalThis.localStorage = new MemoryStorage();
+
+test("payment labels distinguish demo payments from unpaid and legacy schedules", () => {
+  assert.equal(getPaymentMethodLabel("demo_online"), "Thanh toán online mô phỏng");
+  assert.equal(getPaymentMethodLabel("in_store"), "Thanh toán tại cửa hàng");
+  assert.equal(getPaymentStatusLabel("demo_paid"), "Đã thanh toán (mô phỏng)");
+  assert.equal(getPaymentStatusLabel("unpaid"), "Chưa thanh toán");
+  assert.equal(getPaymentStatusLabel("paid_at_store"), "Đã thu tại cửa hàng (demo)");
+  assert.equal(getPaymentStatusLabel(""), "Chưa ghi nhận");
+});
 
 test("sample admin and user can log in; invalid credentials are rejected", () => {
   assert.equal(login("admin", "123456"), true);

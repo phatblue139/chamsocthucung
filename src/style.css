@@ -1283,6 +1283,18 @@ ul { margin: 0; padding: 0; list-style: none; }
   box-shadow: 0 0 0 4px rgba(255, 140, 66, 0.15);
 }
 
+.user-payment-summary {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--primary-soft);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 .user-form-full {
   grid-column: 1 / -1;
 }
