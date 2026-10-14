@@ -1,14 +1,22 @@
+```html
 <!doctype html>
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Khu vực người dùng NEKO - đăng ký và theo dõi lịch chăm sóc thú cưng." />
+    <meta
+      name="description"
+      content="Khu vực người dùng NEKO - đăng ký và theo dõi lịch chăm sóc thú cưng."
+    />
     <title>Khu vực người dùng | NEKO</title>
+
     <script>
       try {
-        if (localStorage.getItem("neko:admin") === "true" || !localStorage.getItem("neko:user")) {
+        if (
+          localStorage.getItem("neko:admin") === "true" ||
+          !localStorage.getItem("neko:user")
+        ) {
           location.replace("/");
         }
       } catch (error) {
@@ -16,78 +24,133 @@
       }
     </script>
   </head>
+
   <body class="user-page">
     <div data-site-header></div>
 
     <main class="user-main">
       <div class="container">
         <section class="user-welcome">
-          <p>Đăng ký lịch chăm sóc cho bé yêu và theo dõi các yêu cầu của bạn tại đây.</p>
+          <p>
+            Đăng ký lịch chăm sóc cho bé yêu và theo dõi các yêu cầu
+            của bạn tại đây.
+          </p>
         </section>
 
         <div class="user-content-grid">
+          <!-- FORM ĐĂNG KÝ LỊCH -->
           <section class="user-panel">
             <div class="user-panel-heading">
               <div>
                 <p class="eyebrow">Tạo yêu cầu mới</p>
                 <h2>Đăng ký lịch chăm sóc</h2>
               </div>
+
               <span class="user-panel-badge">Gửi tới NEKO</span>
             </div>
-            <form id="userScheduleForm" class="care-form user-schedule-form">
+
+            <form
+              id="userScheduleForm"
+              class="care-form user-schedule-form"
+            >
+              <!-- Chọn thú cưng -->
               <div class="care-form-group">
-                <label for="userPetName">Tên thú cưng</label>
-                <input type="text" id="userPetName" name="petName" placeholder="Ví dụ: Miu" required />
-              </div>
-              <div class="care-form-group">
-                <label for="userCareType">Loại chăm sóc</label>
-                <select id="userCareType" name="careType" required>
-                  <option value="">-- Chọn loại chăm sóc --</option>
-                  <option value="Tắm">Tắm - 100.000đ</option>
-                  <option value="Cắt móng">Cắt móng - 50.000đ</option>
-                  <option value="Tiêm phòng">Tiêm phòng - 200.000đ</option>
-                  <option value="Tẩy giun">Tẩy giun - 150.000đ</option>
-                  <option value="Cho ăn">Cho ăn - 50.000đ</option>
-                  <option value="Khác">Khác - theo yêu cầu</option>
+                <label for="userPetId">Thú cưng *</label>
+                <select id="userPetId" name="petId" required>
+                  <option value="">-- Chọn thú cưng --</option>
                 </select>
               </div>
-              <div class="care-form-group" id="userCareTypeOtherGroup" hidden>
-                <label for="userCareTypeOther">Tên dịch vụ khác</label>
+
+              <!-- Chọn dịch vụ -->
+              <div class="care-form-group">
+                <label for="userCareType">Dịch vụ *</label>
+                <select id="userCareType" name="serviceId" required>
+                  <option value="">-- Chọn dịch vụ --</option>
+                  <option value="SERVICE001">Tắm + cắt móng</option>
+                  <option value="SERVICE002">Tắm vệ sinh</option>
+                  <option value="SERVICE003">Cắt móng</option>
+                  <option value="SERVICE004">Tiêm phòng</option>
+                  <option value="SERVICE005">Tẩy giun</option>
+                </select>
+              </div>
+
+              <!-- Chọn ngày -->
+              <div class="care-form-group">
+                <label for="userScheduleDate">Ngày *</label>
                 <input
-                  type="text"
-                  id="userCareTypeOther"
-                  name="careTypeOther"
-                  placeholder="Nhập tên dịch vụ chăm sóc"
+                  type="date"
+                  id="userScheduleDate"
+                  name="date"
+                  required
                 />
               </div>
+
+              <!-- Chọn giờ -->
               <div class="care-form-group">
-                <label for="userScheduleDate">Ngày</label>
-                <input type="date" id="userScheduleDate" name="date" required />
+                <label for="userScheduleTime">Giờ *</label>
+                <select id="userScheduleTime" name="time" required>
+                  <option value="">-- Chọn giờ --</option>
+                </select>
               </div>
-              <div class="care-form-group">
-                <label for="userScheduleTime">Giờ</label>
-                <select id="userScheduleTime" name="time" required></select>
-              </div>
+
+              <!-- Ghi chú -->
               <div class="care-form-group user-form-full">
                 <label for="userScheduleNote">Ghi chú</label>
-                <textarea id="userScheduleNote" name="note" rows="3" maxlength="500" placeholder="Thông tin thêm cho NEKO..."></textarea>
+                <textarea
+                  id="userScheduleNote"
+                  name="note"
+                  rows="3"
+                  maxlength="500"
+                  placeholder="Thông tin thêm cho NEKO..."
+                ></textarea>
               </div>
+
+              <!-- Tổng tiền -->
+              <div class="care-form-group user-form-full">
+                <label for="userSchedulePrice">Tổng tiền</label>
+                <input
+                  type="text"
+                  id="userSchedulePrice"
+                  value="0 đ"
+                  readonly
+                />
+              </div>
+
+              <!-- Nút đăng ký -->
               <div class="care-form-actions">
-                <button type="submit" class="care-btn care-btn-add">Đăng ký lịch</button>
+                <button
+                  type="submit"
+                  class="care-btn care-btn-add"
+                >
+                  Xác nhận lịch
+                </button>
               </div>
             </form>
-            <p class="user-form-message" id="userScheduleMessage" role="status" aria-live="polite"></p>
+
+            <p
+              class="user-form-message"
+              id="userScheduleMessage"
+              role="status"
+              aria-live="polite"
+            ></p>
           </section>
 
+          <!-- DANH SÁCH LỊCH CỦA NGƯỜI DÙNG -->
           <section class="user-panel user-history-panel">
             <div class="user-panel-heading">
               <div>
                 <p class="eyebrow">Theo dõi</p>
                 <h2>Lịch của tôi</h2>
               </div>
+
               <span class="care-count" id="userScheduleCount"></span>
             </div>
-            <div class="user-schedule-list" id="userScheduleList"></div>
+
+            <div
+              class="user-schedule-list"
+              id="userScheduleList"
+            ></div>
+
             <p class="care-empty" id="userScheduleEmpty" hidden>
               Bạn chưa có lịch chăm sóc nào. Hãy đăng ký lịch đầu tiên nhé!
             </p>
@@ -99,3 +162,4 @@
     <script type="module" src="/src/user.js"></script>
   </body>
 </html>
+```

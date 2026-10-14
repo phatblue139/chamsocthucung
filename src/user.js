@@ -1,23 +1,31 @@
+
 import "./style.css";
 import { getCurrentUser } from "./auth.js";
 import { initSiteHeader } from "./siteHeader.js";
+
 import {
-  CARE_TYPE_OTHER,
-  CLOSE_TIME,
-  OPEN_TIME,
-  SCHEDULE_STATUS,
   SCHEDULE_STORAGE_KEY,
-  formatCurrency,
-  getCareTypePrice,
   getNextScheduleId,
   getScheduleStatusClass,
-  getTimeOptions,
   loadSchedules,
   resolveScheduleStatus,
   saveSchedules,
 } from "./careScheduleData.js";
 
+import { loadMyPets, PET_STORAGE_KEY } from "./petData.js";
+
 initSiteHeader();
+
+const OPEN_TIME = "08:00";
+const CLOSE_TIME = "19:00";
+
+const SERVICES = [
+  { id: "SERVICE001", name: "Tắm + cắt móng", price: 100000 },
+  { id: "SERVICE002", name: "Tắm vệ sinh", price: 70000 },
+  { id: "SERVICE003", name: "Cắt móng", price: 30000 },
+  { id: "SERVICE004", name: "Tiêm phòng", price: 150000 },
+  { id: "SERVICE005", name: "Tẩy giun", price: 50000 },
+];
 
 const currentUser = getCurrentUser();
 
@@ -33,235 +41,353 @@ function initUserView(user) {
   const list = document.getElementById("userScheduleList");
   const empty = document.getElementById("userScheduleEmpty");
   const count = document.getElementById("userScheduleCount");
+
+  const petInput = document.getElementById("userPetId");
+  const serviceInput = document.getElementById("userCareType");
+  const priceInput = document.getElementById("userSchedulePrice");
+
+  if (!form) return;
+
   let schedules = loadSchedules();
+  let pets = getMyPets(user);
 
-  const dateInput = form?.elements.namedItem("date");
-  const timeInput = form?.elements.namedItem("time");
-  const careTypeInput = form?.elements.namedItem("careType");
-  const careTypeOtherInput = form?.elements.namedItem("careTypeOther");
-  const careTypeOtherGroup = document.getElementById("userCareTypeOtherGroup");
-  populateTimeOptions();
+  const dateInput = form.elements.namedItem("date");
+  const timeInput = form.elements.namedItem("time");
+
+  renderPetOptions();
+  updatePrice();
   applyScheduleLimits();
-  syncCareTypeOther();
-
-  careTypeInput?.addEventListener("change", syncCareTypeOther);
 
   dateInput?.addEventListener("change", applyTimeLimits);
+  serviceInput?.addEventListener("change", updatePrice);
+
   applyTimeLimits();
+
+  // Lấy thú cưng thuộc tài khoản đang đăng nhập
+  function getMyPets(currentUser) {
+    // loadMyPets lọc bằng ID thật của tài khoản đang đăng nhập.
+    return loadMyPets();
+  }
+
+  // Hiển thị danh sách thú cưng để người dùng lựa chọn
+  function renderPetOptions() {
+    if (!petInput) return;
+
+    petInput.replaceChildren();
+
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = pets.length
+      ? "-- Chọn thú cưng --"
+      : "-- Bạn chưa có thú cưng --";
+
+    petInput.appendChild(defaultOption);
+
+    pets.forEach((pet) => {
+      const option = document.createElement("option");
+      option.value = String(pet.petId ?? pet.id);
+      option.textContent = pet.name || pet.petName || "Thú cưng";
+      petInput.appendChild(option);
+    });
+
+    petInput.disabled = pets.length === 0;
+  }
+
+  // Tìm thú cưng đang được chọn
+  function getSelectedPet() {
+    const petId = String(petInput?.value || "");
+
+    return pets.find(
+      (pet) => String(pet.petId ?? pet.id) === petId
+    );
+  }
+
+  // Cập nhật giá dịch vụ
+  function updatePrice() {
+    const service = SERVICES.find(
+      (item) => item.id === serviceInput?.value
+    );
+
+    if (priceInput) {
+      priceInput.value = service
+        ? `${service.price.toLocaleString("vi-VN")} đ`
+        : "0 đ";
+    }
+  }
 
   function currentDate() {
     const now = new Date();
-    return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+
+    return new Date(
+      now.getTime() - now.getTimezoneOffset() * 60000
+    )
+      .toISOString()
+      .slice(0, 10);
   }
 
   function currentTime() {
     const now = new Date();
-    return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-  }
 
-  function populateTimeOptions() {
-    if (!timeInput) return;
-    const placeholder = document.createElement("option");
-    placeholder.value = "";
-    placeholder.textContent = "-- Chọn giờ --";
-    const options = getTimeOptions().map((value) => {
-      const option = document.createElement("option");
-      option.value = value;
-      option.textContent = value;
-      return option;
-    });
-    timeInput.replaceChildren(placeholder, ...options);
-  }
-
-  function applyTimeLimits() {
-    if (!timeInput) return;
-    const earliest =
-      dateInput?.value === dateInput.min && currentTime() > OPEN_TIME
-        ? ceilToFiveMinutes(currentTime())
-        : OPEN_TIME;
-    const previous = timeInput.value;
-    timeInput.replaceChildren();
-    timeOptions()
-      .filter((value) => value >= earliest && value <= CLOSE_TIME)
-      .forEach((value) => {
-        const option = document.createElement("option");
-        option.value = value;
-        option.textContent = value;
-        timeInput.appendChild(option);
-      });
-    if (previous && timeInput.value !== previous) timeInput.value = previous;
-    if (!timeInput.value) timeInput.selectedIndex = 0;
+    return `${String(now.getHours()).padStart(2, "0")}:${String(
+      now.getMinutes()
+    ).padStart(2, "0")}`;
   }
 
   function timeOptions() {
     const values = [];
-    for (let minutes = 8 * 60; minutes <= 19 * 60; minutes += 5) {
-      values.push(`${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`);
+
+    for (
+      let minutes = 8 * 60;
+      minutes <= 19 * 60;
+      minutes += 5
+    ) {
+      values.push(
+        `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(
+          minutes % 60
+        ).padStart(2, "0")}`
+      );
     }
+
     return values;
   }
 
   function ceilToFiveMinutes(value) {
     const [hour, minute] = value.split(":").map(Number);
     const rounded = Math.ceil(minute / 5) * 5;
-    if (rounded < 60) return `${String(hour).padStart(2, "0")}:${String(rounded).padStart(2, "0")}`;
-    if (hour < 23) return `${String(hour + 1).padStart(2, "0")}:00`;
+
+    if (rounded < 60) {
+      return `${String(hour).padStart(2, "0")}:${String(
+        rounded
+      ).padStart(2, "0")}`;
+    }
+
+    if (hour < 23) {
+      return `${String(hour + 1).padStart(2, "0")}:00`;
+    }
+
     return CLOSE_TIME;
   }
 
   function applyScheduleLimits() {
-    if (dateInput) dateInput.min = currentDate();
+    if (dateInput) {
+      dateInput.min = currentDate();
+    }
+
     applyTimeLimits();
   }
 
-  function syncCareTypeOther() {
-    const isOther = careTypeInput?.value === CARE_TYPE_OTHER;
-    if (careTypeOtherGroup) careTypeOtherGroup.hidden = !isOther;
-    if (careTypeOtherInput) {
-      careTypeOtherInput.required = isOther;
-      careTypeOtherInput.value = isOther ? careTypeOtherInput.value : "";
+  function applyTimeLimits() {
+    if (!timeInput) return;
+
+    const earliest =
+      dateInput?.value === dateInput.min &&
+      currentTime() > OPEN_TIME
+        ? ceilToFiveMinutes(currentTime())
+        : OPEN_TIME;
+
+    const previous = timeInput.value;
+
+    timeInput.replaceChildren();
+
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = "-- Chọn giờ --";
+    timeInput.appendChild(defaultOption);
+
+    timeOptions()
+      .filter(
+        (value) => value >= earliest && value <= CLOSE_TIME
+      )
+      .forEach((value) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        timeInput.appendChild(option);
+      });
+
+    if (previous) {
+      timeInput.value = previous;
+    }
+
+    if (timeInput.value !== previous) {
+      timeInput.value = "";
     }
   }
 
-  function resolveCareType() {
-    const selected = String(careTypeInput?.value || "").trim();
-    if (selected === CARE_TYPE_OTHER) {
-      return String(careTypeOtherInput?.value || "").trim();
-    }
-    return selected;
-  }
-
-  form?.addEventListener("submit", (event) => {
+  // Đăng ký lịch chăm sóc
+  form.addEventListener("submit", (event) => {
     event.preventDefault();
+
     if (!form.checkValidity()) {
       form.reportValidity();
       return;
     }
 
-    const formData = new FormData(form);
-    const today = currentDate();
-    if (String(formData.get("date") || "") < today) {
-      showMessage("Bạn không thể chọn ngày đã qua. Vui lòng chọn từ hôm nay trở đi.", "error");
+    pets = getMyPets(user);
+    renderPetOptions();
+
+    const selectedPet = getSelectedPet();
+
+    if (!selectedPet) {
+      showMessage(
+        "Bạn cần chọn thú cưng của mình trước khi đăng ký.",
+        "error"
+      );
       return;
     }
 
+    const formData = new FormData(form);
+
+    const date = String(formData.get("date") || "").trim();
     const time = String(formData.get("time") || "").trim();
-    if (time && (time < OPEN_TIME || time > CLOSE_TIME)) {
-      showMessage("Thời gian đặt lịch chỉ từ 08:00 đến 19:00.", "error");
+    const note = String(formData.get("note") || "").trim();
+
+    if (date < currentDate()) {
+      showMessage(
+        "Bạn không thể chọn ngày đã qua. Vui lòng chọn lại.",
+        "error"
+      );
       return;
     }
-    if (time && Number(time.split(":")[1]) % 5 !== 0) {
-      showMessage("Giờ đặt lịch chỉ chọn các mốc 00, 05, 10... phút.", "error");
+
+    if (time < OPEN_TIME || time > CLOSE_TIME) {
+      showMessage(
+        "Thời gian đặt lịch chỉ từ 08:00 đến 19:00.",
+        "error"
+      );
       return;
     }
-    if (formData.get("date") === today && time && time < currentTime()) {
-      showMessage("Thời gian phải từ 08:00 đến 19:00 và không được ở quá khứ.", "error");
+
+    if (Number(time.split(":")[1]) % 5 !== 0) {
+      showMessage(
+        "Vui lòng chọn giờ theo các mốc 5 phút.",
+        "error"
+      );
+      return;
+    }
+
+    if (date === currentDate() && time < currentTime()) {
+      showMessage(
+        "Bạn không thể đặt lịch vào thời gian đã qua.",
+        "error"
+      );
+      return;
+    }
+
+    if (note.length > 500) {
+      showMessage(
+        "Ghi chú không được vượt quá 500 ký tự.",
+        "error"
+      );
+      return;
+    }
+
+    const service = SERVICES.find(
+      (item) => item.id === serviceInput.value
+    );
+
+    if (!service) {
+      showMessage("Vui lòng chọn dịch vụ.", "error");
       return;
     }
 
     const latestSchedules = loadSchedules();
-    const careType = resolveCareType();
+
+    const nextId = getNextScheduleId(latestSchedules);
+    const nextBookingNumber = latestSchedules.reduce((max, item) => {
+      const match = String(item.bookingId || "").match(/^BOOK(\d+)$/i);
+      return match ? Math.max(max, Number(match[1])) : max;
+    }, 0) + 1;
+
     const schedule = {
-      id: getNextScheduleId(latestSchedules),
-      petName: String(formData.get("petName") || "").trim(),
-      careType,
-      price: getCareTypePrice(careType),
-      date: String(formData.get("date") || "").trim(),
-      time: String(formData.get("time") || "").trim(),
-      note: String(formData.get("note") || "").trim(),
-      customerUsername: user.username,
-      customerName: user.fullName || user.username,
+      id: nextId,
+      bookingId: `BOOK${String(nextBookingNumber).padStart(3, "0")}`,
+      userId: String(user.id ?? user.userId ?? ""),
+      customerUsername: user.username || "",
+      customerName: user.fullName || user.username || "",
       customerPhone: user.phone || "",
+
+      petId: String(selectedPet.petId ?? selectedPet.id),
+      serviceId: service.id,
+      serviceName: service.name,
+      price: service.price,
+
+      date,
+      time,
+      note,
+
       status: "Chờ xác nhận",
+      bookingStatus: "Chờ thanh toán",
+      paymentStatus: "Chưa thanh toán",
+
       source: "user",
       createdAt: new Date().toISOString(),
     };
 
-    if (schedule.note.length > 500) {
-      showMessage("Ghi chú không được vượt quá 500 ký tự.", "error");
-      return;
-    }
-
     const nextSchedules = [...latestSchedules, schedule];
+
     if (!saveSchedules(nextSchedules)) {
-      showMessage("Không thể lưu lịch. Vui lòng thử lại.", "error");
+      showMessage(
+        "Không thể lưu lịch. Vui lòng thử lại.",
+        "error"
+      );
       return;
     }
 
     schedules = nextSchedules;
+
     form.reset();
+    updatePrice();
     applyScheduleLimits();
-    syncCareTypeOther();
     render();
-    showMessage("Đã gửi lịch chăm sóc tới NEKO. Chúng tôi sẽ liên hệ xác nhận sớm nhất.", "success");
+
+    showMessage(
+      "Đã đăng ký lịch thành công! NEKO sẽ liên hệ xác nhận.",
+      "success"
+    );
   });
 
   function showMessage(text, type) {
     if (!message) return;
+
     message.textContent = text;
     message.className = `user-form-message ${type}`;
   }
 
-  function cancelUserSchedule(id) {
-    const latestSchedules = loadSchedules();
-    const schedule = latestSchedules.find((item) =>
-      Number(item.id) === Number(id) &&
-      (item.customerUsername || item.ownerUsername) === user.username &&
-      !item.deletedAt,
-    );
-
-    if (!schedule) {
-      schedules = latestSchedules;
-      render();
-      showMessage("Không tìm thấy lịch để hủy. Vui lòng tải lại trang.", "error");
-      return;
-    }
-
-    const status = resolveScheduleStatus(schedule);
-    if (![SCHEDULE_STATUS.PENDING, SCHEDULE_STATUS.CONFIRMED].includes(status)) {
-      schedules = latestSchedules;
-      render();
-      showMessage("Lịch này không thể hủy.", "error");
-      return;
-    }
-
-    if (!confirm("Bạn có chắc muốn hủy lịch chăm sóc này không?")) return;
-
-    const nextSchedules = latestSchedules.map((item) =>
-      Number(item.id) === Number(id) &&
-      (item.customerUsername || item.ownerUsername) === user.username
-        ? { ...item, status: SCHEDULE_STATUS.CANCELLED, cancelledAt: new Date().toISOString() }
-        : item,
-    );
-
-    if (!saveSchedules(nextSchedules)) {
-      showMessage("Không thể hủy lịch. Vui lòng thử lại.", "error");
-      return;
-    }
-
-    schedules = nextSchedules;
-    render();
-    showMessage("Đã hủy lịch chăm sóc.", "success");
-  }
-
+  // Cập nhật nếu lịch thay đổi ở tab khác
   window.addEventListener("storage", (event) => {
-    if (event.key !== SCHEDULE_STORAGE_KEY) return;
-    schedules = loadSchedules();
-    render();
+    if (event.key === SCHEDULE_STORAGE_KEY) {
+      schedules = loadSchedules();
+      render();
+    }
+    if (event.key === PET_STORAGE_KEY) {
+      pets = getMyPets(user);
+      renderPetOptions();
+      render();
+    }
   });
 
+  // Hiển thị lịch của tài khoản hiện tại
   function render() {
     if (!list || !empty || !count) return;
 
     const userSchedules = schedules
-      .filter((schedule) => !schedule.deletedAt && (schedule.customerUsername || schedule.ownerUsername) === user.username)
+      .filter((schedule) => {
+        return (
+          schedule.customerUsername === user.username ||
+          String(schedule.userId || "") ===
+            String(user.id ?? user.userId ?? user.username ?? "")
+        );
+      })
       .sort((first, second) => {
         const firstValue = `${first.date || ""} ${first.time || ""}`;
         const secondValue = `${second.date || ""} ${second.time || ""}`;
+
         return firstValue.localeCompare(secondValue);
       });
 
     list.replaceChildren();
+
     count.textContent = `${userSchedules.length} lịch`;
     empty.hidden = userSchedules.length > 0;
 
@@ -272,92 +398,47 @@ function initUserView(user) {
       const heading = document.createElement("div");
       heading.className = "user-schedule-card-heading";
 
-      const price = formatCurrency(schedule.price);
+      const petHeading = document.createElement("h3");
 
-      const title = document.createElement("div");
-      title.className = "user-schedule-card-title";
+      const pet = pets.find(
+        (item) =>
+          String(item.petId ?? item.id) === String(schedule.petId)
+      );
 
-      const petName = document.createElement("h3");
-      petName.textContent = schedule.petName || "Thú cưng";
-      title.appendChild(petName);
+      petHeading.textContent = pet?.name || "Thú cưng";
 
-      const timeTag = document.createElement("span");
-      timeTag.className = "user-schedule-time";
-      timeTag.textContent = schedule.time || "Chưa chọn giờ";
-      title.appendChild(timeTag);
-
-      heading.appendChild(title);
+      heading.appendChild(petHeading);
 
       const status = document.createElement("span");
       const statusValue = resolveScheduleStatus(schedule);
-      status.className = `user-schedule-status ${getScheduleStatusClass(statusValue)}`;
+
+      status.className =
+        `user-schedule-status ${getScheduleStatusClass(statusValue)}`;
+
       status.textContent = statusValue;
       heading.appendChild(status);
 
+      card.appendChild(heading);
+
       const details = document.createElement("div");
       details.className = "user-schedule-details";
-      details.textContent = `${formatDate(schedule.date)} · ${schedule.time || ""} · ${schedule.careType || "Chăm sóc"}${price ? ` · ${price}` : ""}`;
-      card.appendChild(heading, details);
 
-      const hint = document.createElement("span");
-      const toggleButton = document.createElement("button");
-      toggleButton.type = "button";
-      toggleButton.className = "user-schedule-hint";
-      toggleButton.setAttribute("aria-expanded", "false");
-      toggleButton.setAttribute("aria-controls", `userScheduleDetails-${schedule.id}`);
-      toggleButton.textContent = "Xem chi tiết lịch";
-      card.appendChild(toggleButton);
+      details.textContent =
+        `${formatDate(schedule.date)} · ${schedule.time || ""} · ` +
+        `${schedule.serviceName || schedule.careType || "Chăm sóc"} · ` +
+        `${Number(schedule.price || 0).toLocaleString("vi-VN")} đ`;
 
-      const more = document.createElement("div");
-      more.className = "user-schedule-more";
-      more.id = `userScheduleDetails-${schedule.id}`;
-      more.hidden = true;
-      more.append(
-        createScheduleRow("Ngày", formatDate(schedule.date)),
-        createScheduleRow("Giờ đặt lịch", schedule.time || "Chưa chọn"),
-        createScheduleRow("Loại chăm sóc", schedule.careType || "Chăm sóc"),
-        createScheduleRow("Giá dịch vụ", price || "Theo yêu cầu"),
-        createScheduleRow("Trạng thái", statusValue),
-        createScheduleRow("Ghi chú", schedule.note || "Không có"),
-      );
+      card.appendChild(details);
 
-      if ([SCHEDULE_STATUS.PENDING, SCHEDULE_STATUS.CONFIRMED].includes(statusValue)) {
-        const cancelButton = document.createElement("button");
-        cancelButton.type = "button";
-        cancelButton.className = "user-schedule-cancel";
-        cancelButton.textContent = "Hủy lịch";
-        cancelButton.addEventListener("click", () => cancelUserSchedule(schedule.id));
-        more.appendChild(cancelButton);
+      if (schedule.note) {
+        const note = document.createElement("p");
+        note.className = "user-schedule-note";
+        note.textContent = schedule.note;
+        card.appendChild(note);
       }
-      card.appendChild(more);
-
-      function toggle() {
-        const isOpen = card.classList.toggle("is-open");
-        toggleButton.setAttribute("aria-expanded", String(isOpen));
-        more.hidden = !isOpen;
-        toggleButton.textContent = isOpen ? "Thu gọn" : "Xem chi tiết lịch";
-      }
-
-      toggleButton.addEventListener("click", toggle);
 
       list.appendChild(card);
     });
-  }
-
-  function createScheduleRow(label, value) {
-    const row = document.createElement("div");
-    row.className = "user-schedule-detail-row";
-
-    const term = document.createElement("span");
-    term.className = "user-schedule-detail-label";
-    term.textContent = label;
-
-    const desc = document.createElement("span");
-    desc.className = "user-schedule-detail-value";
-    desc.textContent = value;
-
-    row.append(term, desc);
-    return row;
   }
 
   render();
@@ -365,6 +446,11 @@ function initUserView(user) {
 
 function formatDate(value) {
   if (!value) return "Chưa chọn ngày";
+
   const [year, month, day] = value.split("-");
-  return day && month && year ? `${day}/${month}/${year}` : value;
+
+  return day && month && year
+    ? `${day}/${month}/${year}`
+    : value;
 }
+

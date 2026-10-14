@@ -1,6 +1,41 @@
 [
-  { "id": 1, "name": "Milu", "species": "Chó", "breed": "Corgi", "age": 3, "owner": "Nguyễn Minh Anh", "status": "Đang chăm sóc" },
-  { "id": 2, "name": "Misa", "species": "Mèo", "breed": "Anh lông ngắn", "age": 2, "owner": "Trần Thu Hà", "status": "Đang chăm sóc" },
-  { "id": 3, "name": "Lucky", "species": "Chó", "breed": "Golden Retriever", "age": 5, "owner": "Lê Hoàng Nam", "status": "Chờ lịch" },
-  { "id": 4, "name": "Bông", "species": "Mèo", "breed": "Mèo mướp", "age": 1, "owner": "Phạm Ngọc Lan", "status": "Đang chăm sóc" }
+  {
+    "petId": "PET001",
+    "userId": "demo-user",
+    "name": "Milo",
+    "species": "Chó",
+    "breed": "Poodle",
+    "age": 3,
+    "gender": "Đực",
+    "weight": 5,
+    "image": "",
+    "owner": "Nguyễn Minh Anh",
+    "status": "Đang chăm sóc"
+  },
+  {
+    "petId": "PET002",
+    "userId": "demo-user",
+    "name": "Miu",
+    "species": "Mèo",
+    "breed": "Mèo Anh lông ngắn",
+    "age": 2,
+    "gender": "Cái",
+    "weight": 4,
+    "image": "",
+    "owner": "Nguyễn Minh Anh",
+    "status": "Chờ lịch"
+  },
+  {
+    "petId": "PET003",
+    "userId": "demo-user-2",
+    "name": "Bông",
+    "species": "Chó",
+    "breed": "Corgi",
+    "age": 4,
+    "gender": "Cái",
+    "weight": 8,
+    "image": "",
+    "owner": "Trần Văn B",
+    "status": "Đang chăm sóc"
+  }
 ]
