@@ -9,6 +9,8 @@ import {
 import { filterPets, getAdminStatistics } from "../src/adminData.js";
 import {
   SCHEDULE_STATUS,
+  getCareTypePrice,
+  getPetSittingPrice,
   getScheduleStatusClass,
   normalizeStatus,
   resolveScheduleStatus,
@@ -86,6 +88,19 @@ test("schedule status is normalized from aliases and falls back by source", () =
   assert.equal(getScheduleStatusClass(SCHEDULE_STATUS.CONFIRMED), "confirmed");
   assert.equal(getScheduleStatusClass(SCHEDULE_STATUS.CANCELLED), "cancelled");
   assert.equal(getScheduleStatusClass("trạng thái lạ"), "pending");
+});
+
+test("multiple care services add their prices together", () => {
+  assert.equal(getCareTypePrice("Tắm · Cắt móng"), 150000);
+  assert.equal(getCareTypePrice(["Tắm", "Tiêm phòng"]), 300000);
+  assert.equal(getCareTypePrice("Dịch vụ khác"), 0);
+});
+
+test("pet sitting price uses hourly rates with a daily cap per 24 hours", () => {
+  assert.equal(getPetSittingPrice("2026-10-15", "22:00", "2026-10-16", "02:00"), 40000);
+  assert.equal(getPetSittingPrice("2026-10-15", "08:00", "2026-10-16", "08:00"), 150000);
+  assert.equal(getPetSittingPrice("2026-10-15", "08:00", "2026-10-16", "09:00"), 160000);
+  assert.equal(getPetSittingPrice("2026-10-15", "08:00", "2026-10-15", "07:55"), 0);
 });
 
 test("dashboard statistics ignore unknown status values", () => {

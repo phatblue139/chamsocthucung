@@ -191,6 +191,29 @@ function createCell(value) {
     return cell;
 }
 
+function createCareTypeCell(schedule) {
+    const cell = document.createElement("td");
+    cell.className = "care-type-cell";
+
+    if (!Array.isArray(schedule.petServices) || !schedule.petServices.length) {
+        cell.textContent = schedule.careType || "";
+        return cell;
+    }
+
+    schedule.petServices.forEach((item) => {
+        const entry = document.createElement("div");
+        entry.className = "care-type-entry";
+        const petName = document.createElement("strong");
+        petName.textContent = item.petName || "Thú cưng";
+        const services = document.createElement("span");
+        services.textContent = Array.isArray(item.services) ? item.services.join(", ") : "Chăm sóc";
+        entry.append(petName, document.createTextNode(": "), services);
+        cell.appendChild(entry);
+    });
+
+    return cell;
+}
+
 function render() {
     if (!careList || !emptyMsg || !careCount) return;
 
@@ -225,10 +248,10 @@ function render() {
             createCell(customer),
             createCell(phone),
             createCell(schedule.petName),
-            createCell(schedule.careType),
+            createCareTypeCell(schedule),
             createCell(priceText),
-            createCell(schedule.date),
-            createCell(schedule.time),
+            createCell(schedule.endDate ? `${schedule.date} → ${schedule.endDate}` : schedule.date),
+            createCell(schedule.endDate ? `${schedule.time} → ${schedule.endTime || ""}` : schedule.time),
             createCell(schedule.note),
             createStatusCell(status),
         );

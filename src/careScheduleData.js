@@ -86,6 +86,9 @@ export const SCHEDULE_STATUS = {
 };
 
 export const CARE_TYPE_OTHER = "Khác";
+export const CARE_TYPE_PET_SITTING = "Trông coi thú cưng";
+export const PET_SITTING_HOURLY_RATE = 10000;
+export const PET_SITTING_DAILY_RATE = 150000;
 
 export const CARE_TYPES = [
   { value: "Tắm", price: 100000 },
@@ -101,7 +104,27 @@ const CARE_TYPE_PRICES = CARE_TYPES.reduce((map, item) => {
 }, {});
 
 export function getCareTypePrice(careType) {
-  return CARE_TYPE_PRICES[String(careType || "").trim()] ?? 0;
+  const services = Array.isArray(careType)
+    ? careType
+    : String(careType || "").split(" · ");
+  return services.reduce((total, service) => total + (CARE_TYPE_PRICES[String(service || "").trim()] ?? 0), 0);
+}
+
+export function getPetSittingPrice(startDate, startTime, endDate, endTime) {
+  const toMinutes = (dateValue, timeValue) => {
+    const [year, month, day] = String(dateValue || "").split("-").map(Number);
+    const [hour, minute] = String(timeValue || "").split(":").map(Number);
+    if (![year, month, day, hour, minute].every(Number.isFinite)) return NaN;
+    return Math.floor(Date.UTC(year, month - 1, day) / 60000) + hour * 60 + minute;
+  };
+
+  const duration = toMinutes(endDate, endTime) - toMinutes(startDate, startTime);
+  if (!Number.isFinite(duration) || duration <= 0) return 0;
+
+  const fullDays = Math.floor(duration / (24 * 60));
+  const remainingHours = Math.ceil((duration % (24 * 60)) / 60);
+  const remainingPrice = Math.min(remainingHours * PET_SITTING_HOURLY_RATE, PET_SITTING_DAILY_RATE);
+  return fullDays * PET_SITTING_DAILY_RATE + remainingPrice;
 }
 
 export function isKnownCareType(careType) {
