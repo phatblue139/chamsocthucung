@@ -35,7 +35,7 @@ if (!currentUser) {
 function initUserView(user) {
   const form = document.getElementById("userScheduleForm");
   const message = document.getElementById("userScheduleMessage");
-  const petSittingEstimate = document.getElementById("userPetSittingEstimate");
+  const scheduleTotal = document.getElementById("userScheduleTotal");
   const list = document.getElementById("userScheduleList");
   const empty = document.getElementById("userScheduleEmpty");
   const count = document.getElementById("userScheduleCount");
@@ -80,12 +80,12 @@ function initUserView(user) {
   dateInput?.addEventListener("change", () => {
     if (returnDateInput) returnDateInput.min = dateInput.value || currentDate();
     applyTimeLimits();
-    updatePetSittingEstimate();
+    updateScheduleTotal();
   });
   applyTimeLimits();
-  timeInput?.addEventListener("change", updatePetSittingEstimate);
-  returnDateInput?.addEventListener("change", updatePetSittingEstimate);
-  returnTimeInput?.addEventListener("change", updatePetSittingEstimate);
+  timeInput?.addEventListener("change", updateScheduleTotal);
+  returnDateInput?.addEventListener("change", updateScheduleTotal);
+  returnTimeInput?.addEventListener("change", updateScheduleTotal);
   petSelect?.addEventListener("change", syncPetSittingFields);
   petServicesContainer?.addEventListener("change", (event) => {
     if (event.target.matches('input[name="careTypes"]')) syncPetSittingFields();
@@ -214,30 +214,44 @@ function initUserView(user) {
     if (scheduleTimeLabel) scheduleTimeLabel.textContent = isPetSitting ? "Giờ nhận thú cưng" : "Giờ";
     populateTimeOptions();
     applyTimeLimits();
-    updatePetSittingEstimate();
+    updateScheduleTotal();
   }
 
-  function updatePetSittingEstimate() {
-    if (!petSittingEstimate) return;
+  function updateScheduleTotal() {
+    if (!scheduleTotal) return;
     const selectedPetIds = getSelectedPetIds();
     const selectedGroups = Array.from(petServicesContainer?.querySelectorAll(".user-pet-service-group") || [])
-      .filter((group) => selectedPetIds.has(group.dataset.petId) && group.querySelector(
-        `input[name="careTypes"][value="${CARE_TYPE_PET_SITTING}"]:checked`,
-      ));
-    petSittingEstimate.hidden = selectedGroups.length === 0;
-    if (!selectedGroups.length) return;
+      .filter((group) => selectedPetIds.has(group.dataset.petId));
+    let total = 0;
+    let hasSelectedService = false;
+    let hasUnpricedPetSitting = false;
 
-    const startDate = String(dateInput?.value || "");
-    const startTime = String(timeInput?.value || "");
-    const endDate = String(returnDateInput?.value || "");
-    const endTime = String(returnTimeInput?.value || "");
-    const pricePerPet = getPetSittingPrice(startDate, startTime, endDate, endTime);
-    if (!pricePerPet) {
-      petSittingEstimate.textContent = "Chọn ngày giờ nhận và trả để xem phí trông coi.";
+    selectedGroups.forEach((group) => {
+      const services = Array.from(group.querySelectorAll('input[name="careTypes"]:checked'), (input) => input.value);
+      if (!services.length) return;
+      hasSelectedService = true;
+      total += getCareTypePrice(services);
+      if (services.includes(CARE_TYPE_PET_SITTING)) {
+        const sittingPrice = getPetSittingPrice(
+          dateInput?.value,
+          timeInput?.value,
+          returnDateInput?.value,
+          returnTimeInput?.value,
+        );
+        if (sittingPrice) total += sittingPrice;
+        else hasUnpricedPetSitting = true;
+      }
+    });
+
+    scheduleTotal.hidden = !hasSelectedService;
+    if (!hasSelectedService) return;
+    if (hasUnpricedPetSitting) {
+      scheduleTotal.textContent = total
+        ? `Tạm tính: ${formatCurrency(total)} · Chưa gồm phí trông giữ; chọn ngày giờ nhận và trả để tính đủ.`
+        : "Chọn ngày giờ nhận và trả để xem tổng tiền dịch vụ.";
       return;
     }
-
-    petSittingEstimate.textContent = `Phí trông coi: ${formatCurrency(pricePerPet)}/bé · ${selectedGroups.length} bé · Tổng ${formatCurrency(pricePerPet * selectedGroups.length)}.`;
+    scheduleTotal.textContent = `Tổng tiền dịch vụ: ${formatCurrency(total) || "0đ"}.`;
   }
 
   form?.addEventListener("submit", (event) => {
@@ -297,6 +311,11 @@ function initUserView(user) {
         .map((input) => input.value);
       return { pet, services };
     });
+
+    if (!petServiceSelections.length) {
+      showMessage("Vui lòng chọn ít nhất một thú cưng để đặt lịch.", "error");
+      return;
+    }
 
     const missingServices = petServiceSelections.filter(({ services }) => services.length === 0);
     if (missingServices.length) {
