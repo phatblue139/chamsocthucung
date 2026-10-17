@@ -22,7 +22,58 @@
     <main class="user-main">
       <div class="container">
         <section class="user-welcome">
-          <p>Đăng ký lịch chăm sóc cho bé yêu và theo dõi các yêu cầu của bạn tại đây.</p>
+          <p class="user-welcome-tag">
+            🐾 Đăng ký thú cưng của bạn, sau đó đặt lịch chăm sóc cho bé yêu &amp; theo dõi các yêu cầu tại đây.
+          </p>
+        </section>
+
+        <section class="user-panel user-pet-panel">
+          <div class="user-panel-heading">
+            <div>
+              <p class="eyebrow">Hồ sơ thú cưng</p>
+              <h2>Đăng ký thú cưng</h2>
+            </div>
+            <span class="user-panel-badge"><span id="userPetCount">0 thú cưng</span></span>
+          </div>
+          <form id="userPetForm" class="care-form user-pet-form">
+            <p class="user-pet-form-intro">Điền thông tin cơ bản để NEKO lưu hồ sơ và giúp bạn đặt lịch chăm sóc phù hợp.</p>
+            <div class="care-form-group">
+              <label for="userPetName">Tên thú cưng</label>
+              <input type="text" id="userPetName" name="name" placeholder="Ví dụ: Miu" required maxlength="60" />
+            </div>
+            <div class="care-form-group">
+              <label for="userPetSpecies">Loài</label>
+              <select id="userPetSpecies" name="species" required>
+                <option value="Chó">Chó</option>
+                <option value="Mèo">Mèo</option>
+                <option value="Khác">Khác</option>
+              </select>
+            </div>
+            <div class="care-form-group" id="userPetSpeciesOtherGroup" hidden>
+              <label for="userPetSpeciesOther">Tên loài</label>
+              <input type="text" id="userPetSpeciesOther" name="speciesOther" placeholder="Ví dụ: Thỏ" maxlength="40" />
+            </div>
+            <div class="care-form-group">
+              <label for="userPetBreed">Giống <span class="user-pet-optional">(không bắt buộc)</span></label>
+              <input type="text" id="userPetBreed" name="breed" placeholder="Ví dụ: Corgi" maxlength="80" />
+            </div>
+            <div class="care-form-group">
+              <label for="userPetAge">Tuổi (năm)</label>
+              <input type="number" id="userPetAge" name="age" min="0" max="40" step="1" placeholder="Ví dụ: 2" required />
+            </div>
+            <div class="care-form-group">
+              <label for="userPetOwner">Tên chủ nuôi <span class="user-pet-optional">(không bắt buộc)</span></label>
+              <input type="text" id="userPetOwner" name="owner" placeholder="Ví dụ: Nguyễn Văn A" maxlength="80" />
+            </div>
+            <div class="care-form-actions">
+              <button type="submit" class="care-btn care-btn-add">Đăng ký thú cưng</button>
+            </div>
+          </form>
+          <p class="user-form-message" id="userPetMessage" role="status" aria-live="polite"></p>
+          <div class="user-pet-list" id="userPetList"></div>
+          <p class="care-empty" id="userPetEmpty" hidden>
+            Bạn chưa có thú cưng nào. Hãy đăng ký thú cưng đầu tiên nhé!
+          </p>
         </section>
 
         <div class="user-content-grid">
@@ -35,30 +86,13 @@
               <span class="user-panel-badge">Gửi tới NEKO</span>
             </div>
             <form id="userScheduleForm" class="care-form user-schedule-form">
-              <div class="care-form-group">
-                <label for="userPetName">Tên thú cưng</label>
-                <input type="text" id="userPetName" name="petName" placeholder="Ví dụ: Miu" required />
-              </div>
-              <div class="care-form-group">
-                <label for="userCareType">Loại chăm sóc</label>
-                <select id="userCareType" name="careType" required>
-                  <option value="">-- Chọn loại chăm sóc --</option>
-                  <option value="Tắm">Tắm - 100.000đ</option>
-                  <option value="Cắt móng">Cắt móng - 50.000đ</option>
-                  <option value="Tiêm phòng">Tiêm phòng - 200.000đ</option>
-                  <option value="Tẩy giun">Tẩy giun - 150.000đ</option>
-                  <option value="Cho ăn">Cho ăn - 50.000đ</option>
-                  <option value="Khác">Khác - theo yêu cầu</option>
-                </select>
-              </div>
-              <div class="care-form-group" id="userCareTypeOtherGroup" hidden>
-                <label for="userCareTypeOther">Tên dịch vụ khác</label>
-                <input
-                  type="text"
-                  id="userCareTypeOther"
-                  name="careTypeOther"
-                  placeholder="Nhập tên dịch vụ chăm sóc"
-                />
+              <fieldset class="care-form-group user-schedule-pets">
+                <legend>Thú cưng <span class="user-pet-optional">(có thể chọn nhiều)</span></legend>
+                <div class="user-pet-choice-list" id="userPetSelect"></div>
+                <p class="user-pet-choice-hint">Các dịch vụ đã chọn áp dụng cho từng bé; tổng tiền tính theo số thú cưng.</p>
+              </fieldset>
+              <div class="user-pet-services" id="userPetServices">
+                <p class="user-pet-choice-hint">Chọn thú cưng để chọn dịch vụ riêng cho từng bé.</p>
               </div>
               <div class="care-form-group">
                 <label for="userScheduleDate">Ngày</label>
@@ -68,6 +102,15 @@
                 <label for="userScheduleTime">Giờ</label>
                 <select id="userScheduleTime" name="time" required></select>
               </div>
+              <div class="care-form-group" id="userScheduleReturnDateGroup" hidden>
+                <label for="userScheduleReturnDate">Ngày trả thú cưng</label>
+                <input type="date" id="userScheduleReturnDate" name="endDate" />
+              </div>
+              <div class="care-form-group" id="userScheduleReturnTimeGroup" hidden>
+                <label for="userScheduleReturnTime">Giờ trả thú cưng</label>
+                <select id="userScheduleReturnTime" name="endTime"></select>
+              </div>
+              <p class="user-pet-choice-hint user-schedule-total user-form-full" id="userScheduleTotal" aria-live="polite" hidden></p>
               <div class="care-form-group user-form-full">
                 <label for="userScheduleNote">Ghi chú</label>
                 <textarea id="userScheduleNote" name="note" rows="3" maxlength="500" placeholder="Thông tin thêm cho NEKO..."></textarea>
@@ -83,16 +126,34 @@
             <div class="user-panel-heading">
               <div>
                 <p class="eyebrow">Theo dõi</p>
-                <h2>Lịch của tôi</h2>
+                <h2>Lịch đang xử lý</h2>
               </div>
               <span class="care-count" id="userScheduleCount"></span>
             </div>
             <div class="user-schedule-list" id="userScheduleList"></div>
             <p class="care-empty" id="userScheduleEmpty" hidden>
-              Bạn chưa có lịch chăm sóc nào. Hãy đăng ký lịch đầu tiên nhé!
+              Không có lịch nào đang chờ xác nhận hoặc thực hiện.
             </p>
           </section>
         </div>
+
+        <section class="user-panel user-history-panel user-history-standalone">
+          <details class="user-schedule-history">
+              <summary class="user-panel-heading user-schedule-history-summary">
+                <div>
+                  <p class="eyebrow">Các dịch vụ đã kết thúc</p>
+                  <h3>Lịch sử đăng ký dịch vụ</h3>
+                </div>
+                <span class="care-count" id="userScheduleHistoryCount"></span>
+              </summary>
+              <div class="user-schedule-history-content">
+                <div class="user-schedule-list" id="userScheduleHistoryList"></div>
+                <p class="care-empty" id="userScheduleHistoryEmpty" hidden>
+                  Chưa có lịch nào đã hủy hoặc hoàn thành.
+                </p>
+              </div>
+          </details>
+        </section>
       </div>
     </main>
 

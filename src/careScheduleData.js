@@ -4,13 +4,13 @@ const SAMPLE_SCHEDULES = [
     petId: 1,
     petName: "Milu",
     careType: "Cho ăn",
-    date: "2026-09-23",
+    date: "2026-10-20",
     time: "08:00",
     note: "Cho ăn buổi sáng",
     customerUsername: "sample",
-    customerName: "Dữ liệu mẫu",
-    customerPhone: "",
-    status: "Đã xác nhận",
+    customerName: "Nguyễn Minh Anh",
+    customerPhone: "0901234567",
+    status: "Chờ xác nhận",
     source: "sample",
     createdAt: "2026-09-20T08:00:00.000Z",
   },
@@ -19,12 +19,12 @@ const SAMPLE_SCHEDULES = [
     petId: 2,
     petName: "Misa",
     careType: "Tắm",
-    date: "2026-09-23",
+    date: "2026-10-21",
     time: "10:00",
     note: "Tắm và vệ sinh tai",
     customerUsername: "sample",
-    customerName: "Dữ liệu mẫu",
-    customerPhone: "",
+    customerName: "Nguyễn Minh Anh",
+    customerPhone: "0901234567",
     status: "Đã xác nhận",
     source: "sample",
     createdAt: "2026-09-20T08:00:00.000Z",
@@ -34,12 +34,12 @@ const SAMPLE_SCHEDULES = [
     petId: 3,
     petName: "Lucky",
     careType: "Tẩy giun",
-    date: "2026-09-23",
+    date: "2026-10-22",
     time: "17:00",
     note: "Tẩy giun định kỳ",
     customerUsername: "sample",
-    customerName: "Dữ liệu mẫu",
-    customerPhone: "",
+    customerName: "Nguyễn Minh Anh",
+    customerPhone: "0901234567",
     status: "Đã xác nhận",
     source: "sample",
     createdAt: "2026-09-20T08:00:00.000Z",
@@ -49,12 +49,12 @@ const SAMPLE_SCHEDULES = [
     petId: 1,
     petName: "Milu",
     careType: "Tiêm phòng",
-    date: "2026-09-25",
+    date: "2026-10-23",
     time: "09:30",
     note: "Tiêm vaccine định kỳ",
     customerUsername: "sample",
-    customerName: "Dữ liệu mẫu",
-    customerPhone: "",
+    customerName: "Nguyễn Minh Anh",
+    customerPhone: "0901234567",
     status: "Đã xác nhận",
     source: "sample",
     createdAt: "2026-09-20T08:00:00.000Z",
@@ -64,12 +64,12 @@ const SAMPLE_SCHEDULES = [
     petId: 2,
     petName: "Misa",
     careType: "Cắt móng",
-    date: "2026-09-26",
+    date: "2026-10-24",
     time: "14:00",
     note: "Cắt móng chân",
     customerUsername: "sample",
-    customerName: "Dữ liệu mẫu",
-    customerPhone: "",
+    customerName: "Nguyễn Minh Anh",
+    customerPhone: "0901234567",
     status: "Đã xác nhận",
     source: "sample",
     createdAt: "2026-09-20T08:00:00.000Z",
@@ -86,6 +86,9 @@ export const SCHEDULE_STATUS = {
 };
 
 export const CARE_TYPE_OTHER = "Khác";
+export const CARE_TYPE_PET_SITTING = "Trông coi thú cưng";
+export const PET_SITTING_HOURLY_RATE = 10000;
+export const PET_SITTING_DAILY_RATE = 150000;
 
 export const CARE_TYPES = [
   { value: "Tắm", price: 100000 },
@@ -101,7 +104,27 @@ const CARE_TYPE_PRICES = CARE_TYPES.reduce((map, item) => {
 }, {});
 
 export function getCareTypePrice(careType) {
-  return CARE_TYPE_PRICES[String(careType || "").trim()] ?? 0;
+  const services = Array.isArray(careType)
+    ? careType
+    : String(careType || "").split(" · ");
+  return services.reduce((total, service) => total + (CARE_TYPE_PRICES[String(service || "").trim()] ?? 0), 0);
+}
+
+export function getPetSittingPrice(startDate, startTime, endDate, endTime) {
+  const toMinutes = (dateValue, timeValue) => {
+    const [year, month, day] = String(dateValue || "").split("-").map(Number);
+    const [hour, minute] = String(timeValue || "").split(":").map(Number);
+    if (![year, month, day, hour, minute].every(Number.isFinite)) return NaN;
+    return Math.floor(Date.UTC(year, month - 1, day) / 60000) + hour * 60 + minute;
+  };
+
+  const duration = toMinutes(endDate, endTime) - toMinutes(startDate, startTime);
+  if (!Number.isFinite(duration) || duration <= 0) return 0;
+
+  const fullDays = Math.floor(duration / (24 * 60));
+  const remainingHours = Math.ceil((duration % (24 * 60)) / 60);
+  const remainingPrice = Math.min(remainingHours * PET_SITTING_HOURLY_RATE, PET_SITTING_DAILY_RATE);
+  return fullDays * PET_SITTING_DAILY_RATE + remainingPrice;
 }
 
 export function isKnownCareType(careType) {
@@ -215,6 +238,18 @@ function normalizeSchedule(schedule) {
     source,
     createdAt: String(item.createdAt || ""),
   };
+}
+
+export function mergeScheduleUpdate(schedule, changes) {
+  const existing = schedule && typeof schedule === "object" ? schedule : {};
+  const next = { ...existing, ...changes };
+  if (!Array.isArray(existing.petServices) || !existing.petServices.length) return next;
+
+  ["petId", "petIds", "petName", "petNames", "petServices", "careType", "price"].forEach((key) => {
+    if (Object.prototype.hasOwnProperty.call(existing, key)) next[key] = existing[key];
+    else delete next[key];
+  });
+  return next;
 }
 
 export function getSampleSchedules() {

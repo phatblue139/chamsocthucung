@@ -33,7 +33,9 @@ if (!isAdminLoggedIn()) {
     if (!form.reportValidity()) return;
 
     const id = Number(petIdInput.value);
+    const existingPet = id ? pets.find((item) => Number(item.id) === id) : null;
     const pet = {
+      ...(existingPet || {}),
       id: id || getNextPetId(pets),
       name: nameInput.value.trim(),
       species: speciesInput.value,

@@ -6,6 +6,7 @@ import {
     getCareTypePrice,
     getNextScheduleId,
     getScheduleStatusClass,
+    mergeScheduleUpdate,
     getTimeOptions,
     isKnownCareType,
     loadSchedules,
@@ -191,6 +192,29 @@ function createCell(value) {
     return cell;
 }
 
+function createCareTypeCell(schedule) {
+    const cell = document.createElement("td");
+    cell.className = "care-type-cell";
+
+    if (!Array.isArray(schedule.petServices) || !schedule.petServices.length) {
+        cell.textContent = schedule.careType || "";
+        return cell;
+    }
+
+    schedule.petServices.forEach((item) => {
+        const entry = document.createElement("div");
+        entry.className = "care-type-entry";
+        const petName = document.createElement("strong");
+        petName.textContent = item.petName || "Thú cưng";
+        const services = document.createElement("span");
+        services.textContent = Array.isArray(item.services) ? item.services.join(", ") : "Chăm sóc";
+        entry.append(petName, document.createTextNode(": "), services);
+        cell.appendChild(entry);
+    });
+
+    return cell;
+}
+
 function render() {
     if (!careList || !emptyMsg || !careCount) return;
 
@@ -225,10 +249,10 @@ function render() {
             createCell(customer),
             createCell(phone),
             createCell(schedule.petName),
-            createCell(schedule.careType),
+            createCareTypeCell(schedule),
             createCell(priceText),
-            createCell(schedule.date),
-            createCell(schedule.time),
+            createCell(schedule.endDate ? `${schedule.date} → ${schedule.endDate}` : schedule.date),
+            createCell(schedule.endDate ? `${schedule.time} → ${schedule.endTime || ""}` : schedule.time),
             createCell(schedule.note),
             createStatusCell(status),
         );
@@ -391,10 +415,7 @@ function updateSchedule(id) {
     }
 
     const nextSchedules = [...schedules];
-    nextSchedules[index] = {
-        ...nextSchedules[index],
-        ...getFormData(),
-    };
+    nextSchedules[index] = mergeScheduleUpdate(nextSchedules[index], getFormData());
 
     if (!saveSchedules(nextSchedules)) {
         showMessage("Không thể cập nhật lịch. Vui lòng thử lại.", "error");
@@ -412,12 +433,18 @@ function editSchedule(id) {
 
     idInput.value = schedule.id;
     petNameInput.value = schedule.petName || "";
+    const hasDetailedServices = Array.isArray(schedule.petServices) && schedule.petServices.length > 0;
+    petNameInput.disabled = hasDetailedServices;
+    careTypeInput.disabled = hasDetailedServices;
+    if (careTypeOtherInput) careTypeOtherInput.disabled = hasDetailedServices;
     setCareType(schedule.careType);
     dateInput.value = schedule.date || "";
     setTime(schedule.time);
     statusInput.value = getScheduleStatus(schedule);    noteInput.value = schedule.note || "";
     saveBtn.textContent = "Cập nhật lịch";
-    showMessage("Đang chỉnh sửa lịch đã chọn.", "");
+    showMessage(hasDetailedServices
+        ? "Lịch có nhiều dịch vụ do khách chọn; dịch vụ và giá được giữ nguyên khi cập nhật."
+        : "Đang chỉnh sửa lịch đã chọn.", "");
 
     window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -511,6 +538,9 @@ function restoreSchedule(id) {
 function resetForm() {
     form?.reset();
     idInput.value = "";
+    if (petNameInput) petNameInput.disabled = false;
+    if (careTypeInput) careTypeInput.disabled = false;
+    if (careTypeOtherInput) careTypeOtherInput.disabled = false;
     if (saveBtn) saveBtn.textContent = "Lưu lịch";
     syncCareTypeOther();
 }

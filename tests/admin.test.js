@@ -9,6 +9,9 @@ import {
 import { filterPets, getAdminStatistics } from "../src/adminData.js";
 import {
   SCHEDULE_STATUS,
+  getCareTypePrice,
+  getPetSittingPrice,
+  mergeScheduleUpdate,
   getScheduleStatusClass,
   normalizeStatus,
   resolveScheduleStatus,
@@ -86,6 +89,46 @@ test("schedule status is normalized from aliases and falls back by source", () =
   assert.equal(getScheduleStatusClass(SCHEDULE_STATUS.CONFIRMED), "confirmed");
   assert.equal(getScheduleStatusClass(SCHEDULE_STATUS.CANCELLED), "cancelled");
   assert.equal(getScheduleStatusClass("trạng thái lạ"), "pending");
+});
+
+test("multiple care services add their prices together", () => {
+  assert.equal(getCareTypePrice("Tắm · Cắt móng"), 150000);
+  assert.equal(getCareTypePrice(["Tắm", "Tiêm phòng"]), 300000);
+  assert.equal(getCareTypePrice("Dịch vụ khác"), 0);
+});
+
+test("pet sitting price uses hourly rates with a daily cap per 24 hours", () => {
+  assert.equal(getPetSittingPrice("2026-10-15", "22:00", "2026-10-16", "02:00"), 40000);
+  assert.equal(getPetSittingPrice("2026-10-15", "08:00", "2026-10-16", "08:00"), 150000);
+  assert.equal(getPetSittingPrice("2026-10-15", "08:00", "2026-10-16", "09:00"), 160000);
+  assert.equal(getPetSittingPrice("2026-10-15", "08:00", "2026-10-15", "07:55"), 0);
+});
+
+test("admin edits preserve detailed customer services and their total price", () => {
+  const schedule = {
+    petId: "",
+    petIds: [1, 2],
+    petName: "Milu, Misa",
+    petNames: ["Milu", "Misa"],
+    petServices: [{ petId: 1, services: ["Tắm"], price: 100000 }],
+    careType: "Milu: Tắm | Misa: Tiêm phòng",
+    price: 300000,
+    date: "2026-10-20",
+  };
+  const updated = mergeScheduleUpdate(schedule, {
+    petName: "Tên không hợp lệ",
+    careType: "Khác",
+    price: 0,
+    date: "2026-10-21",
+    status: SCHEDULE_STATUS.CONFIRMED,
+  });
+
+  assert.equal(updated.price, 300000);
+  assert.equal(updated.careType, schedule.careType);
+  assert.deepEqual(updated.petServices, schedule.petServices);
+  assert.equal(updated.petName, schedule.petName);
+  assert.equal(updated.date, "2026-10-21");
+  assert.equal(updated.status, SCHEDULE_STATUS.CONFIRMED);
 });
 
 test("dashboard statistics ignore unknown status values", () => {
