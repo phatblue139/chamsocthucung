@@ -21,6 +21,17 @@ import {
   resolveScheduleStatus,
   saveSchedules,
 } from "./careScheduleData.js";
+import {
+  SHIPMENT_CENTERS,
+  calculateShipmentFee,
+  getAddressAreaCode,
+  getAddressStorage,
+  getDistanceForLocation,
+  getNextShipmentId,
+  getShipmentStorage,
+  saveShipmentStorage,
+  validateShippingPet,
+} from "./shippingData.js";
 
 initSiteHeader();
 
@@ -52,15 +63,39 @@ function initUserView(user) {
   const petList = document.getElementById("userPetList");
   const petEmpty = document.getElementById("userPetEmpty");
   const petCount = document.getElementById("userPetCount");
-  let pets = loadPets().filter((pet) => pet.ownerUsername === user.username);
+  let pets = loadPets().filter((pet) => String(pet.ownerUsername) === String(user.username));
 
   const petSelect = document.getElementById("userPetSelect");
   const petServicesContainer = document.getElementById("userPetServices");
+  const shipToggle = document.getElementById("userShipToggle");
+  const shipPanel = document.getElementById("userShipPanel");
+  const shipQuoteText = document.getElementById("userShipQuoteText");
+  const shipmentPetSelect = document.getElementById("userShipmentPet");
+  const pickupAddressSelect = document.getElementById("userPickupAddress");
+  const returnAddressSelect = document.getElementById("userReturnAddress");
+  const shipCenterSelect = document.getElementById("userShipCenter");
+  const shipTypeSelect = document.getElementById("userShipType");
+  const returnAddressGroup = document.getElementById("userReturnAddressGroup");
   let activePetId = "";
 
   renderPets();
   renderPetSelect();
+  populateShipControls();
   petSelect?.addEventListener("change", handlePetSelectionChange);
+  shipToggle?.addEventListener("change", () => {
+    if (shipPanel) shipPanel.hidden = !shipToggle.checked;
+    if (returnAddressGroup) returnAddressGroup.hidden = shipTypeSelect?.value !== "round-trip";
+    syncShippingRequirements();
+    updateShipQuote();
+  });
+  shipTypeSelect?.addEventListener("change", () => {
+    if (returnAddressGroup) returnAddressGroup.hidden = shipTypeSelect.value !== "round-trip";
+    syncShippingRequirements();
+    updateShipQuote();
+  });
+  shipmentPetSelect?.addEventListener("change", updateShipQuote);
+  pickupAddressSelect?.addEventListener("change", updateShipQuote);
+  shipCenterSelect?.addEventListener("change", updateShipQuote);
   syncPetSpeciesOther();
   petSpeciesInput?.addEventListener("change", syncPetSpeciesOther);
 
@@ -90,6 +125,156 @@ function initUserView(user) {
   petServicesContainer?.addEventListener("change", (event) => {
     if (event.target.matches('input[name="careTypes"]')) syncPetSittingFields();
   });
+
+  function populateShipControls() {
+    const addresses = getAddressStorage().filter((address) => String(address.ownerUsername) === String(user.username));
+    const emptyAddressMessage = document.getElementById("userShipAddressEmpty");
+    if (emptyAddressMessage) emptyAddressMessage.hidden = addresses.length > 0;
+    const populate = (select, options, placeholderText) => {
+      if (!select) return;
+      const previous = select.value;
+      select.replaceChildren();
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = placeholderText;
+      select.appendChild(placeholder);
+      options.forEach(({ value, label }) => {
+        const option = document.createElement("option");
+        option.value = String(value);
+        option.textContent = label;
+        select.appendChild(option);
+      });
+      if (options.some(({ value }) => String(value) === previous)) select.value = previous;
+    };
+
+    populate(shipmentPetSelect, pets.map((pet) => ({
+      value: pet.id,
+      label: `${pet.name || `Thú cưng #${pet.id}`} · ${pet.species || "Khác"}`,
+    })), "-- Chọn thú cưng --");
+    const addressOptions = addresses.map((address) => ({
+      value: address.id,
+      label: `${address.contactName || "Người liên hệ"} · ${[address.city, address.district].filter(Boolean).join(" ")}`.trim(),
+    }));
+    populate(pickupAddressSelect, addressOptions, "-- Chọn địa chỉ đón --");
+    populate(returnAddressSelect, addressOptions, "-- Chọn địa chỉ trả --");
+    populate(shipCenterSelect, SHIPMENT_CENTERS.map((center) => ({ value: center.code, label: center.name })), "-- Chọn trung tâm --");
+    if (shipPanel) shipPanel.hidden = !shipToggle?.checked;
+    if (returnAddressGroup) returnAddressGroup.hidden = shipTypeSelect?.value !== "round-trip";
+    syncShippingRequirements();
+    updateShipQuote();
+  }
+
+  function syncShippingRequirements() {
+    const shippingEnabled = Boolean(shipToggle?.checked);
+    if (shipmentPetSelect) shipmentPetSelect.required = shippingEnabled;
+    if (pickupAddressSelect) pickupAddressSelect.required = shippingEnabled;
+    if (shipCenterSelect) shipCenterSelect.required = shippingEnabled;
+    if (returnAddressSelect) returnAddressSelect.required = shippingEnabled && shipTypeSelect?.value === "round-trip";
+  }
+
+  function updateShipQuote() {
+    if (!shipToggle?.checked) {
+      if (shipQuoteText) shipQuoteText.textContent = "Vui lòng chọn thú cưng, địa chỉ và trung tâm để xem phí ship.";
+      return;
+    }
+
+    const hasSavedAddress = getAddressStorage().some((address) => String(address.ownerUsername) === String(user.username));
+    if (!hasSavedAddress) {
+      if (shipQuoteText) shipQuoteText.textContent = "Tài khoản chưa có địa chỉ. Hãy thêm địa chỉ để tiếp tục đặt ship.";
+      return;
+    }
+
+    const pet = pets.find((item) => String(item.id) === String(shipmentPetSelect?.value || ""));
+    const address = getAddressStorage().find((item) => String(item.id) === String(pickupAddressSelect?.value || "") && String(item.ownerUsername) === String(user.username));
+    const center = SHIPMENT_CENTERS.find((item) => item.code === String(shipCenterSelect?.value || ""));
+    if (!pet || !address || !center) {
+      if (shipQuoteText) shipQuoteText.textContent = "Vui lòng chọn thú cưng, địa chỉ và trung tâm để xem phí ship.";
+      return;
+    }
+
+    const petValidation = validateShippingPet(pet);
+    if (!petValidation.valid) {
+      if (shipQuoteText) shipQuoteText.textContent = petValidation.message;
+      return;
+    }
+
+    const areaCode = getAddressAreaCode(address.city, address.district) || address.areaCode;
+    const route = getDistanceForLocation(areaCode, center.code);
+    if (!route) {
+      if (shipQuoteText) shipQuoteText.textContent = "Không tìm thấy khoảng cách mô phỏng cho khu vực đã chọn.";
+      return;
+    }
+    const quote = calculateShipmentFee({
+      distanceKm: route.distanceKm,
+      petSize: pet.size,
+      transportType: shipTypeSelect?.value || "one-way",
+    });
+    if (shipQuoteText) {
+      shipQuoteText.textContent = quote.valid
+        ? `Khoảng cách mô phỏng: ${route.distanceKm} km · ${quote.message} Tổng: ${formatCurrency(quote.total)}.`
+        : quote.message;
+    }
+  }
+
+  function createShippingRecord() {
+    if (!shipToggle?.checked) return null;
+
+    const pet = pets.find((item) => String(item.id) === String(shipmentPetSelect?.value || ""));
+    const addresses = getAddressStorage().filter((item) => String(item.ownerUsername) === String(user.username));
+    const pickupAddress = addresses.find((item) => String(item.id) === String(pickupAddressSelect?.value || ""));
+    const center = SHIPMENT_CENTERS.find((item) => item.code === String(shipCenterSelect?.value || ""));
+    const transportType = shipTypeSelect?.value || "one-way";
+    const returnAddress = addresses.find((item) => String(item.id) === String(returnAddressSelect?.value || ""));
+
+    if (!pet || !pickupAddress || !center) {
+      showMessage("Vui lòng chọn thú cưng, địa chỉ đón và trung tâm ship.", "error");
+      return false;
+    }
+    if (transportType === "round-trip" && !returnAddress) {
+      showMessage("Vui lòng chọn địa chỉ trả cho hình thức vận chuyển hai chiều.", "error");
+      return false;
+    }
+    const validation = validateShippingPet(pet);
+    if (!validation.valid) {
+      showMessage(validation.message, "error");
+      return false;
+    }
+
+    const areaCode = getAddressAreaCode(pickupAddress.city, pickupAddress.district) || pickupAddress.areaCode;
+    const route = getDistanceForLocation(areaCode, center.code);
+    if (!route) {
+      showMessage("Không tìm được khoảng cách mô phỏng cho địa chỉ đã chọn.", "error");
+      return false;
+    }
+    const quote = calculateShipmentFee({
+      distanceKm: route.distanceKm,
+      petSize: pet.size,
+      transportType,
+    });
+    if (!quote.valid) {
+      showMessage(quote.message, "error");
+      return false;
+    }
+
+    return {
+      id: getNextShipmentId(getShipmentStorage()),
+      customerUsername: user.username,
+      customerName: user.fullName || user.username,
+      customerPhone: user.phone || "",
+      petId: Number(pet.id),
+      petName: pet.name || "Thú cưng",
+      pickupAddressId: String(pickupAddress.id),
+      returnAddressId: transportType === "round-trip" ? String(returnAddress.id) : "",
+      centerCode: center.code,
+      centerName: center.name,
+      areaCode,
+      transportType,
+      distanceKm: route.distanceKm,
+      totalFee: quote.total,
+      status: "Chờ xác nhận",
+      createdAt: new Date().toISOString(),
+    };
+  }
 
   function currentDate() {
     const now = new Date();
@@ -368,15 +553,36 @@ function initUserView(user) {
       return;
     }
 
+    const shippingRecord = createShippingRecord();
+    if (shippingRecord === false) return;
+    if (shippingRecord) {
+      schedule.shipping = {
+        id: shippingRecord.id,
+        centerName: shippingRecord.centerName,
+        transportType: shippingRecord.transportType,
+        totalFee: shippingRecord.totalFee,
+        distanceKm: shippingRecord.distanceKm,
+      };
+    }
+
     const nextSchedules = [...latestSchedules, schedule];
     if (!saveSchedules(nextSchedules)) {
       showMessage("Không thể lưu lịch. Vui lòng thử lại.", "error");
       return;
     }
 
+    if (shippingRecord && !saveShipmentStorage([...getShipmentStorage(), shippingRecord])) {
+      saveSchedules(latestSchedules);
+      showMessage("Không thể lưu đơn ship. Lịch chưa được tạo; vui lòng thử lại.", "error");
+      return;
+    }
+
     schedules = nextSchedules;
     form.reset();
     renderPetServiceChoices();
+    if (shipToggle) shipToggle.checked = false;
+    if (shipPanel) shipPanel.hidden = true;
+    populateShipControls();
     syncPetSittingFields();
     applyScheduleLimits();
     render();
@@ -393,37 +599,54 @@ function initUserView(user) {
     event.preventDefault();
     if (!petForm.reportValidity()) return;
 
-    const petName = String(petForm.name?.value || "").trim();
+    const editId = document.getElementById("userPetEditId")?.value || "";
+    const petName = String(petForm.elements.namedItem("name")?.value || "").trim();
+    const size = petForm.querySelector('input[name="size"]:checked')?.value || "";
     if (!petName) {
       showPetMessage("Vui lòng nhập tên thú cưng.", "error");
       return;
     }
+    if (!size) {
+      showPetMessage("Vui lòng chọn nhóm kích thước thú cưng.", "error");
+      return;
+    }
 
+    const previousPet = editId ? pets.find((item) => Number(item.id) === Number(editId)) : null;
     const pet = {
-      id: getNextPetId(),
+      ...(previousPet || {}),
+      id: editId ? Number(editId) : getNextPetId(),
       name: petName,
       species: petSpeciesInput?.value === "Khác"
         ? String(petSpeciesOtherInput?.value || "").trim()
         : petSpeciesInput?.value || "Chó",
-      breed: String(petForm.breed?.value || "").trim(),
-      age: Number(petForm.age?.value || 0),
-      owner: String(petForm.owner?.value || "").trim() || user.fullName || user.username,
+      breed: String(petForm.elements.namedItem("breed")?.value || "").trim(),
+      size,
+      owner: String(petForm.elements.namedItem("owner")?.value || "").trim() || user.fullName || user.username,
+      ownerPhone: String(petForm.elements.namedItem("ownerPhone")?.value || "").trim(),
       ownerUsername: user.username,
       status: "Chờ lịch",
     };
 
-    const nextPets = [...pets, pet];
-    if (!savePets([...loadPets().filter((item) => !(item.ownerUsername === user.username && Number(item.id) === Number(pet.id))), pet])) {
+    const allPets = loadPets();
+    const nextPets = editId
+      ? allPets.map((item) => String(item.ownerUsername) === String(user.username) && Number(item.id) === Number(editId) ? pet : item)
+      : [...allPets, pet];
+    if (!savePets(nextPets)) {
       showPetMessage("Không thể lưu thú cưng. Vui lòng thử lại.", "error");
       return;
     }
 
-    pets = nextPets;
+    pets = nextPets.filter((item) => String(item.ownerUsername) === String(user.username));
     petForm.reset();
+    const editInput = document.getElementById("userPetEditId");
+    if (editInput) editInput.value = "";
+    const submitButton = petForm.querySelector('button[type="submit"]');
+    if (submitButton) submitButton.textContent = "Đăng ký thú cưng";
     syncPetSpeciesOther();
     renderPets();
     renderPetSelect();
-    showPetMessage(`Đã đăng ký thú cưng ${pet.name}. Bạn có thể đặt lịch ngay.`, "success");
+    populateShipControls();
+    showPetMessage(editId ? `Đã cập nhật hồ sơ thú cưng ${pet.name}.` : `Đã đăng ký thú cưng ${pet.name}. Bạn có thể đặt lịch ngay.`, "success");
   });
 
   function showPetMessage(text, type) {
@@ -441,6 +664,25 @@ function initUserView(user) {
     }
   }
 
+  function editPetProfile(pet) {
+    const editId = document.getElementById("userPetEditId");
+    if (!editId || !petForm) return;
+    editId.value = String(pet.id);
+    petForm.elements.namedItem("name").value = pet.name || "";
+    petForm.elements.namedItem("species").value = ["Chó", "Mèo"].includes(pet.species) ? pet.species : "Khác";
+    petSpeciesOtherInput.value = ["Chó", "Mèo", "Khác"].includes(pet.species) ? "" : pet.species || "";
+    petForm.elements.namedItem("breed").value = pet.breed || "";
+    petForm.elements.namedItem("owner").value = pet.owner || user.fullName || user.username;
+    petForm.elements.namedItem("ownerPhone").value = pet.ownerPhone || user.phone || "";
+    petForm.querySelectorAll('input[name="size"]').forEach((input) => {
+      input.checked = input.value === String(pet.size || "").toLowerCase();
+    });
+    const submitButton = petForm.querySelector('button[type="submit"]');
+    if (submitButton) submitButton.textContent = "Lưu thay đổi";
+    syncPetSpeciesOther();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   function renderPets() {
     if (!petList || !petEmpty || !petCount) return;
     petList.replaceChildren();
@@ -454,31 +696,55 @@ function initUserView(user) {
       const info = document.createElement("div");
       info.className = "user-pet-card-info";
 
-      const title = document.createElement("div");
-      title.className = "user-pet-card-title";
+      const primary = document.createElement("div");
+      primary.className = "user-pet-card-primary";
       const name = document.createElement("h3");
       name.textContent = pet.name || "Thú cưng";
-      title.appendChild(name);
+      primary.appendChild(name);
+
+      const ownerDetails = document.createElement("span");
+      ownerDetails.className = "user-pet-card-owner";
+      const ownerName = document.createElement("span");
+      ownerName.className = "user-pet-card-owner-name";
+      ownerName.textContent = `Chủ nuôi: ${pet.owner || user.fullName || user.username}`;
+      const ownerPhone = document.createElement("span");
+      ownerPhone.className = "user-pet-card-phone";
+      ownerPhone.textContent = `SĐT: ${pet.ownerPhone || user.phone || "Chưa cập nhật"}`;
+      ownerDetails.append(ownerName, ownerPhone);
+      primary.appendChild(ownerDetails);
+
+      const title = document.createElement("div");
+      title.className = "user-pet-card-title";
 
       const speciesTag = document.createElement("span");
       speciesTag.className = "user-pet-species";
       speciesTag.textContent = pet.species || "Khác";
       title.appendChild(speciesTag);
-      info.appendChild(title);
+
+      if (pet.breed) {
+        const breed = document.createElement("span");
+        breed.className = "user-pet-card-breed";
+        breed.textContent = pet.breed;
+        title.appendChild(breed);
+      }
+      info.append(primary, title);
 
       const facts = document.createElement("span");
       facts.className = "user-pet-card-facts";
-      facts.textContent = [pet.breed, pet.age !== undefined && pet.age !== null ? `${pet.age} tuổi` : ""]
-        .filter(Boolean)
-        .join(" · ") || pet.status || "";
-      if (facts.textContent) title.appendChild(facts);
-
-      const ownerDetails = document.createElement("p");
-      ownerDetails.className = "user-pet-card-owner";
-      ownerDetails.textContent = `Chủ nuôi: ${pet.owner || user.fullName || user.username} · SĐT: ${user.phone || "Chưa cập nhật"}`;
-      info.appendChild(ownerDetails);
+      const sizeLabel = pet.size === "small" ? "Nhỏ" : pet.size === "medium" ? "Vừa" : pet.size === "large" ? "Lớn" : "";
+      facts.textContent = sizeLabel || pet.status || "";
+      if (facts.textContent) info.appendChild(facts);
 
       card.appendChild(info);
+
+      const edit = document.createElement("button");
+      edit.type = "button";
+      edit.className = "care-btn care-btn-edit";
+      edit.textContent = "Sửa";
+      edit.addEventListener("click", () => editPetProfile(pet));
+
+      const actions = document.createElement("div");
+      actions.className = "user-pet-card-actions";
 
       const remove = document.createElement("button");
       remove.type = "button";
@@ -495,10 +761,12 @@ function initUserView(user) {
         pets = nextPets;
         renderPets();
         renderPetSelect();
+        populateShipControls();
         syncPetSittingFields();
         showPetMessage(`Đã xóa hồ sơ thú cưng ${pet.name}.`, "success");
       });
-      card.appendChild(remove);
+      actions.append(edit, remove);
+      card.appendChild(actions);
 
       petList.appendChild(card);
     });
@@ -693,10 +961,16 @@ function initUserView(user) {
   });
 
   window.addEventListener("storage", (event) => {
+    if (event.key !== "neko:addresses") return;
+    populateShipControls();
+  });
+
+  window.addEventListener("storage", (event) => {
     if (event.key !== PET_STORAGE_KEY) return;
-    pets = loadPets().filter((pet) => pet.ownerUsername === user.username);
+    pets = loadPets().filter((pet) => String(pet.ownerUsername) === String(user.username));
     renderPets();
     renderPetSelect();
+    populateShipControls();
     syncPetSittingFields();
   });
 
@@ -772,7 +1046,7 @@ function initUserView(user) {
       const details = document.createElement("div");
       details.className = "user-schedule-details";
       details.textContent = `${formatDate(schedule.date)} · ${schedule.time || ""}${schedule.endDate ? ` → ${formatDate(schedule.endDate)} ${schedule.endTime || ""}` : ""} · ${schedule.careType || "Chăm sóc"}${price ? ` · ${price}` : ""}`;
-      card.appendChild(heading, details);
+      card.append(heading, details);
 
       const hint = document.createElement("span");
       const toggleButton = document.createElement("button");
@@ -805,6 +1079,14 @@ function initUserView(user) {
         more.append(
           createScheduleRow("Thú cưng", schedule.petName || "Thú cưng"),
           createScheduleRow("Loại chăm sóc", schedule.careType || "Chăm sóc"),
+        );
+      }
+
+      if (schedule.shipping) {
+        more.append(
+          createScheduleRow("Vận chuyển", `${schedule.shipping.centerName || "Trung tâm NEKO"} · ${schedule.shipping.transportType === "round-trip" ? "Hai chiều" : "Một chiều"}`),
+          createScheduleRow("Phí ship (tham khảo)", formatCurrency(schedule.shipping.totalFee) || "Theo yêu cầu"),
+          createScheduleRow("Khoảng cách mô phỏng", `${schedule.shipping.distanceKm} km`),
         );
       }
 

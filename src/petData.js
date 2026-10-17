@@ -2,6 +2,30 @@ import samplePets from "./samplePets.json" with { type: "json" };
 
 export const PET_STORAGE_KEY = "neko:pets";
 
+function normalizePetSize(size) {
+  const raw = String(size || "").trim().toLowerCase();
+  if (!raw) return "";
+  if (["small", "nhỏ", "tiny"].includes(raw)) return "small";
+  if (["medium", "vừa", "mid"].includes(raw)) return "medium";
+  if (["large", "lớn", "big"].includes(raw)) return "large";
+  return raw;
+}
+
+function normalizePetRecord(pet) {
+  const item = pet && typeof pet === "object" ? { ...pet } : {};
+  const weightNumber = Number(item.weightKg ?? item.weight ?? item.weight_kg ?? "");
+  const lengthNumber = Number(item.bodyLengthCm ?? item.lengthCm ?? item.bodyLength ?? "");
+  const heightNumber = Number(item.bodyHeightCm ?? item.heightCm ?? item.bodyHeight ?? "");
+
+  return {
+    ...item,
+    size: normalizePetSize(item.size || item.sizeCategory || item.petSize || item.groupSize || ""),
+    weightKg: Number.isFinite(weightNumber) ? weightNumber : "",
+    bodyLengthCm: Number.isFinite(lengthNumber) ? lengthNumber : "",
+    bodyHeightCm: Number.isFinite(heightNumber) ? heightNumber : "",
+  };
+}
+
 function getStorage() {
   try {
     return typeof localStorage === "undefined" ? null : localStorage;
@@ -11,7 +35,7 @@ function getStorage() {
 }
 
 function clonePets(pets) {
-  return pets.map((pet) => ({ ...pet }));
+  return pets.map((pet) => normalizePetRecord(pet));
 }
 
 export function loadPets() {
