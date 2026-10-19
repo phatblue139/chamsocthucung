@@ -22,9 +22,28 @@
     <main class="user-main">
       <div class="container">
         <section class="user-welcome">
-          <p class="user-welcome-tag">
-            🐾 Đăng ký thú cưng của bạn, sau đó đặt lịch chăm sóc cho bé yêu &amp; theo dõi các yêu cầu tại đây.
-          </p>
+          <div class="user-welcome-copy">
+            <p class="eyebrow">NEKO · KHU VỰC KHÁCH HÀNG</p>
+            <h1>Khu vực của tôi</h1>
+            <p>Quản lý hồ sơ thú cưng, đăng ký lịch chăm sóc và theo dõi các yêu cầu dịch vụ.</p>
+          </div>
+          <div class="user-overview-stats" aria-label="Tổng quan tài khoản">
+            <article class="user-stat-card">
+              <span class="user-stat-label">Thú cưng</span>
+              <strong id="userStatPetCount">0</strong>
+              <span class="user-stat-caption">Hồ sơ của bạn</span>
+            </article>
+            <article class="user-stat-card">
+              <span class="user-stat-label">Chờ xác nhận</span>
+              <strong id="userStatPendingCount">0</strong>
+              <span class="user-stat-caption">Lịch đang chờ xử lý</span>
+            </article>
+            <article class="user-stat-card">
+              <span class="user-stat-label">Đã hoàn thành</span>
+              <strong id="userStatCompletedCount">0</strong>
+              <span class="user-stat-caption">Lịch chăm sóc</span>
+            </article>
+          </div>
         </section>
 
         <section class="user-panel user-pet-panel">
@@ -36,34 +55,55 @@
             <span class="user-panel-badge"><span id="userPetCount">0 thú cưng</span></span>
           </div>
           <form id="userPetForm" class="care-form user-pet-form">
+            <input type="hidden" id="userPetEditId" />
             <p class="user-pet-form-intro">Điền thông tin cơ bản để NEKO lưu hồ sơ và giúp bạn đặt lịch chăm sóc phù hợp.</p>
             <div class="care-form-group">
-              <label for="userPetName">Tên thú cưng</label>
+              <label for="userPetName">Tên thú cưng <span class="required-mark">*</span></label>
               <input type="text" id="userPetName" name="name" placeholder="Ví dụ: Miu" required maxlength="60" />
             </div>
             <div class="care-form-group">
-              <label for="userPetSpecies">Loài</label>
+              <label for="userPetSpecies">Loài <span class="required-mark">*</span></label>
               <select id="userPetSpecies" name="species" required>
                 <option value="Chó">Chó</option>
                 <option value="Mèo">Mèo</option>
                 <option value="Khác">Khác</option>
               </select>
             </div>
-            <div class="care-form-group" id="userPetSpeciesOtherGroup" hidden>
-              <label for="userPetSpeciesOther">Tên loài</label>
-              <input type="text" id="userPetSpeciesOther" name="speciesOther" placeholder="Ví dụ: Thỏ" maxlength="40" />
-            </div>
             <div class="care-form-group">
               <label for="userPetBreed">Giống <span class="user-pet-optional">(không bắt buộc)</span></label>
               <input type="text" id="userPetBreed" name="breed" placeholder="Ví dụ: Corgi" maxlength="80" />
             </div>
             <div class="care-form-group">
-              <label for="userPetAge">Tuổi (năm)</label>
-              <input type="number" id="userPetAge" name="age" min="0" max="40" step="1" placeholder="Ví dụ: 2" required />
-            </div>
-            <div class="care-form-group">
               <label for="userPetOwner">Tên chủ nuôi <span class="user-pet-optional">(không bắt buộc)</span></label>
               <input type="text" id="userPetOwner" name="owner" placeholder="Ví dụ: Nguyễn Văn A" maxlength="80" />
+            </div>
+            <div class="care-form-group">
+              <label for="userPetOwnerPhone">Số điện thoại chủ nuôi <span class="required-mark">*</span></label>
+              <input type="tel" id="userPetOwnerPhone" name="ownerPhone" placeholder="Ví dụ: 0901234567" maxlength="20" required />
+            </div>
+            <div class="care-form-group user-form-full" id="userPetSpeciesOtherGroup" hidden>
+              <label for="userPetSpeciesOther">Tên loài <span class="required-mark">*</span></label>
+              <input type="text" id="userPetSpeciesOther" name="speciesOther" placeholder="Ví dụ: Thỏ" maxlength="40" />
+            </div>
+            <div class="care-form-group user-form-full">
+              <label>Nhóm kích thước <span class="required-mark">*</span></label>
+              <div class="pet-size-selector" role="radiogroup" aria-label="Chọn kích thước thú cưng">
+                <label class="pet-size-card" for="petSizeSmall">
+                  <input type="radio" id="petSizeSmall" name="size" value="small" required />
+                  <span class="pet-size-name">Nhỏ</span>
+                  <span class="pet-size-meta">Cân nặng &lt;5 kg · Dài &lt;30 cm · Cao &lt;25 cm</span>
+                </label>
+                <label class="pet-size-card" for="petSizeMedium">
+                  <input type="radio" id="petSizeMedium" name="size" value="medium" required />
+                  <span class="pet-size-name">Vừa</span>
+                  <span class="pet-size-meta">Cân nặng 5–&lt;15 kg · Dài 30–&lt;60 cm · Cao 25–&lt;45 cm</span>
+                </label>
+                <label class="pet-size-card" for="petSizeLarge">
+                  <input type="radio" id="petSizeLarge" name="size" value="large" required />
+                  <span class="pet-size-name">Lớn</span>
+                  <span class="pet-size-meta">Cân nặng ≥15 kg · Dài ≥60 cm · Cao ≥45 cm</span>
+                </label>
+              </div>
             </div>
             <div class="care-form-actions">
               <button type="submit" class="care-btn care-btn-add">Đăng ký thú cưng</button>
@@ -93,6 +133,55 @@
               </fieldset>
               <div class="user-pet-services" id="userPetServices">
                 <p class="user-pet-choice-hint">Chọn thú cưng để chọn dịch vụ riêng cho từng bé.</p>
+              </div>
+              <div class="care-form-group user-form-full">
+                <label class="user-ship-toggle-label" for="userShipToggle">
+                  <input type="checkbox" id="userShipToggle" name="ship" />
+                  <span>Đặt ship thú cưng</span>
+                </label>
+              </div>
+              <div id="userShipPanel" class="user-ship-panel user-form-full" hidden>
+                <div class="user-ship-header">
+                  <p class="eyebrow">Vận chuyển thú cưng</p>
+                  <span class="user-ship-note">Khoảng cách mô phỏng – phục vụ tính phí trong dự án mẫu, không phải quãng đường thực tế.</span>
+                </div>
+                <div class="user-ship-grid">
+                  <div class="care-form-group">
+                    <label for="userShipmentPet">Chọn thú cưng</label>
+                    <select id="userShipmentPet" name="shipmentPet"></select>
+                  </div>
+                  <div class="care-form-group">
+                    <label for="userShipCenter">Trung tâm chăm sóc</label>
+                    <select id="userShipCenter" name="shipCenter" required></select>
+                  </div>
+                  <div class="care-form-group">
+                    <label for="userShipType">Hình thức vận chuyển</label>
+                    <select id="userShipType" name="shipType">
+                      <option value="one-way">Một chiều</option>
+                      <option value="round-trip">Hai chiều</option>
+                    </select>
+                  </div>
+                  <div class="care-form-group">
+                    <label for="userPickupAddress">Địa chỉ đón</label>
+                    <select id="userPickupAddress" name="pickupAddress"></select>
+                  </div>
+                  <div class="care-form-group" id="userReturnAddressGroup" hidden>
+                    <label for="userReturnAddress">Địa chỉ trả</label>
+                    <select id="userReturnAddress" name="returnAddress"></select>
+                  </div>
+                  <div class="care-form-group user-form-full">
+                    <p id="userShipAddressEmpty" class="user-ship-address-empty" hidden>
+                      Tài khoản chưa có địa chỉ đã lưu. Hãy thêm địa chỉ trước khi đặt ship.
+                    </p>
+                    <a href="/addresses.html" class="btn btn-outline address-link">Quản lý / thêm địa chỉ</a>
+                  </div>
+                  <div class="care-form-group user-form-full user-ship-summary" id="userShipQuoteBox">
+                    <div class="user-ship-summary-inner">
+                      <strong>Thông tin phí</strong>
+                      <p id="userShipQuoteText">Vui lòng chọn thú cưng, địa chỉ và trung tâm để xem phí ship.</p>
+                    </div>
+                  </div>
+                </div>
               </div>
               <div class="care-form-group">
                 <label for="userScheduleDate">Ngày</label>

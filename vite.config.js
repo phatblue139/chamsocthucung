@@ -12,6 +12,7 @@ export default defineConfig({
         services: resolve(import.meta.dirname, 'services.html'),
         pricing: resolve(import.meta.dirname, 'pricing.html'),
         booking: resolve(import.meta.dirname, 'booking.html'),
+        addresses: resolve(import.meta.dirname, 'addresses.html'),
         careSchedules: resolve(import.meta.dirname, 'src/careSchedules.html'),
         user: resolve(import.meta.dirname, 'user.html'),
       },
