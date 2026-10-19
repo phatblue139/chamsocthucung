@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quản lý thanh toán | NEKO Admin</title>
+    <link rel="stylesheet" href="./style.css" />
+    <script>
+      try {
+        if (localStorage.getItem("neko:admin") !== "true") location.replace("/");
+      } catch (error) {
+        location.replace("/");
+      }
+    </script>
+  </head>
+  <body>
+    <main class="care-page admin-page">
+      <div class="container">
+        <header class="admin-topbar">
+          <a class="admin-brand" href="/src/admin.html">NEKO <span>ADMIN</span></a>
+          <nav class="admin-nav" aria-label="Quản trị">
+            <a href="/src/admin.html">Tổng quan</a>
+            <a href="/src/adminPets.html">Thú cưng</a>
+            <a href="/src/careSchedules.html">Lịch chăm sóc</a>
+            <a class="is-current" href="/src/adminPayments.html" aria-current="page">Thanh toán</a>
+          </nav>
+          <button type="button" class="care-btn care-btn-reset" id="logoutBtn">Đăng xuất</button>
+        </header>
+
+        <section class="admin-heading">
+          <p class="admin-kicker">NEKO · QUẢN TRỊ</p>
+          <h1>Thanh toán</h1>
+          <p>Theo dõi khoản thu theo lịch chăm sóc và xác nhận khoản đã nhận.</p>
+        </section>
+
+        <section class="admin-metrics admin-payment-metrics" aria-label="Tổng quan thanh toán">
+          <article class="admin-metric metric-open">
+            <span>Chưa thanh toán</span>
+            <strong id="unpaidCount">0</strong>
+          </article>
+          <article class="admin-metric metric-done">
+            <span>Đã thanh toán</span>
+            <strong id="paidCount">0</strong>
+          </article>
+          <article class="admin-metric metric-pets">
+            <span>Tổng giá trị lịch</span>
+            <strong id="paymentTotal">0đ</strong>
+          </article>
+        </section>
+
+        <div class="admin-care-toolbar admin-payment-toolbar">
+          <input type="search" id="paymentSearch" class="care-search" placeholder="Tìm khách hàng, tài khoản, thú cưng..." aria-label="Tìm thanh toán" />
+          <select id="paymentFilter" class="care-search" aria-label="Lọc theo trạng thái thanh toán">
+            <option value="all">Tất cả thanh toán</option>
+            <option value="unpaid">Chưa thanh toán</option>
+            <option value="paid">Đã thanh toán</option>
+          </select>
+        </div>
+
+        <p id="paymentMessage" class="user-form-message" role="status" aria-live="polite"></p>
+        <div class="care-table-wrapper">
+          <table class="care-table admin-payment-table">
+            <thead>
+              <tr>
+                <th>Mã lịch</th>
+                <th>Khách hàng</th>
+                <th>Thú cưng / dịch vụ</th>
+                <th>Phương thức</th>
+                <th>Số tiền</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="paymentList"></tbody>
+          </table>
+        </div>
+        <p id="paymentEmpty" class="care-empty" hidden>Không có khoản thanh toán phù hợp.</p>
+        <p class="admin-payment-note">Trạng thái này được admin xác nhận thủ công. Ứng dụng mẫu chưa kết nối ngân hàng hoặc cổng thanh toán.</p>
+      </div>
+    </main>
+    <script type="module" src="./adminPayments.js"></script>
+  </body>
+</html>

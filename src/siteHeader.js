@@ -8,6 +8,7 @@ const NAV_ITEMS = [
 
 const ROLE_ITEMS = [
   { href: '/user.html', label: 'Lịch đăng ký', className: 'user-link' },
+  { href: '/payment.html', label: 'Ví NEKO', className: 'user-link', showWalletBalance: true },
   { href: '/addresses.html', label: 'Sổ địa chỉ', className: 'user-link' },
   { href: '/src/admin.html', label: 'Dashboard Admin', className: 'admin-link' },
 ]
@@ -180,7 +181,7 @@ function currentPath() {
   return pathname.replace(/\/+$/, '') || '/'
 }
 
-function renderNavLink({ href, label, className = '' }) {
+function renderNavLink({ href, label, className = '', showWalletBalance = false }) {
   const classes = [className].filter(Boolean).join(' ')
   const isActive = currentPath() === href
 
@@ -190,6 +191,7 @@ function renderNavLink({ href, label, className = '' }) {
           class="nav-link${classes ? ` ${classes}` : ''}${isActive ? ' active' : ''}"
           ${isActive ? 'aria-current="page"' : ''}>
           ${label}
+          ${showWalletBalance ? '<span class="nav-wallet-amount" data-user-wallet-balance>0đ</span>' : ''}
         </a>`
 }
 

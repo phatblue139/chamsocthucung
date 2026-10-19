@@ -157,6 +157,18 @@ ul { margin: 0; padding: 0; list-style: none; }
 }
 .nav-link:hover { color: var(--primary-dark); }
 .nav-link.active { color: var(--primary-dark); }
+.nav-wallet-amount {
+  display: inline-flex;
+  margin-left: 6px;
+  padding: 2px 7px;
+  border: 1px solid rgba(62, 198, 160, 0.35);
+  border-radius: 6px;
+  background: rgba(62, 198, 160, 0.12);
+  color: #16785d;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
 .nav-link.active::after {
   content: '';
   position: absolute;
@@ -1428,6 +1440,233 @@ body.user-page {
   font-weight: 700;
 }
 
+.user-payment-account .user-panel-heading {
+  margin-bottom: 12px;
+}
+
+.user-payment-back {
+  display: inline-flex;
+  margin-bottom: 16px;
+}
+
+.user-wallet-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 0.8fr);
+  align-items: end;
+  gap: 24px;
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.user-wallet-balance {
+  display: grid;
+  gap: 5px;
+}
+
+.user-wallet-balance > span,
+.user-wallet-topup > label {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.user-wallet-balance strong {
+  color: var(--ink);
+  font-size: 30px;
+  line-height: 1.2;
+}
+
+.user-wallet-balance small {
+  max-width: 520px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.user-wallet-topup {
+  display: grid;
+  gap: 8px;
+}
+
+.user-wallet-topup-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-wallet-topup-controls input {
+  min-width: 0;
+  height: 42px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+}
+
+.user-wallet-withdraw {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 0.8fr);
+  align-items: end;
+  gap: 24px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.user-wallet-withdraw h2 {
+  font-size: 20px;
+}
+
+.user-wallet-withdraw p {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.user-wallet-history {
+  margin: 18px 0;
+}
+
+.user-wallet-history > strong {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.user-wallet-transactions {
+  display: grid;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.user-wallet-transactions li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.user-wallet-transactions li small {
+  color: var(--muted);
+}
+
+.user-wallet-transactions li strong {
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.user-wallet-empty {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.user-payment-preference {
+  display: grid;
+  gap: 14px;
+}
+
+.user-payment-preference .user-payment-methods {
+  margin: 0;
+}
+
+.user-payment-preference .care-form-actions {
+  justify-content: flex-start;
+  margin-top: 0;
+}
+
+.user-payment-methods {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.user-payment-methods legend {
+  margin-bottom: 8px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.user-payment-choice-list {
+  display: grid;
+  gap: 8px;
+}
+
+.user-payment-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.user-payment-choice:has(input:checked) {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.user-payment-choice input {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  margin: 2px 0 0;
+  accent-color: var(--primary);
+}
+
+.user-payment-choice span {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.user-payment-choice strong {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.user-payment-choice small {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (max-width: 680px) {
+  .user-wallet-overview {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .user-wallet-withdraw {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .user-wallet-transactions li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .user-wallet-transactions li small {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .user-wallet-transactions li strong {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+}
+
 .user-pet-services {
   grid-column: 1 / -1;
   min-width: 0;
@@ -2685,6 +2924,30 @@ body.user-page {
 .species-filter { width: 180px; }
 .admin-pet-table { min-width: 850px; }
 .admin-care-table { min-width: 1250px; }
+.admin-payment-metrics .admin-metric { min-height: 132px; }
+.admin-payment-toolbar select { flex: 0 0 220px; }
+.admin-payment-table { min-width: 960px; }
+.admin-payment-table th,
+.admin-payment-table td { padding: 12px 14px; vertical-align: middle; }
+.payment-status-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.payment-status-badge.is-paid { background: #e4f4ed; color: #23694f; }
+.payment-status-badge.is-unpaid { background: #fff0e4; color: #9c4c17; }
+.payment-confirm-button { min-height: 36px; padding: 8px 10px; white-space: nowrap; }
+.admin-payment-note {
+  max-width: 1080px;
+  margin: 14px auto 0;
+  color: var(--muted);
+  font-size: 13px;
+}
 :is(.admin-pet-table, .admin-care-table) th,
 :is(.admin-pet-table, .admin-care-table) td { padding: 12px 14px; }
 .admin-care-stats { max-width: 1080px; }
@@ -2706,6 +2969,7 @@ body.user-page {
   .admin-heading h1 { font-size: 30px; }
   :is(.admin-pet-form, .admin-care-form) { grid-template-columns: 1fr; }
   :is(.admin-pet-toolbar, .admin-care-toolbar) { align-items: stretch; flex-direction: column; }
+  .admin-payment-toolbar select { flex-basis: auto; width: 100%; }
   .species-filter { width: 100%; }
   .admin-brand { margin-right: auto; }
   .admin-topbar > .care-btn-reset { padding: 9px 12px; }
