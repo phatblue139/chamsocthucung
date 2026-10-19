@@ -53,6 +53,9 @@ function initUserView(user) {
   const historyList = document.getElementById("userScheduleHistoryList");
   const historyEmpty = document.getElementById("userScheduleHistoryEmpty");
   const historyCount = document.getElementById("userScheduleHistoryCount");
+  const petStat = document.getElementById("userStatPetCount");
+  const pendingStat = document.getElementById("userStatPendingCount");
+  const completedStat = document.getElementById("userStatCompletedCount");
   let schedules = loadSchedules();
 
   const petForm = document.getElementById("userPetForm");
@@ -688,6 +691,7 @@ function initUserView(user) {
     petList.replaceChildren();
     petCount.textContent = `${pets.length} thú cưng`;
     petEmpty.hidden = pets.length > 0;
+    if (petStat) petStat.textContent = String(pets.length);
 
     pets.forEach((pet) => {
       const card = document.createElement("article");
@@ -988,6 +992,16 @@ function initUserView(user) {
       const status = resolveScheduleStatus(schedule);
       return [SCHEDULE_STATUS.CANCELLED, SCHEDULE_STATUS.COMPLETED].includes(status);
     });
+    if (pendingStat) {
+      pendingStat.textContent = String(userSchedules.filter(
+        (schedule) => resolveScheduleStatus(schedule) === SCHEDULE_STATUS.PENDING,
+      ).length);
+    }
+    if (completedStat) {
+      completedStat.textContent = String(userSchedules.filter(
+        (schedule) => resolveScheduleStatus(schedule) === SCHEDULE_STATUS.COMPLETED,
+      ).length);
+    }
     const sortByAppointment = (first, second) => {
       const firstValue = `${first.date || ""} ${first.time || ""}`;
       const secondValue = `${second.date || ""} ${second.time || ""}`;

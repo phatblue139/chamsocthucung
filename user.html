@@ -22,9 +22,28 @@
     <main class="user-main">
       <div class="container">
         <section class="user-welcome">
-          <p class="user-welcome-tag">
-            🐾 Đăng ký thú cưng của bạn, sau đó đặt lịch chăm sóc cho bé yêu &amp; theo dõi các yêu cầu tại đây.
-          </p>
+          <div class="user-welcome-copy">
+            <p class="eyebrow">NEKO · KHU VỰC KHÁCH HÀNG</p>
+            <h1>Khu vực của tôi</h1>
+            <p>Quản lý hồ sơ thú cưng, đăng ký lịch chăm sóc và theo dõi các yêu cầu dịch vụ.</p>
+          </div>
+          <div class="user-overview-stats" aria-label="Tổng quan tài khoản">
+            <article class="user-stat-card">
+              <span class="user-stat-label">Thú cưng</span>
+              <strong id="userStatPetCount">0</strong>
+              <span class="user-stat-caption">Hồ sơ của bạn</span>
+            </article>
+            <article class="user-stat-card">
+              <span class="user-stat-label">Chờ xác nhận</span>
+              <strong id="userStatPendingCount">0</strong>
+              <span class="user-stat-caption">Lịch đang chờ xử lý</span>
+            </article>
+            <article class="user-stat-card">
+              <span class="user-stat-label">Đã hoàn thành</span>
+              <strong id="userStatCompletedCount">0</strong>
+              <span class="user-stat-caption">Lịch chăm sóc</span>
+            </article>
+          </div>
         </section>
 
         <section class="user-panel user-pet-panel">
@@ -39,11 +58,11 @@
             <input type="hidden" id="userPetEditId" />
             <p class="user-pet-form-intro">Điền thông tin cơ bản để NEKO lưu hồ sơ và giúp bạn đặt lịch chăm sóc phù hợp.</p>
             <div class="care-form-group">
-              <label for="userPetName">Tên thú cưng</label>
+              <label for="userPetName">Tên thú cưng <span class="required-mark">*</span></label>
               <input type="text" id="userPetName" name="name" placeholder="Ví dụ: Miu" required maxlength="60" />
             </div>
             <div class="care-form-group">
-              <label for="userPetSpecies">Loài</label>
+              <label for="userPetSpecies">Loài <span class="required-mark">*</span></label>
               <select id="userPetSpecies" name="species" required>
                 <option value="Chó">Chó</option>
                 <option value="Mèo">Mèo</option>
@@ -63,7 +82,7 @@
               <input type="tel" id="userPetOwnerPhone" name="ownerPhone" placeholder="Ví dụ: 0901234567" maxlength="20" required />
             </div>
             <div class="care-form-group user-form-full" id="userPetSpeciesOtherGroup" hidden>
-              <label for="userPetSpeciesOther">Tên loài</label>
+              <label for="userPetSpeciesOther">Tên loài <span class="required-mark">*</span></label>
               <input type="text" id="userPetSpeciesOther" name="speciesOther" placeholder="Ví dụ: Thỏ" maxlength="40" />
             </div>
             <div class="care-form-group user-form-full">

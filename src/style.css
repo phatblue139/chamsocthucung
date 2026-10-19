@@ -2197,6 +2197,147 @@ body.user-page {
   overflow-wrap: anywhere;
 }
 
+.user-page .user-main {
+  min-height: calc(100vh - 74px);
+  padding: 36px 0 72px;
+}
+
+.user-page .user-main > .container {
+  width: min(1220px, calc(100% - 48px));
+}
+
+.user-page .user-welcome {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(450px, 0.95fr);
+  align-items: center;
+  gap: 32px;
+  max-width: none;
+  margin: 0 0 28px;
+  text-align: left;
+}
+
+.user-welcome-copy .eyebrow {
+  margin-bottom: 12px;
+}
+
+.user-welcome-copy h1 {
+  margin-bottom: 10px;
+  font-size: 36px;
+}
+
+.user-welcome-copy > p:last-child {
+  max-width: 620px;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.user-overview-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.user-stat-card {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  min-height: 112px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+.user-stat-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.user-stat-card strong {
+  color: var(--ink);
+  font-size: 27px;
+  line-height: 1.2;
+}
+
+.user-stat-caption {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.user-page .user-content-grid {
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  gap: 20px;
+}
+
+.user-page .user-panel {
+  padding: 24px;
+  border-radius: 12px;
+}
+
+.user-page .user-panel-heading {
+  margin-bottom: 20px;
+}
+
+.user-page .user-panel-heading h2 {
+  font-size: 23px;
+}
+
+.user-page .user-panel .eyebrow {
+  margin-bottom: 8px;
+  font-size: 11px;
+}
+
+.user-page .user-pet-panel {
+  margin-bottom: 20px;
+}
+
+.user-page .user-pet-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.user-page .user-pet-form-intro,
+.user-page .user-form-full,
+.user-page .user-pet-form .care-form-actions {
+  grid-column: 1 / -1;
+}
+
+.user-page .user-pet-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.user-page .user-pet-card,
+.user-page .user-schedule-card {
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.user-page .user-pet-card {
+  align-items: flex-start;
+}
+
+.user-page .user-pet-card-primary {
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+
+.user-page .user-pet-card-owner {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 1000px) {
+  .user-page .user-welcome {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .user-page .user-content-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 900px) {
   .user-content-grid {
     grid-template-columns: 1fr;
@@ -2230,6 +2371,46 @@ body.user-page {
 }
 
 @media (max-width: 640px) {
+  .user-page .user-main > .container {
+    width: min(100% - 28px, 560px);
+  }
+
+  .user-page .user-main {
+    padding: 28px 0 48px;
+  }
+
+  .user-page .user-welcome-copy h1 {
+    font-size: 30px;
+  }
+
+  .user-overview-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .user-stat-card {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    min-height: auto;
+  }
+
+  .user-stat-card strong {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .user-stat-caption {
+    grid-column: 1;
+  }
+
+  .user-page .user-panel {
+    padding: 20px 16px;
+  }
+
+  .user-page .user-pet-form,
+  .user-page .user-pet-list {
+    grid-template-columns: 1fr;
+  }
+
   .user-pet-form {
     grid-template-columns: 1fr;
   }
