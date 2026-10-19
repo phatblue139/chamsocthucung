@@ -1,6 +1,11 @@
 import "./style.css";
 import { getCurrentUser } from "./auth.js";
 import { initSiteHeader } from "./siteHeader.js";
+import {
+  chargeWallet,
+  loadPaymentPreference,
+  loadWallet,
+} from "./paymentData.js";
 import { getNextPetId, loadPets, PET_STORAGE_KEY, savePets } from "./petData.js";
 import {
   CARE_TYPES,
@@ -56,7 +61,15 @@ function initUserView(user) {
   const petStat = document.getElementById("userStatPetCount");
   const pendingStat = document.getElementById("userStatPendingCount");
   const completedStat = document.getElementById("userStatCompletedCount");
+  let defaultPaymentMethod = loadPaymentPreference(user.username);
   let schedules = loadSchedules();
+  setBookingPaymentMethod(defaultPaymentMethod);
+
+  function setBookingPaymentMethod(method) {
+    form?.querySelectorAll('input[name="paymentMethod"]').forEach((input) => {
+      input.checked = input.value === method;
+    });
+  }
 
   const petForm = document.getElementById("userPetForm");
   const petSpeciesInput = petForm?.elements.namedItem("species");
@@ -79,6 +92,7 @@ function initUserView(user) {
   const shipCenterSelect = document.getElementById("userShipCenter");
   const shipTypeSelect = document.getElementById("userShipType");
   const returnAddressGroup = document.getElementById("userReturnAddressGroup");
+  let currentShippingFee = 0;
   let activePetId = "";
 
   renderPets();
@@ -176,6 +190,8 @@ function initUserView(user) {
   }
 
   function updateShipQuote() {
+    currentShippingFee = 0;
+    updateScheduleTotal();
     if (!shipToggle?.checked) {
       if (shipQuoteText) shipQuoteText.textContent = "Vui lòng chọn thú cưng, địa chỉ và trung tâm để xem phí ship.";
       return;
@@ -216,6 +232,10 @@ function initUserView(user) {
       shipQuoteText.textContent = quote.valid
         ? `Khoảng cách mô phỏng: ${route.distanceKm} km · ${quote.message} Tổng: ${formatCurrency(quote.total)}.`
         : quote.message;
+    }
+    if (quote.valid) {
+      currentShippingFee = quote.total;
+      updateScheduleTotal();
     }
   }
 
@@ -435,11 +455,16 @@ function initUserView(user) {
     if (!hasSelectedService) return;
     if (hasUnpricedPetSitting) {
       scheduleTotal.textContent = total
-        ? `Tạm tính: ${formatCurrency(total)} · Chưa gồm phí trông giữ; chọn ngày giờ nhận và trả để tính đủ.`
+        ? `Dịch vụ: ${formatCurrency(total)} · Chưa gồm phí trông giữ; chọn ngày giờ nhận và trả để tính đủ.`
         : "Chọn ngày giờ nhận và trả để xem tổng tiền dịch vụ.";
       return;
     }
-    scheduleTotal.textContent = `Tổng tiền dịch vụ: ${formatCurrency(total) || "0đ"}.`;
+    if (shipToggle?.checked && !currentShippingFee) {
+      scheduleTotal.textContent = `Dịch vụ: ${formatCurrency(total) || "0đ"} · Phí vận chuyển đang chờ báo giá.`;
+      return;
+    }
+    const shippingLabel = currentShippingFee ? ` · Vận chuyển: ${formatCurrency(currentShippingFee)}` : "";
+    scheduleTotal.textContent = `Dịch vụ: ${formatCurrency(total) || "0đ"}${shippingLabel} · Tổng thanh toán: ${formatCurrency(total + currentShippingFee) || "0đ"}.`;
   }
 
   form?.addEventListener("submit", (event) => {
@@ -546,6 +571,11 @@ function initUserView(user) {
       customerUsername: user.username,
       customerName: user.fullName || user.username,
       customerPhone: user.phone || "",
+      payment: {
+        method: String(formData.get("paymentMethod") || "at-center"),
+        status: "Chưa thanh toán",
+        amount: 0,
+      },
       status: "Chờ xác nhận",
       source: "user",
       createdAt: new Date().toISOString(),
@@ -567,6 +597,16 @@ function initUserView(user) {
         distanceKm: shippingRecord.distanceKm,
       };
     }
+    schedule.payment.amount = schedule.price + (shippingRecord?.totalFee || 0);
+
+    if (schedule.payment.method === "wallet") {
+      const wallet = loadWallet(user.username);
+      if (wallet.balance < schedule.payment.amount) {
+        showMessage(`Số dư ví ${formatCurrency(wallet.balance) || "0đ"} chưa đủ. Cần ${formatCurrency(schedule.payment.amount)} để thanh toán lịch này.`, "error");
+        return;
+      }
+      schedule.payment.status = "Đã thanh toán";
+    }
 
     const nextSchedules = [...latestSchedules, schedule];
     if (!saveSchedules(nextSchedules)) {
@@ -574,14 +614,24 @@ function initUserView(user) {
       return;
     }
 
-    if (shippingRecord && !saveShipmentStorage([...getShipmentStorage(), shippingRecord])) {
+    const shipmentsBeforeBooking = getShipmentStorage();
+    if (shippingRecord && !saveShipmentStorage([...shipmentsBeforeBooking, shippingRecord])) {
       saveSchedules(latestSchedules);
       showMessage("Không thể lưu đơn ship. Lịch chưa được tạo; vui lòng thử lại.", "error");
       return;
     }
 
+    if (schedule.payment.method === "wallet" && !chargeWallet(user.username, schedule.payment.amount, `Thanh toán lịch #${schedule.id}`)) {
+      saveSchedules(latestSchedules);
+      if (shippingRecord) saveShipmentStorage(shipmentsBeforeBooking);
+      showMessage("Không thể trừ số dư ví. Lịch chưa được tạo; vui lòng kiểm tra lại số dư.", "error");
+      return;
+    }
+    if (schedule.payment.method === "wallet") window.dispatchEvent(new Event("neko:wallet-updated"));
+
     schedules = nextSchedules;
     form.reset();
+    setBookingPaymentMethod(defaultPaymentMethod);
     renderPetServiceChoices();
     if (shipToggle) shipToggle.checked = false;
     if (shipPanel) shipPanel.hidden = true;
@@ -1030,7 +1080,8 @@ function initUserView(user) {
       const heading = document.createElement("div");
       heading.className = "user-schedule-card-heading";
 
-      const price = formatCurrency(schedule.price);
+      const paymentAmount = Number(schedule.payment?.amount ?? (Number(schedule.price) + Number(schedule.shipping?.totalFee || 0)));
+      const price = formatCurrency(paymentAmount);
 
       const title = document.createElement("div");
       title.className = "user-schedule-card-title";
@@ -1105,7 +1156,9 @@ function initUserView(user) {
       }
 
       more.append(
-        createScheduleRow("Tổng tiền", price || "Theo yêu cầu"),
+        createScheduleRow("Tổng thanh toán", price || "Theo yêu cầu"),
+        createScheduleRow("Phương thức thanh toán", schedule.payment?.method === "bank-transfer" ? "Chuyển khoản sau khi xác nhận" : "Thanh toán tại trung tâm"),
+        createScheduleRow("Trạng thái thanh toán", schedule.payment?.status || "Chưa thanh toán"),
         createScheduleRow("Trạng thái", statusValue),
         createScheduleRow("Ghi chú", schedule.note || "Không có"),
       );

@@ -8,6 +8,16 @@ import {
 } from "../src/auth.js";
 import { filterPets, getAdminStatistics } from "../src/adminData.js";
 import {
+  DEFAULT_PAYMENT_METHOD,
+  PAYMENT_PREFERENCE_STORAGE_KEY,
+  chargeWallet,
+  loadWallet,
+  loadPaymentPreference,
+  requestWalletWithdrawal,
+  savePaymentPreference,
+  topUpWallet,
+} from "../src/paymentData.js";
+import {
   SCHEDULE_STATUS,
   getCareTypePrice,
   getPetSittingPrice,
@@ -24,6 +34,13 @@ import {
   normalizePetSize,
   validateShippingPet,
 } from "../src/shippingData.js";
+import {
+  confirmPaymentReceived,
+  getPaymentAmount,
+  getPaymentStatus,
+  PAYMENT_STATUS_PAID,
+  PAYMENT_STATUS_UNPAID,
+} from "../src/paymentAdminData.js";
 
 class MemoryStorage {
   values = new Map();
@@ -192,4 +209,47 @@ test("simulated routes use the selected address district", () => {
 
   assert.equal(getDistanceForLocation(centralDistrict, "CENTER_1")?.distanceKm, 2);
   assert.equal(getDistanceForLocation(outerDistrict, "CENTER_1")?.distanceKm, 12);
+});
+
+test("payment preference is saved per user and rejects unknown methods", () => {
+  localStorage.removeItem(PAYMENT_PREFERENCE_STORAGE_KEY);
+  assert.equal(loadPaymentPreference("new-customer"), DEFAULT_PAYMENT_METHOD);
+  assert.equal(savePaymentPreference("Customer-A", "bank-transfer"), true);
+  assert.equal(loadPaymentPreference("customer-a"), "bank-transfer");
+  assert.equal(loadPaymentPreference("customer-b"), DEFAULT_PAYMENT_METHOD);
+  assert.equal(savePaymentPreference("customer-a", "card"), false);
+  assert.equal(savePaymentPreference("customer-a", "wallet"), true);
+});
+
+test("wallet tracks demo top-ups and charges without allowing a negative balance", () => {
+  const username = `wallet-test-${Date.now()}`;
+  assert.equal(loadWallet(username).balance, 0);
+  assert.equal(chargeWallet(username, 10000), false);
+  assert.equal(topUpWallet(username, 100000), true);
+  assert.equal(chargeWallet(username, 35000), true);
+  assert.equal(loadWallet(username).balance, 65000);
+  assert.equal(requestWalletWithdrawal(username, 40000), true);
+  assert.equal(loadWallet(username).balance, 25000);
+  assert.equal(requestWalletWithdrawal(username, 30000), false);
+  assert.equal(loadWallet(username).transactions.length, 3);
+  assert.equal(loadWallet(username).transactions.at(-1).status, "pending");
+  assert.equal(topUpWallet(username, -1), false);
+});
+
+test("admin payment helpers include shipping and confirm receipt metadata", () => {
+  const schedule = {
+    id: 18,
+    price: 100000,
+    shipping: { totalFee: 25000 },
+    payment: { method: "bank-transfer", status: "Chờ thanh toán" },
+  };
+  assert.equal(getPaymentAmount(schedule), 125000);
+  assert.equal(getPaymentStatus(schedule), PAYMENT_STATUS_UNPAID);
+
+  const confirmed = confirmPaymentReceived(schedule, "admin", "2026-10-19T10:00:00.000Z");
+  assert.equal(getPaymentStatus(confirmed), PAYMENT_STATUS_PAID);
+  assert.equal(confirmed.payment.amount, 125000);
+  assert.equal(confirmed.payment.receivedBy, "admin");
+  assert.equal(confirmed.payment.paidAt, "2026-10-19T10:00:00.000Z");
+  assert.equal(schedule.payment.status, "Chờ thanh toán");
 });

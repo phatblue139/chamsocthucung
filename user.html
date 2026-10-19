@@ -46,6 +46,18 @@
           </div>
         </section>
 
+        <section class="user-panel user-payment-account">
+          <div class="user-panel-heading">
+            <div>
+              <p class="eyebrow">Thanh toán</p>
+              <h2>Tài khoản thanh toán</h2>
+            </div>
+            <span class="user-panel-badge">Ví NEKO</span>
+          </div>
+          <p class="user-pet-form-intro">Xem số dư ví, nạp thử nghiệm và quản lý phương thức thanh toán mặc định.</p>
+          <a class="btn btn-primary" href="/payment.html">Mở tài khoản thanh toán</a>
+        </section>
+
         <section class="user-panel user-pet-panel">
           <div class="user-panel-heading">
             <div>
@@ -200,6 +212,23 @@
                 <select id="userScheduleReturnTime" name="endTime"></select>
               </div>
               <p class="user-pet-choice-hint user-schedule-total user-form-full" id="userScheduleTotal" aria-live="polite" hidden></p>
+              <fieldset class="care-form-group user-form-full user-payment-methods">
+                <legend>Phương thức thanh toán</legend>
+                <div class="user-payment-choice-list">
+                  <label class="user-payment-choice">
+                    <input type="radio" name="paymentMethod" value="at-center" checked required />
+                    <span><strong>Thanh toán tại trung tâm</strong><small>Thanh toán trực tiếp khi sử dụng dịch vụ.</small></span>
+                  </label>
+                  <label class="user-payment-choice">
+                    <input type="radio" name="paymentMethod" value="bank-transfer" required />
+                    <span><strong>Chuyển khoản sau khi xác nhận</strong><small>NEKO sẽ gửi thông tin chuyển khoản. Chưa hỗ trợ thanh toán trực tuyến.</small></span>
+                  </label>
+                  <label class="user-payment-choice">
+                    <input type="radio" name="paymentMethod" value="wallet" required />
+                    <span><strong>Thanh toán bằng ví NEKO</strong><small>Trừ trực tiếp số dư ví khi tạo lịch; cần đủ số dư.</small></span>
+                  </label>
+                </div>
+              </fieldset>
               <div class="care-form-group user-form-full">
                 <label for="userScheduleNote">Ghi chú</label>
                 <textarea id="userScheduleNote" name="note" rows="3" maxlength="500" placeholder="Thông tin thêm cho NEKO..."></textarea>
