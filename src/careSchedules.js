@@ -6,6 +6,7 @@ import {
     getCareTypePrice,
     getNextScheduleId,
     getScheduleStatusClass,
+    mergeScheduleUpdate,
     getTimeOptions,
     isKnownCareType,
     loadSchedules,
@@ -414,10 +415,7 @@ function updateSchedule(id) {
     }
 
     const nextSchedules = [...schedules];
-    nextSchedules[index] = {
-        ...nextSchedules[index],
-        ...getFormData(),
-    };
+    nextSchedules[index] = mergeScheduleUpdate(nextSchedules[index], getFormData());
 
     if (!saveSchedules(nextSchedules)) {
         showMessage("Không thể cập nhật lịch. Vui lòng thử lại.", "error");
@@ -435,12 +433,18 @@ function editSchedule(id) {
 
     idInput.value = schedule.id;
     petNameInput.value = schedule.petName || "";
+    const hasDetailedServices = Array.isArray(schedule.petServices) && schedule.petServices.length > 0;
+    petNameInput.disabled = hasDetailedServices;
+    careTypeInput.disabled = hasDetailedServices;
+    if (careTypeOtherInput) careTypeOtherInput.disabled = hasDetailedServices;
     setCareType(schedule.careType);
     dateInput.value = schedule.date || "";
     setTime(schedule.time);
     statusInput.value = getScheduleStatus(schedule);    noteInput.value = schedule.note || "";
     saveBtn.textContent = "Cập nhật lịch";
-    showMessage("Đang chỉnh sửa lịch đã chọn.", "");
+    showMessage(hasDetailedServices
+        ? "Lịch có nhiều dịch vụ do khách chọn; dịch vụ và giá được giữ nguyên khi cập nhật."
+        : "Đang chỉnh sửa lịch đã chọn.", "");
 
     window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -534,6 +538,9 @@ function restoreSchedule(id) {
 function resetForm() {
     form?.reset();
     idInput.value = "";
+    if (petNameInput) petNameInput.disabled = false;
+    if (careTypeInput) careTypeInput.disabled = false;
+    if (careTypeOtherInput) careTypeOtherInput.disabled = false;
     if (saveBtn) saveBtn.textContent = "Lưu lịch";
     syncCareTypeOther();
 }

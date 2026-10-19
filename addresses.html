@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quản lý địa chỉ | NEKO</title>
+    <script>
+      try {
+        if (!localStorage.getItem("neko:user")) {
+          location.replace("/");
+        }
+      } catch (error) {
+        location.replace("/");
+      }
+    </script>
+  </head>
+  <body class="user-page address-page">
+    <div data-site-header></div>
+
+    <main class="user-main">
+      <div class="container">
+        <section class="user-panel">
+          <div class="user-panel-heading">
+            <div>
+              <p class="eyebrow">Địa chỉ của tôi</p>
+              <h2>Quản lý địa chỉ nhận &amp; trả thú cưng</h2>
+            </div>
+          </div>
+
+          <form id="addressForm" class="care-form">
+            <input type="hidden" id="addressId" />
+
+            <div class="care-form-group">
+              <label for="addressContactName">Tên người liên hệ <span class="required-mark">*</span></label>
+              <input id="addressContactName" name="contactName" type="text" maxlength="80" required />
+            </div>
+
+            <div class="care-form-group">
+              <label for="addressPhone">Số điện thoại <span class="required-mark">*</span></label>
+              <input id="addressPhone" name="phone" type="tel" maxlength="20" required />
+            </div>
+
+            <div class="care-form-group">
+              <label for="addressCity">Tỉnh/Thành phố <span class="required-mark">*</span></label>
+              <select id="addressCity" name="city" required></select>
+            </div>
+
+            <div class="care-form-group">
+              <label for="addressDistrict">Quận/Huyện hoặc khu vực <span class="required-mark">*</span></label>
+              <select id="addressDistrict" name="district" required disabled></select>
+            </div>
+
+            <div class="care-form-group">
+              <label for="addressWard">Phường/Xã</label>
+              <select id="addressWard" name="ward" disabled></select>
+            </div>
+
+            <div class="care-form-group">
+              <label for="addressHouseNumber">Số nhà, tên đường <span class="required-mark">*</span></label>
+              <input id="addressHouseNumber" name="houseNumber" type="text" maxlength="120" required />
+            </div>
+
+            <div class="care-form-group user-form-full">
+              <label for="addressDetail">Địa chỉ chi tiết</label>
+              <textarea id="addressDetail" name="detail" rows="3" maxlength="200" placeholder="Ví dụ: 13 Trịnh Văn Bô, ngõ 3, tầng 2"></textarea>
+            </div>
+
+            <div class="care-form-group user-form-full">
+              <label class="user-ship-toggle-label" for="addressDefault">
+                <input id="addressDefault" name="isDefault" type="checkbox" />
+                <span>Đặt làm địa chỉ mặc định</span>
+              </label>
+            </div>
+
+            <div class="care-form-actions">
+              <button type="submit" class="care-btn care-btn-add">Lưu địa chỉ</button>
+              <button type="button" class="care-btn care-btn-cancel" id="addressCancelBtn">Hủy</button>
+            </div>
+          </form>
+
+          <p id="addressMessage" class="user-form-message" role="status" aria-live="polite"></p>
+
+          <div class="address-list" id="addressList"></div>
+        </section>
+      </div>
+    </main>
+
+    <script type="module" src="/src/addresses.js"></script>
+  </body>
+</html>
