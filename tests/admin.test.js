@@ -16,6 +16,14 @@ import {
   normalizeStatus,
   resolveScheduleStatus,
 } from "../src/careScheduleData.js";
+import {
+  calculateShipmentFee,
+  getDistanceConfig,
+  getDistanceForLocation,
+  getAddressAreaCode,
+  normalizePetSize,
+  validateShippingPet,
+} from "../src/shippingData.js";
 
 class MemoryStorage {
   values = new Map();
@@ -138,4 +146,50 @@ test("dashboard statistics ignore unknown status values", () => {
     { status: "không rõ" },
   ]);
   assert.deepEqual(stats, { totalPets: 0, unfinishedSchedules: 1, completedSchedules: 1 });
+});
+
+test("simulated shipping fees use distance and selected pet size", () => {
+  assert.equal(getDistanceForLocation("A", "CENTER_1")?.distanceKm, 2);
+  assert.deepEqual(getDistanceConfig().slice(0, 4).map((row) => row.areaCode), ["A", "B", "C", "D"]);
+
+  const oneWay = calculateShipmentFee({
+    distanceKm: 8,
+    petSize: "medium",
+    transportType: "one-way",
+  });
+  assert.equal(oneWay.baseFee, 20000);
+  assert.equal(oneWay.distanceFee, 25000);
+  assert.equal(oneWay.weightFee, 0);
+  assert.equal(oneWay.sizeFee, 10000);
+  assert.equal(oneWay.total, 55000);
+
+  const roundTrip = calculateShipmentFee({
+    distanceKm: 8,
+    petSize: "medium",
+    transportType: "round-trip",
+  });
+  assert.equal(roundTrip.baseFee, 35000);
+  assert.equal(roundTrip.total, 70000);
+
+  const invalid = calculateShipmentFee({ distanceKm: 20, petSize: "medium", transportType: "one-way" });
+  assert.equal(invalid.valid, false);
+  assert.match(invalid.message, /xác nhận/);
+});
+
+test("pet sizes are normalized and validated safely", () => {
+  assert.equal(normalizePetSize("SMALL"), "small");
+  assert.equal(normalizePetSize("tiny"), "small");
+  assert.equal(normalizePetSize("medium"), "medium");
+  assert.equal(normalizePetSize("large"), "large");
+  assert.equal(normalizePetSize(""), "");
+  assert.equal(validateShippingPet({ name: "Milu", size: "medium" }).valid, true);
+  assert.equal(validateShippingPet({ name: "Milu" }).valid, false);
+});
+
+test("simulated routes use the selected address district", () => {
+  const centralDistrict = getAddressAreaCode("Hà Nội", "Ba Đình");
+  const outerDistrict = getAddressAreaCode("Hà Nội", "Hà Đông");
+
+  assert.equal(getDistanceForLocation(centralDistrict, "CENTER_1")?.distanceKm, 2);
+  assert.equal(getDistanceForLocation(outerDistrict, "CENTER_1")?.distanceKm, 12);
 });
