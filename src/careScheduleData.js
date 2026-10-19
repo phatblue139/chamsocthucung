@@ -128,7 +128,8 @@ export function getPetSittingPrice(startDate, startTime, endDate, endTime) {
 }
 
 export function isKnownCareType(careType) {
-  return Object.prototype.hasOwnProperty.call(CARE_TYPE_PRICES, String(careType || "").trim());
+  const normalized = String(careType || "").trim();
+  return normalized === CARE_TYPE_PET_SITTING || Object.prototype.hasOwnProperty.call(CARE_TYPE_PRICES, normalized);
 }
 
 export function formatCurrency(value) {
@@ -258,19 +259,16 @@ export function getSampleSchedules() {
 
 export function loadSchedules() {
   const storage = getStorage();
-  if (!storage) return getSampleSchedules();
+  if (!storage) return [];
 
-  const stored = storage.getItem(SCHEDULE_STORAGE_KEY);
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed)) return parsed.map(normalizeSchedule);
-    } catch (error) {
-      return getSampleSchedules();
-    }
+  try {
+    const stored = storage.getItem(SCHEDULE_STORAGE_KEY);
+    if (stored === null || stored === "") return [];
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) ? parsed.map(normalizeSchedule) : [];
+  } catch (error) {
+    return [];
   }
-
-  return getSampleSchedules();
 }
 
 export function saveSchedules(schedules) {
@@ -278,6 +276,8 @@ export function saveSchedules(schedules) {
   if (!storage || !Array.isArray(schedules)) return false;
 
   try {
+    const stored = storage.getItem(SCHEDULE_STORAGE_KEY);
+    if (stored !== null && !Array.isArray(JSON.parse(stored))) return false;
     storage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(schedules.map(normalizeSchedule)));
     return true;
   } catch (error) {

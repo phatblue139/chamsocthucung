@@ -1,15 +1,22 @@
 import {
+    CARE_TYPES,
+    CARE_TYPE_PET_SITTING,
     CARE_TYPE_OTHER,
     SCHEDULE_STORAGE_KEY,
     SCHEDULE_STATUS,
     formatCurrency,
     getCareTypePrice,
+    getPetSittingPrice,
     getNextScheduleId,
     getScheduleStatusClass,
     mergeScheduleUpdate,
     getTimeOptions,
     isKnownCareType,
     loadSchedules,
+    OPEN_TIME,
+    CLOSE_TIME,
+    PET_SITTING_DAILY_RATE,
+    PET_SITTING_HOURLY_RATE,
     resolveScheduleStatus,
     saveSchedules,
 } from "./careScheduleData.js";
@@ -37,6 +44,10 @@ const careTypeOtherInput = document.getElementById("careTypeOther");
 const careTypeOtherGroup = document.getElementById("careTypeOtherGroup");
 const dateInput = document.getElementById("date");
 const timeInput = document.getElementById("time");
+const endDateInput = document.getElementById("endDate");
+const endTimeInput = document.getElementById("endTime");
+const endDateGroup = document.getElementById("petSittingEndDateGroup");
+const endTimeGroup = document.getElementById("petSittingEndTimeGroup");
 const statusInput = document.getElementById("status");
 const noteInput = document.getElementById("note");
 const careStats = document.getElementById("careStats");
@@ -65,6 +76,14 @@ form?.addEventListener("submit", (event) => {
 
     if (!form.checkValidity()) {
         form.reportValidity();
+        return;
+    }
+    if (careTypeInput.value === CARE_TYPE_PET_SITTING && (
+        endDateInput.value < dateInput.value ||
+        (endDateInput.value === dateInput.value && endTimeInput.value <= timeInput.value)
+    )) {
+        showMessage("Ngày/giờ trả thú cưng phải sau thời điểm nhận.", "error");
+        endDateInput.focus();
         return;
     }
 
@@ -119,8 +138,9 @@ cancelBtn?.addEventListener("click", () => {
 });
 
 careTypeInput?.addEventListener("change", syncCareTypeOther);
+populateCareTypeOptions();
+populateEndTimeOptions();
 syncCareTypeOther();
-populateTimeOptions();
 window.addEventListener("storage", (event) => {
     if (event.key !== SCHEDULE_STORAGE_KEY) return;
     schedules = loadSchedules();
@@ -192,25 +212,45 @@ function createCell(value) {
     return cell;
 }
 
+function formatSchedulePets(schedule) {
+    if (Array.isArray(schedule.petServices) && schedule.petServices.length) {
+        return schedule.petServices.map((item) =>
+            `${item.petName || "Thú cưng"}${item.petId ? ` (#${item.petId})` : ""}`,
+        ).join(", ");
+    }
+    const petIds = Array.isArray(schedule.petIds) && schedule.petIds.length
+        ? schedule.petIds
+        : schedule.petId ? [schedule.petId] : [];
+    if (!petIds.length) return schedule.petName || "";
+    const petNames = Array.isArray(schedule.petNames) ? schedule.petNames : [];
+    return petIds.map((id, index) => `${petNames[index] || schedule.petName || "Thú cưng"} (#${id})`).join(", ");
+}
+
 function createCareTypeCell(schedule) {
     const cell = document.createElement("td");
     cell.className = "care-type-cell";
 
     if (!Array.isArray(schedule.petServices) || !schedule.petServices.length) {
         cell.textContent = schedule.careType || "";
-        return cell;
+    } else {
+        schedule.petServices.forEach((item) => {
+            const entry = document.createElement("div");
+            entry.className = "care-type-entry";
+            const petName = document.createElement("strong");
+            petName.textContent = item.petName || "Thú cưng";
+            const services = document.createElement("span");
+            services.textContent = Array.isArray(item.services) ? item.services.join(", ") : "Chăm sóc";
+            entry.append(petName, document.createTextNode(": "), services);
+            cell.appendChild(entry);
+        });
     }
 
-    schedule.petServices.forEach((item) => {
-        const entry = document.createElement("div");
-        entry.className = "care-type-entry";
-        const petName = document.createElement("strong");
-        petName.textContent = item.petName || "Thú cưng";
-        const services = document.createElement("span");
-        services.textContent = Array.isArray(item.services) ? item.services.join(", ") : "Chăm sóc";
-        entry.append(petName, document.createTextNode(": "), services);
-        cell.appendChild(entry);
-    });
+    if (schedule.shipping) {
+        const shipping = document.createElement("div");
+        shipping.className = "care-type-entry";
+        shipping.textContent = `Phí ship (${schedule.shipping.transportType === "round-trip" ? "hai chiều" : "một chiều"}): ${formatCurrency(schedule.shipping.totalFee) || "Theo yêu cầu"}`;
+        cell.appendChild(shipping);
+    }
 
     return cell;
 }
@@ -235,7 +275,11 @@ function render() {
 
     rows.forEach((schedule) => {
         const row = document.createElement("tr");
-        const customer = schedule.customerName || schedule.customerUsername || "Dữ liệu mẫu";
+        const customer = [
+            schedule.customerName || (schedule.source === "admin" ? "Admin" : ""),
+            schedule.customerUsername ? `@${schedule.customerUsername}` : "",
+            schedule.customerId ? `ID ${schedule.customerId}` : "",
+        ].filter(Boolean).join(" · ") || "—";
         const phone = schedule.customerPhone || "—";
         const status = getScheduleStatus(schedule);
         const isDeleted = Boolean(schedule.deletedAt);
@@ -248,7 +292,7 @@ function render() {
             createCell(schedule.id),
             createCell(customer),
             createCell(phone),
-            createCell(schedule.petName),
+            createCell(formatSchedulePets(schedule)),
             createCareTypeCell(schedule),
             createCell(priceText),
             createCell(schedule.endDate ? `${schedule.date} → ${schedule.endDate}` : schedule.date),
@@ -325,12 +369,16 @@ function createStatusCell(status) {
 
 function getFormData() {
     const careType = resolveCareType();
+    const isPetSitting = careType === CARE_TYPE_PET_SITTING;
     return {
         petName: petNameInput.value.trim(),
         careType,
-        price: getCareTypePrice(careType),
+        price: isPetSitting
+            ? getPetSittingPrice(dateInput.value, timeInput.value, endDateInput.value, endTimeInput.value)
+            : getCareTypePrice(careType),
         date: dateInput.value,
         time: timeInput.value,
+        ...(isPetSitting ? { endDate: endDateInput.value, endTime: endTimeInput.value } : {}),
         note: noteInput.value.trim(),
         status: statusInput.value,
     };
@@ -338,11 +386,41 @@ function getFormData() {
 
 function syncCareTypeOther() {
     const isOther = careTypeInput?.value === CARE_TYPE_OTHER;
+    const isPetSitting = careTypeInput?.value === CARE_TYPE_PET_SITTING;
     if (careTypeOtherGroup) careTypeOtherGroup.hidden = !isOther;
     if (careTypeOtherInput) {
         careTypeOtherInput.required = isOther;
         careTypeOtherInput.value = isOther ? careTypeOtherInput.value : "";
     }
+    if (endDateGroup) endDateGroup.hidden = !isPetSitting;
+    if (endTimeGroup) endTimeGroup.hidden = !isPetSitting;
+    if (endDateInput) endDateInput.required = isPetSitting;
+    if (endTimeInput) endTimeInput.required = isPetSitting;
+    if (!isPetSitting) {
+        if (endDateInput) endDateInput.value = "";
+        if (endTimeInput) endTimeInput.value = "";
+    }
+    populateTimeOptions();
+}
+
+function populateCareTypeOptions() {
+    if (!careTypeInput) return;
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "-- Chọn loại chăm sóc --";
+    const options = CARE_TYPES.map((service) => {
+        const option = document.createElement("option");
+        option.value = service.value;
+        option.textContent = `${service.value} - ${formatCurrency(service.price)}`;
+        return option;
+    });
+    const petSittingOption = document.createElement("option");
+    petSittingOption.value = CARE_TYPE_PET_SITTING;
+    petSittingOption.textContent = `${CARE_TYPE_PET_SITTING} - ${formatCurrency(PET_SITTING_HOURLY_RATE)}/giờ, ${formatCurrency(PET_SITTING_DAILY_RATE)}/ngày`;
+    const otherOption = document.createElement("option");
+    otherOption.value = CARE_TYPE_OTHER;
+    otherOption.textContent = `${CARE_TYPE_OTHER} - theo yêu cầu`;
+    careTypeInput.replaceChildren(placeholder, ...options, petSittingOption, otherOption);
 }
 
 function resolveCareType() {
@@ -361,18 +439,32 @@ function setCareType(value) {
     syncCareTypeOther();
 }
 
-function populateTimeOptions() {
+function populateTimeOptions({ open = OPEN_TIME, close = CLOSE_TIME } = {}) {
     if (!timeInput) return;
     const placeholder = document.createElement("option");
     placeholder.value = "";
     placeholder.textContent = "-- Chọn giờ --";
-    const options = getTimeOptions().map((value) => {
+    const options = getTimeOptions({ open, close }).map((value) => {
         const option = document.createElement("option");
         option.value = value;
         option.textContent = value;
         return option;
     });
     timeInput.replaceChildren(placeholder, ...options);
+}
+
+function populateEndTimeOptions() {
+    if (!endTimeInput) return;
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "-- Chọn giờ trả --";
+    const options = getTimeOptions().map((value) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        return option;
+    });
+    endTimeInput.replaceChildren(placeholder, ...options);
 }
 
 function setTime(value) {
@@ -386,14 +478,28 @@ function setTime(value) {
     timeInput.value = time;
 }
 
+function setEndTime(value) {
+    const time = String(value || "").trim();
+    if (time && endTimeInput && !Array.from(endTimeInput.options).some((option) => option.value === time)) {
+        const option = document.createElement("option");
+        option.value = time;
+        option.textContent = time;
+        endTimeInput.appendChild(option);
+    }
+    if (endTimeInput) endTimeInput.value = time;
+}
+
 function addSchedule() {
+    const latestSchedules = loadSchedules();
+    const now = new Date().toISOString();
     const schedule = {
-        id: getNextScheduleId(schedules),
+        id: getNextScheduleId(latestSchedules),
         ...getFormData(),
         source: "admin",
-        createdAt: new Date().toISOString(),
+        createdAt: now,
+        updatedAt: now,
     };
-    const nextSchedules = [...schedules, schedule];
+    const nextSchedules = [...latestSchedules, schedule];
 
     if (!saveSchedules(nextSchedules)) {
         showMessage("Không thể lưu lịch. Vui lòng thử lại.", "error");
@@ -406,16 +512,21 @@ function addSchedule() {
 }
 
 function updateSchedule(id) {
-    const index = schedules.findIndex((schedule) => Number(schedule.id) === id);
+    const latestSchedules = loadSchedules();
+    const index = latestSchedules.findIndex((schedule) => Number(schedule.id) === id);
     if (index < 0) {
+        schedules = latestSchedules;
         resetForm();
         showMessage(`Lịch #${id} không còn tồn tại. Vui lòng chọn lại lịch cần sửa.`, "error");
         render();
         return false;
     }
 
-    const nextSchedules = [...schedules];
-    nextSchedules[index] = mergeScheduleUpdate(nextSchedules[index], getFormData());
+    const nextSchedules = [...latestSchedules];
+    nextSchedules[index] = {
+        ...mergeScheduleUpdate(nextSchedules[index], getFormData()),
+        updatedAt: new Date().toISOString(),
+    };
 
     if (!saveSchedules(nextSchedules)) {
         showMessage("Không thể cập nhật lịch. Vui lòng thử lại.", "error");
@@ -440,7 +551,10 @@ function editSchedule(id) {
     setCareType(schedule.careType);
     dateInput.value = schedule.date || "";
     setTime(schedule.time);
-    statusInput.value = getScheduleStatus(schedule);    noteInput.value = schedule.note || "";
+    if (endDateInput) endDateInput.value = schedule.endDate || "";
+    setEndTime(schedule.endTime || "");
+    statusInput.value = getScheduleStatus(schedule);
+    noteInput.value = schedule.note || "";
     saveBtn.textContent = "Cập nhật lịch";
     showMessage(hasDetailedServices
         ? "Lịch có nhiều dịch vụ do khách chọn; dịch vụ và giá được giữ nguyên khi cập nhật."
@@ -450,9 +564,16 @@ function editSchedule(id) {
 }
 
 function setStatus(id, nextStatus, extra = {}) {
-    const nextSchedules = schedules.map((item) =>
-        Number(item.id) === id ? { ...item, status: nextStatus, ...extra } : item,
-    );
+    const latestSchedules = loadSchedules();
+    if (!latestSchedules.some((item) => Number(item.id) === id)) {
+        schedules = latestSchedules;
+        render();
+        showMessage(`Lịch #${id} không còn tồn tại. Danh sách đã được cập nhật.`, "error");
+        return false;
+    }
+    const nextSchedules = latestSchedules.map((item) => Number(item.id) === id
+        ? { ...item, status: nextStatus, ...extra, updatedAt: new Date().toISOString() }
+        : item);
 
     if (!saveSchedules(nextSchedules)) {
         showMessage("Không thể cập nhật trạng thái lịch. Vui lòng thử lại.", "error");
@@ -465,8 +586,10 @@ function setStatus(id, nextStatus, extra = {}) {
 }
 
 function confirmSchedule(id) {
-    const schedule = schedules.find((item) => Number(item.id) === id);
+    const latestSchedules = loadSchedules();
+    const schedule = latestSchedules.find((item) => Number(item.id) === id);
     if (!schedule) return;
+    schedules = latestSchedules;
 
     const status = getScheduleStatus(schedule);
     if (status !== STATUS_PENDING) {
@@ -481,8 +604,10 @@ function confirmSchedule(id) {
 }
 
 function toggleCompleted(id) {
-    const schedule = schedules.find((item) => Number(item.id) === id);
+    const latestSchedules = loadSchedules();
+    const schedule = latestSchedules.find((item) => Number(item.id) === id);
     if (!schedule) return;
+    schedules = latestSchedules;
 
     const status = getScheduleStatus(schedule);
     const isCompleted = status === STATUS_COMPLETED;
@@ -506,9 +631,17 @@ function toggleCompleted(id) {
 function deleteSchedule(id) {
     if (!confirm("Chuyển lịch chăm sóc này vào danh sách đã xóa? Bạn có thể khôi phục sau.")) return;
 
-    const nextSchedules = schedules.map((schedule) =>
-        Number(schedule.id) === id ? { ...schedule, deletedAt: new Date().toISOString() } : schedule,
-    );
+    const latestSchedules = loadSchedules();
+    if (!latestSchedules.some((schedule) => Number(schedule.id) === id)) {
+        schedules = latestSchedules;
+        render();
+        showMessage(`Lịch #${id} không còn tồn tại. Danh sách đã được cập nhật.`, "error");
+        return;
+    }
+    const deletedAt = new Date().toISOString();
+    const nextSchedules = latestSchedules.map((schedule) => Number(schedule.id) === id
+        ? { ...schedule, deletedAt, updatedAt: deletedAt }
+        : schedule);
     if (!saveSchedules(nextSchedules)) {
         showMessage("Không thể xóa lịch. Vui lòng thử lại.", "error");
         return;
@@ -521,9 +654,17 @@ function deleteSchedule(id) {
 }
 
 function restoreSchedule(id) {
-    const nextSchedules = schedules.map((schedule) =>
-        Number(schedule.id) === id ? { ...schedule, deletedAt: "" } : schedule,
-    );
+    const latestSchedules = loadSchedules();
+    if (!latestSchedules.some((schedule) => Number(schedule.id) === id)) {
+        schedules = latestSchedules;
+        render();
+        showMessage(`Lịch #${id} không còn tồn tại. Danh sách đã được cập nhật.`, "error");
+        return;
+    }
+    const restoredAt = new Date().toISOString();
+    const nextSchedules = latestSchedules.map((schedule) => Number(schedule.id) === id
+        ? { ...schedule, deletedAt: "", updatedAt: restoredAt }
+        : schedule);
 
     if (!saveSchedules(nextSchedules)) {
         showMessage("Không thể khôi phục lịch. Vui lòng thử lại.", "error");

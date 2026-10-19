@@ -11,18 +11,23 @@ function normalizePetSize(size) {
   return raw;
 }
 
+function normalizeOptionalNumber(...values) {
+  const value = values.find((item) => item !== null && item !== undefined && item !== "");
+  if (value === undefined) return "";
+  const number = Number(value);
+  return Number.isFinite(number) ? number : "";
+}
+
 function normalizePetRecord(pet) {
   const item = pet && typeof pet === "object" ? { ...pet } : {};
-  const weightNumber = Number(item.weightKg ?? item.weight ?? item.weight_kg ?? "");
-  const lengthNumber = Number(item.bodyLengthCm ?? item.lengthCm ?? item.bodyLength ?? "");
-  const heightNumber = Number(item.bodyHeightCm ?? item.heightCm ?? item.bodyHeight ?? "");
 
   return {
     ...item,
+    age: normalizeOptionalNumber(item.age, item.ageYears),
     size: normalizePetSize(item.size || item.sizeCategory || item.petSize || item.groupSize || ""),
-    weightKg: Number.isFinite(weightNumber) ? weightNumber : "",
-    bodyLengthCm: Number.isFinite(lengthNumber) ? lengthNumber : "",
-    bodyHeightCm: Number.isFinite(heightNumber) ? heightNumber : "",
+    weightKg: normalizeOptionalNumber(item.weightKg, item.weight, item.weight_kg),
+    bodyLengthCm: normalizeOptionalNumber(item.bodyLengthCm, item.lengthCm, item.bodyLength),
+    bodyHeightCm: normalizeOptionalNumber(item.bodyHeightCm, item.heightCm, item.bodyHeight),
   };
 }
 
@@ -40,7 +45,7 @@ function clonePets(pets) {
 
 export function loadPets() {
   const storage = getStorage();
-  if (!storage) return clonePets(samplePets);
+  if (!storage) return [];
 
   try {
     const saved = storage.getItem(PET_STORAGE_KEY);
@@ -51,9 +56,9 @@ export function loadPets() {
     }
 
     const pets = JSON.parse(saved);
-    return Array.isArray(pets) ? clonePets(pets) : clonePets(samplePets);
+    return Array.isArray(pets) ? clonePets(pets) : [];
   } catch (error) {
-    return clonePets(samplePets);
+    return [];
   }
 }
 
@@ -62,6 +67,8 @@ export function savePets(pets) {
   if (!storage || !Array.isArray(pets)) return false;
 
   try {
+    const stored = storage.getItem(PET_STORAGE_KEY);
+    if (stored !== null && !Array.isArray(JSON.parse(stored))) return false;
     storage.setItem(PET_STORAGE_KEY, JSON.stringify(pets));
     return true;
   } catch (error) {
@@ -69,9 +76,12 @@ export function savePets(pets) {
   }
 }
 
+let lastGeneratedPetId = 0;
+
 export function getNextPetId(pets = loadPets()) {
   const ids = (Array.isArray(pets) ? pets : [])
     .map((pet) => Number(pet?.id))
     .filter((id) => Number.isInteger(id) && id > 0);
-  return ids.length ? Math.max(...ids) + 1 : 1;
+  lastGeneratedPetId = Math.max(Date.now(), ids.length ? Math.max(...ids) + 1 : 1, lastGeneratedPetId + 1);
+  return lastGeneratedPetId;
 }

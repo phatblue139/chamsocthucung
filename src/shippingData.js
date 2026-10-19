@@ -1,6 +1,15 @@
 export const ADDRESS_STORAGE_KEY = "neko:addresses";
 export const SHIPMENT_STORAGE_KEY = "neko:shipments";
 export const DISTANCE_CONFIG_KEY = "neko:distance-config";
+const DISTANCE_CONFIG_VERSION_KEY = `${DISTANCE_CONFIG_KEY}:version`;
+const DISTANCE_CONFIG_VERSION = "2";
+const PREVIOUS_CENTER_2_DISTANCES = new Map([
+  ["A:CENTER_2", 3], ["B:CENTER_2", 6], ["C:CENTER_2", 9], ["D:CENTER_2", 15],
+  ["HN_BA_DINH:CENTER_2", 3], ["HN_HOAN_KIEM:CENTER_2", 4], ["HN_TAY_HO:CENTER_2", 5],
+  ["HN_DONG_DA:CENTER_2", 6], ["HN_HAI_BA_TRUNG:CENTER_2", 7], ["HN_LONG_BIEN:CENTER_2", 8],
+  ["HN_CAU_GIAY:CENTER_2", 9], ["HN_THANH_XUAN:CENTER_2", 10], ["HN_BAC_TU_LIEM:CENTER_2", 11],
+  ["HN_NAM_TU_LIEM:CENTER_2", 12], ["HN_HA_DONG:CENTER_2", 15],
+]);
 
 export const SHIPMENT_STATUS = {
   PENDING: "Chờ xác nhận",
@@ -20,10 +29,10 @@ export const DEFAULT_DISTANCE_CONFIG = [
   { areaCode: "B", areaName: "Khu vực B", centerCode: "CENTER_1", centerName: "Trung tâm 1", distanceKm: 5 },
   { areaCode: "C", areaName: "Khu vực C", centerCode: "CENTER_1", centerName: "Trung tâm 1", distanceKm: 8 },
   { areaCode: "D", areaName: "Khu vực D", centerCode: "CENTER_1", centerName: "Trung tâm 1", distanceKm: 12 },
-  { areaCode: "A", areaName: "Khu vực A", centerCode: "CENTER_2", centerName: "Trung tâm 2", distanceKm: 3 },
-  { areaCode: "B", areaName: "Khu vực B", centerCode: "CENTER_2", centerName: "Trung tâm 2", distanceKm: 6 },
-  { areaCode: "C", areaName: "Khu vực C", centerCode: "CENTER_2", centerName: "Trung tâm 2", distanceKm: 9 },
-  { areaCode: "D", areaName: "Khu vực D", centerCode: "CENTER_2", centerName: "Trung tâm 2", distanceKm: 15 },
+  { areaCode: "A", areaName: "Khu vực A", centerCode: "CENTER_2", centerName: "Đống Đa", distanceKm: 3 },
+  { areaCode: "B", areaName: "Khu vực B", centerCode: "CENTER_2", centerName: "Đống Đa", distanceKm: 6 },
+  { areaCode: "C", areaName: "Khu vực C", centerCode: "CENTER_2", centerName: "Đống Đa", distanceKm: 9 },
+  { areaCode: "D", areaName: "Khu vực D", centerCode: "CENTER_2", centerName: "Đống Đa", distanceKm: 15 },
   { areaCode: "HN_BA_DINH", areaName: "Ba Đình", centerCode: "CENTER_1", centerName: "Trung tâm 1", distanceKm: 2 },
   { areaCode: "HN_HOAN_KIEM", areaName: "Hoàn Kiếm", centerCode: "CENTER_1", centerName: "Trung tâm 1", distanceKm: 3 },
   { areaCode: "HN_TAY_HO", areaName: "Tây Hồ", centerCode: "CENTER_1", centerName: "Trung tâm 1", distanceKm: 4 },
@@ -35,22 +44,21 @@ export const DEFAULT_DISTANCE_CONFIG = [
   { areaCode: "HN_BAC_TU_LIEM", areaName: "Bắc Từ Liêm", centerCode: "CENTER_1", centerName: "Trung tâm 1", distanceKm: 10 },
   { areaCode: "HN_NAM_TU_LIEM", areaName: "Nam Từ Liêm", centerCode: "CENTER_1", centerName: "Trung tâm 1", distanceKm: 11 },
   { areaCode: "HN_HA_DONG", areaName: "Hà Đông", centerCode: "CENTER_1", centerName: "Trung tâm 1", distanceKm: 12 },
-  { areaCode: "HN_BA_DINH", areaName: "Ba Đình", centerCode: "CENTER_2", centerName: "Trung tâm 2", distanceKm: 3 },
-  { areaCode: "HN_HOAN_KIEM", areaName: "Hoàn Kiếm", centerCode: "CENTER_2", centerName: "Trung tâm 2", distanceKm: 4 },
-  { areaCode: "HN_TAY_HO", areaName: "Tây Hồ", centerCode: "CENTER_2", centerName: "Trung tâm 2", distanceKm: 5 },
-  { areaCode: "HN_DONG_DA", areaName: "Đống Đa", centerCode: "CENTER_2", centerName: "Trung tâm 2", distanceKm: 6 },
-  { areaCode: "HN_HAI_BA_TRUNG", areaName: "Hai Bà Trưng", centerCode: "CENTER_2", centerName: "Trung tâm 2", distanceKm: 7 },
-  { areaCode: "HN_LONG_BIEN", areaName: "Long Biên", centerCode: "CENTER_2", centerName: "Trung tâm 2", distanceKm: 8 },
-  { areaCode: "HN_CAU_GIAY", areaName: "Cầu Giấy", centerCode: "CENTER_2", centerName: "Trung tâm 2", distanceKm: 9 },
-  { areaCode: "HN_THANH_XUAN", areaName: "Thanh Xuân", centerCode: "CENTER_2", centerName: "Trung tâm 2", distanceKm: 10 },
-  { areaCode: "HN_BAC_TU_LIEM", areaName: "Bắc Từ Liêm", centerCode: "CENTER_2", centerName: "Trung tâm 2", distanceKm: 11 },
-  { areaCode: "HN_NAM_TU_LIEM", areaName: "Nam Từ Liêm", centerCode: "CENTER_2", centerName: "Trung tâm 2", distanceKm: 12 },
-  { areaCode: "HN_HA_DONG", areaName: "Hà Đông", centerCode: "CENTER_2", centerName: "Trung tâm 2", distanceKm: 15 },
+  { areaCode: "HN_BA_DINH", areaName: "Ba Đình", centerCode: "CENTER_2", centerName: "Đống Đa", distanceKm: 4 },
+  { areaCode: "HN_HOAN_KIEM", areaName: "Hoàn Kiếm", centerCode: "CENTER_2", centerName: "Đống Đa", distanceKm: 5 },
+  { areaCode: "HN_TAY_HO", areaName: "Tây Hồ", centerCode: "CENTER_2", centerName: "Đống Đa", distanceKm: 8 },
+  { areaCode: "HN_DONG_DA", areaName: "Đống Đa", centerCode: "CENTER_2", centerName: "Đống Đa", distanceKm: 2 },
+  { areaCode: "HN_HAI_BA_TRUNG", areaName: "Hai Bà Trưng", centerCode: "CENTER_2", centerName: "Đống Đa", distanceKm: 5 },
+  { areaCode: "HN_LONG_BIEN", areaName: "Long Biên", centerCode: "CENTER_2", centerName: "Đống Đa", distanceKm: 10 },
+  { areaCode: "HN_CAU_GIAY", areaName: "Cầu Giấy", centerCode: "CENTER_2", centerName: "Đống Đa", distanceKm: 6 },
+  { areaCode: "HN_THANH_XUAN", areaName: "Thanh Xuân", centerCode: "CENTER_2", centerName: "Đống Đa", distanceKm: 5 },
+  { areaCode: "HN_BAC_TU_LIEM", areaName: "Bắc Từ Liêm", centerCode: "CENTER_2", centerName: "Đống Đa", distanceKm: 12 },
+  { areaCode: "HN_NAM_TU_LIEM", areaName: "Nam Từ Liêm", centerCode: "CENTER_2", centerName: "Đống Đa", distanceKm: 9 },
+  { areaCode: "HN_HA_DONG", areaName: "Hà Đông", centerCode: "CENTER_2", centerName: "Đống Đa", distanceKm: 12 },
 ];
 
 export const SHIPMENT_CENTERS = [
-  { code: "CENTER_1", name: "Trung tâm 1 - Hà Nội" },
-  { code: "CENTER_2", name: "Trung tâm 2 - Đống Đa" },
+  { code: "CENTER_2", name: "Đống Đa" },
 ];
 
 export const ADDRESS_LOCATION_OPTIONS = [
@@ -93,14 +101,34 @@ export function getDistanceConfig() {
     const stored = storage.getItem(DISTANCE_CONFIG_KEY);
     if (!stored) {
       storage.setItem(DISTANCE_CONFIG_KEY, JSON.stringify(DEFAULT_DISTANCE_CONFIG));
+      storage.setItem(DISTANCE_CONFIG_VERSION_KEY, DISTANCE_CONFIG_VERSION);
       return [...DEFAULT_DISTANCE_CONFIG];
     }
 
     const parsed = JSON.parse(stored);
-    if (!Array.isArray(parsed) || !parsed.length) return [...DEFAULT_DISTANCE_CONFIG];
+    if (!Array.isArray(parsed) || !parsed.length) {
+      storage.setItem(DISTANCE_CONFIG_KEY, JSON.stringify(DEFAULT_DISTANCE_CONFIG));
+      storage.setItem(DISTANCE_CONFIG_VERSION_KEY, DISTANCE_CONFIG_VERSION);
+      return [...DEFAULT_DISTANCE_CONFIG];
+    }
     const savedKeys = new Set(parsed.map((row) => `${row.areaCode}:${row.centerCode}`));
     const newlyConfiguredRows = DEFAULT_DISTANCE_CONFIG.filter((row) => !savedKeys.has(`${row.areaCode}:${row.centerCode}`));
-    return [...parsed, ...newlyConfiguredRows];
+    let config = [...parsed, ...newlyConfiguredRows];
+    if (storage.getItem(DISTANCE_CONFIG_VERSION_KEY) !== DISTANCE_CONFIG_VERSION) {
+      const currentCenterRoutes = new Map(DEFAULT_DISTANCE_CONFIG
+        .filter((row) => row.centerCode === "CENTER_2")
+        .map((row) => [`${row.areaCode}:${row.centerCode}`, row]));
+      config = config.map((row) => {
+        const key = `${row.areaCode}:${row.centerCode}`;
+        const currentRoute = currentCenterRoutes.get(key);
+        return currentRoute && row.distanceKm === PREVIOUS_CENTER_2_DISTANCES.get(key)
+          ? currentRoute
+          : row;
+      });
+      storage.setItem(DISTANCE_CONFIG_KEY, JSON.stringify(config));
+      storage.setItem(DISTANCE_CONFIG_VERSION_KEY, DISTANCE_CONFIG_VERSION);
+    }
+    return config;
   } catch (error) {
     return [...DEFAULT_DISTANCE_CONFIG];
   }
@@ -112,6 +140,7 @@ export function saveDistanceConfig(distanceConfig) {
 
   try {
     storage.setItem(DISTANCE_CONFIG_KEY, JSON.stringify(distanceConfig));
+    storage.setItem(DISTANCE_CONFIG_VERSION_KEY, DISTANCE_CONFIG_VERSION);
     return true;
   } catch (error) {
     return false;
@@ -144,30 +173,36 @@ export function getPetSizeLabel(size) {
   }
 }
 
-export function calculateShipmentFee({ distanceKm, petSize, transportType }) {
+export function calculateShipmentFee({ distanceKm, returnDistanceKm, petSize, transportType }) {
   const distance = Number(distanceKm);
   const size = normalizePetSize(petSize);
   const normalizedTransport = String(transportType || "").trim().toLowerCase();
   const type = normalizedTransport === "round-trip" || normalizedTransport === "hai-chieu" ? "round-trip" : "one-way";
+  const returnDistance = returnDistanceKm == null || returnDistanceKm === ""
+    ? distance
+    : Number(returnDistanceKm);
 
   if (!Number.isFinite(distance) || distance < 0) {
     return { valid: false, message: "Thiếu thông tin khoảng cách mô phỏng để tính phí ship." };
+  }
+  if (type === "round-trip" && (!Number.isFinite(returnDistance) || returnDistance < 0)) {
+    return { valid: false, message: "Thiếu thông tin khoảng cách địa chỉ trả để tính phí ship." };
   }
   if (!["small", "medium", "large"].includes(size)) {
     return { valid: false, message: "Vui lòng chọn nhóm kích thước thú cưng trước khi xác nhận ship." };
   }
 
   const baseFee = type === "round-trip" ? 35000 : 20000;
-
-  let distanceFee = 0;
-  if (distance > 15) {
+  if (distance > 15 || (type === "round-trip" && returnDistance > 15)) {
     return { valid: false, message: "Khoảng cách vượt phạm vi hỗ trợ hiện tại. Vui lòng xác nhận thủ công với NEKO." };
   }
-  if (distance > 10) distanceFee = 40000;
-  else if (distance > 5) distanceFee = 25000;
-  else if (distance > 3) distanceFee = 10000;
+  const legDistances = type === "round-trip" ? [distance, returnDistance] : [distance];
+  const distanceFee = legDistances.reduce(
+    (total, legDistance) => total + Math.ceil(Math.max(0, legDistance - 3)) * 5000,
+    0,
+  );
 
-  const sizeFee = size === "small" ? 0 : size === "medium" ? 10000 : size === "large" ? 25000 : 0;
+  const sizeFee = size === "small" ? 0 : size === "medium" ? 5000 : 10000;
   const total = baseFee + distanceFee + sizeFee;
 
   return {
@@ -185,8 +220,8 @@ export function calculateShipmentFee({ distanceKm, petSize, transportType }) {
       size: sizeFee,
     },
     message: type === "round-trip"
-      ? "Vận chuyển hai chiều: phí cơ bản đã bao gồm một lượt đi và một lượt về, không cộng phụ phí trùng lặp."
-      : "Vận chuyển một chiều: phí được tính dựa trên khoảng cách mô phỏng và nhóm kích thước thú cưng.",
+      ? "Vận chuyển hai chiều: phí quãng đường tính cho cả lượt đi và lượt về."
+      : "Vận chuyển một chiều: phí gồm 3 km đầu, quãng đường vượt mức và kích thước thú cưng.",
   };
 }
 

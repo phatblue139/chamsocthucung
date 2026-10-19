@@ -1,4 +1,4 @@
-import { isAdminLoggedIn, logout } from "./auth.js";
+import { getPublicUsers, isAdminLoggedIn, logout, USERS_STORAGE_KEY } from "./auth.js";
 import { filterPets } from "./adminData.js";
 import { getNextPetId, loadPets, PET_STORAGE_KEY, savePets } from "./petData.js";
 
@@ -11,7 +11,9 @@ if (!isAdminLoggedIn()) {
   const speciesInput = document.getElementById("petSpecies");
   const breedInput = document.getElementById("petBreed");
   const ageInput = document.getElementById("petAge");
+  const weightInput = document.getElementById("petWeight");
   const ownerInput = document.getElementById("petOwner");
+  const ownerUsernameInput = document.getElementById("petOwnerUsername");
   const statusInput = document.getElementById("petStatus");
   const searchInput = document.getElementById("petSearch");
   const speciesFilter = document.getElementById("speciesFilter");
@@ -22,10 +24,17 @@ if (!isAdminLoggedIn()) {
   const cancelButton = document.getElementById("petCancelButton");
   const message = document.getElementById("petMessage");
   let pets = loadPets();
+  let ownerAccounts = getPublicUsers();
+  populateOwnerOptions();
 
   document.getElementById("logoutBtn")?.addEventListener("click", () => {
     logout();
     location.replace("/");
+  });
+
+  ownerUsernameInput?.addEventListener("change", () => {
+    const account = ownerAccounts.find((item) => item.username === ownerUsernameInput.value);
+    if (account && ownerInput) ownerInput.value = account.fullName || account.username;
   });
 
   form.addEventListener("submit", (event) => {
@@ -33,26 +42,35 @@ if (!isAdminLoggedIn()) {
     if (!form.reportValidity()) return;
 
     const id = Number(petIdInput.value);
-    const existingPet = id ? pets.find((item) => Number(item.id) === id) : null;
-    const pet = {
-      ...(existingPet || {}),
-      id: id || getNextPetId(pets),
-      name: nameInput.value.trim(),
-      species: speciesInput.value,
-      breed: breedInput.value.trim(),
-      age: Number(ageInput.value),
-      owner: ownerInput.value.trim(),
-      status: statusInput.value,
-    };
-
-    if (id && !pets.some((item) => Number(item.id) === id)) {
+    const latestPets = loadPets();
+    const existingPet = id ? latestPets.find((item) => Number(item.id) === id) : null;
+    if (id && !existingPet) {
       resetForm();
+      pets = latestPets;
       showMessage("Hồ sơ thú cưng không còn tồn tại. Vui lòng chọn lại hồ sơ cần sửa.", "error");
       render();
       return;
     }
+    const ownerUsername = ownerUsernameInput?.value.trim() || "";
+    const ownerAccount = ownerAccounts.find((item) => item.username === ownerUsername);
+    const now = new Date().toISOString();
+    const pet = {
+      ...(existingPet || {}),
+      id: id || getNextPetId(latestPets),
+      name: nameInput.value.trim(),
+      species: speciesInput.value,
+      breed: breedInput.value.trim(),
+      age: Number(ageInput.value),
+      weightKg: weightInput?.value ? Number(weightInput.value) : "",
+      owner: ownerInput.value.trim() || ownerAccount?.fullName || existingPet?.owner || "",
+      ownerUsername,
+      ownerPhone: ownerAccount?.phone || (ownerUsername === existingPet?.ownerUsername ? existingPet?.ownerPhone || "" : ""),
+      status: statusInput.value,
+      createdAt: existingPet?.createdAt || now,
+      updatedAt: now,
+    };
 
-    const nextPets = id ? pets.map((item) => Number(item.id) === id ? pet : item) : [...pets, pet];
+    const nextPets = id ? latestPets.map((item) => Number(item.id) === id ? pet : item) : [...latestPets, pet];
 
     if (!savePets(nextPets)) {
       showMessage("Không thể lưu hồ sơ thú cưng. Vui lòng thử lại.", "error");
@@ -74,16 +92,24 @@ if (!isAdminLoggedIn()) {
     if (button.dataset.action === "edit") {
       petIdInput.value = pet.id;
       nameInput.value = pet.name || "";
+      if (pet.species && !Array.from(speciesInput.options).some((option) => option.value === pet.species)) {
+        const legacySpecies = document.createElement("option");
+        legacySpecies.value = pet.species;
+        legacySpecies.textContent = pet.species;
+        speciesInput.appendChild(legacySpecies);
+      }
       speciesInput.value = pet.species || "Chó";
       breedInput.value = pet.breed || "";
       ageInput.value = String(pet.age ?? 0);
+      if (weightInput) weightInput.value = String(pet.weightKg ?? "");
       ownerInput.value = pet.owner || "";
+      if (ownerUsernameInput) populateOwnerOptions(pet.ownerUsername || "");
       statusInput.value = pet.status || "Chờ lịch";
       saveButton.textContent = "Lưu thay đổi";
       cancelButton.hidden = false;
       nameInput.focus();
     } else if (button.dataset.action === "delete" && confirm(`Xóa hồ sơ thú cưng ${pet.name}?`)) {
-      const nextPets = pets.filter((item) => Number(item.id) !== Number(pet.id));
+      const nextPets = latestPets.filter((item) => Number(item.id) !== Number(pet.id));
       if (!savePets(nextPets)) {
         showMessage("Không thể xóa hồ sơ. Vui lòng thử lại.", "error");
         return;
@@ -106,12 +132,39 @@ if (!isAdminLoggedIn()) {
     pets = loadPets();
     render();
   });
+  window.addEventListener("storage", (event) => {
+    if (event.key !== USERS_STORAGE_KEY) return;
+    ownerAccounts = getPublicUsers();
+    populateOwnerOptions(ownerUsernameInput?.value || "");
+  });
 
   function resetForm() {
     form.reset();
     petIdInput.value = "";
+    populateOwnerOptions();
     saveButton.textContent = "Thêm thú cưng";
     cancelButton.hidden = true;
+  }
+
+  function populateOwnerOptions(selectedUsername = "") {
+    if (!ownerUsernameInput) return;
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "-- Chưa liên kết tài khoản --";
+    const options = ownerAccounts.map((account) => {
+      const option = document.createElement("option");
+      option.value = account.username;
+      option.textContent = `${account.fullName} (@${account.username})`;
+      return option;
+    });
+    if (selectedUsername && !ownerAccounts.some((account) => account.username === selectedUsername)) {
+      const legacyAccount = document.createElement("option");
+      legacyAccount.value = selectedUsername;
+      legacyAccount.textContent = `@${selectedUsername} (tài khoản chưa có trong danh sách)`;
+      options.push(legacyAccount);
+    }
+    ownerUsernameInput.replaceChildren(placeholder, ...options);
+    ownerUsernameInput.value = selectedUsername;
   }
 
   function showMessage(text, type) {
@@ -133,7 +186,17 @@ if (!isAdminLoggedIn()) {
 
     rows.forEach((pet) => {
       const row = document.createElement("tr");
-      row.append(createCell(pet.name), createCell(pet.species), createCell(pet.breed), createCell(pet.age), createCell(pet.owner), createCell(pet.status));
+      const ownerLabel = [pet.owner, pet.ownerUsername ? `@${pet.ownerUsername}` : ""].filter(Boolean).join(" · ");
+      row.append(
+        createCell(pet.id),
+        createCell(pet.name),
+        createCell(pet.species),
+        createCell(pet.breed),
+        createCell(pet.age),
+        createCell(pet.weightKg === "" || pet.weightKg == null ? "" : `${pet.weightKg} kg`),
+        createCell(ownerLabel),
+        createCell(pet.status),
+      );
       const actionCell = document.createElement("td");
       const actions = document.createElement("div");
       actions.className = "care-actions";

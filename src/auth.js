@@ -4,7 +4,7 @@ const ADMIN_USERNAME = "admin";
 const SAMPLE_ADMIN = sampleAccounts.find((account) => account.role === "admin");
 const ADMIN_AUTH_KEY = "neko:admin";
 const USER_AUTH_KEY = "neko:user";
-const USERS_KEY = "neko:users";
+export const USERS_STORAGE_KEY = "neko:users";
 
 function getStorage() {
   try {
@@ -19,7 +19,7 @@ function readUsers() {
   if (!storage) return [];
 
   try {
-    const storedUsers = storage.getItem(USERS_KEY);
+    const storedUsers = storage.getItem(USERS_STORAGE_KEY);
     if (storedUsers === null) {
       const sampleUsers = sampleAccounts
         .filter((account) => account.role === "user")
@@ -40,7 +40,9 @@ function saveUsers(users) {
   if (!storage) return false;
 
   try {
-    storage.setItem(USERS_KEY, JSON.stringify(users));
+    const stored = storage.getItem(USERS_STORAGE_KEY);
+    if (stored !== null && !Array.isArray(JSON.parse(stored))) return false;
+    storage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
     return true;
   } catch (error) {
     return false;
@@ -58,6 +60,10 @@ function toPublicUser(user) {
     fullName: user.fullName || user.username,
     phone: user.phone || "",
   };
+}
+
+export function getPublicUsers() {
+  return readUsers().map(toPublicUser);
 }
 
 export function registerUser({ username = "", password = "", fullName = "", phone = "" } = {}) {

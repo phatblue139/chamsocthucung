@@ -46,12 +46,6 @@
             <label for="careType">Loại chăm sóc</label>
             <select id="careType" required>
               <option value="">-- Chọn loại chăm sóc --</option>
-              <option value="Tắm">Tắm - 100.000đ</option>
-              <option value="Cắt móng">Cắt móng - 50.000đ</option>
-              <option value="Tiêm phòng">Tiêm phòng - 200.000đ</option>
-              <option value="Tẩy giun">Tẩy giun - 150.000đ</option>
-              <option value="Cho ăn">Cho ăn - 50.000đ</option>
-              <option value="Khác">Khác - theo yêu cầu</option>
             </select>
           </div>
 
@@ -68,6 +62,16 @@
           <div class="care-form-group">
             <label for="time">Giờ</label>
             <select id="time" required></select>
+          </div>
+
+          <div class="care-form-group" id="petSittingEndDateGroup" hidden>
+            <label for="endDate">Ngày trả thú cưng</label>
+            <input type="date" id="endDate" />
+          </div>
+
+          <div class="care-form-group" id="petSittingEndTimeGroup" hidden>
+            <label for="endTime">Giờ trả thú cưng</label>
+            <select id="endTime"></select>
           </div>
 
           <div class="care-form-group">
