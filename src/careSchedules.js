@@ -1,4 +1,5 @@
 import {
+    CARE_TYPES,
     CARE_TYPE_OTHER,
     SCHEDULE_STORAGE_KEY,
     SCHEDULE_STATUS,
@@ -14,6 +15,16 @@ import {
     saveSchedules,
 } from "./careScheduleData.js";
 import { isAdminLoggedIn, logout } from "./auth.js";
+import {
+    ADDRESS_STORAGE_KEY,
+    SHIPMENT_STATUS,
+    SHIPMENT_STORAGE_KEY,
+    getAddressStorage,
+    getShipmentNextStatuses,
+    getShipmentStorage,
+    saveShipmentStorage,
+    updateShipmentStatus,
+} from "./shippingData.js";
 
 if (!isAdminLoggedIn()) {
     location.replace("/");
@@ -40,6 +51,8 @@ const timeInput = document.getElementById("time");
 const statusInput = document.getElementById("status");
 const noteInput = document.getElementById("note");
 const careStats = document.getElementById("careStats");
+const shipmentList = document.getElementById("shipmentList");
+const shipmentEmpty = document.getElementById("shipmentEmpty");
 let schedules = loadSchedules();
 let searchKeyword = "";
 let statusFilter = "";
@@ -86,11 +99,15 @@ careList?.addEventListener("click", (event) => {
     } else if (button.dataset.action === "confirm") {
         confirmSchedule(id);
     } else if (button.dataset.action === "complete") {
-        toggleCompleted(id);
+        completeSchedule(id);
+    } else if (button.dataset.action === "cancel") {
+        cancelSchedule(id);
     } else if (button.dataset.action === "delete") {
         deleteSchedule(id);
     } else if (button.dataset.action === "restore") {
         restoreSchedule(id);
+    } else if (button.dataset.action === "shipment-status") {
+        setAdminShipmentStatus(button.dataset.shipmentId, button.dataset.status);
     }
 });
 
@@ -120,11 +137,14 @@ cancelBtn?.addEventListener("click", () => {
 
 careTypeInput?.addEventListener("change", syncCareTypeOther);
 syncCareTypeOther();
+populateCareTypes();
 populateTimeOptions();
 window.addEventListener("storage", (event) => {
-    if (event.key !== SCHEDULE_STORAGE_KEY) return;
-    schedules = loadSchedules();
-    render();
+    if (event.key === SCHEDULE_STORAGE_KEY) {
+        schedules = loadSchedules();
+        render();
+    }
+    if (event.key === SHIPMENT_STORAGE_KEY || event.key === ADDRESS_STORAGE_KEY) renderShipments();
 });
 
 render();
@@ -275,6 +295,7 @@ function render() {
             editButton.dataset.action = "edit";
             editButton.dataset.id = String(schedule.id);
             editButton.textContent = "Sửa";
+            editButton.hidden = isCompleted || status === STATUS_CANCELLED;
 
             const confirmButton = document.createElement("button");
             confirmButton.type = "button";
@@ -290,11 +311,17 @@ function render() {
             completeButton.className = isCompleted ? "care-btn-undo" : "care-btn-complete";
             completeButton.dataset.action = "complete";
             completeButton.dataset.id = String(schedule.id);
-            completeButton.textContent = isCompleted ? "↩ Hoàn tác" : "✔ Hoàn thành";
-            completeButton.title = isCompleted
-                ? "Bỏ đánh dấu hoàn thành"
-                : "Đánh dấu lịch đã hoàn thành";
-            completeButton.hidden = isPending || status === STATUS_CANCELLED;
+            completeButton.textContent = "✔ Hoàn thành";
+            completeButton.title = "Đánh dấu lịch đã hoàn thành";
+            completeButton.hidden = status !== STATUS_CONFIRMED;
+
+            const cancelButton = document.createElement("button");
+            cancelButton.type = "button";
+            cancelButton.className = "care-btn-delete";
+            cancelButton.dataset.action = "cancel";
+            cancelButton.dataset.id = String(schedule.id);
+            cancelButton.textContent = "Hủy lịch";
+            cancelButton.hidden = ![STATUS_PENDING, STATUS_CONFIRMED].includes(status);
 
             const deleteButton = document.createElement("button");
             deleteButton.type = "button";
@@ -303,7 +330,7 @@ function render() {
             deleteButton.dataset.id = String(schedule.id);
             deleteButton.textContent = "Xóa";
 
-            actionGroup.append(editButton, confirmButton, completeButton, deleteButton);
+            actionGroup.append(editButton, confirmButton, completeButton, cancelButton, deleteButton);
         }
         actionCell.appendChild(actionGroup);
         row.appendChild(actionCell);
@@ -312,6 +339,125 @@ function render() {
 
     emptyMsg.textContent = showDeleted ? "Thùng rác chưa có lịch nào." : "Không có lịch chăm sóc nào.";
     emptyMsg.hidden = rows.length > 0;
+    renderShipments();
+}
+
+function renderShipments() {
+    if (!shipmentList || !shipmentEmpty) return;
+    const shipments = getShipmentStorage();
+    const addresses = getAddressStorage();
+    shipmentList.replaceChildren();
+
+    shipments.forEach((shipment) => {
+        const row = document.createElement("tr");
+        const customer = `${shipment.customerName || shipment.customerUsername || "Khách hàng"}${shipment.customerPhone ? ` · ${shipment.customerPhone}` : ""}`;
+        const linkedSchedule = schedules.find((schedule) =>
+            String(schedule.id) === String(shipment.scheduleId) ||
+            String(schedule.shipping?.id) === String(shipment.id),
+        );
+        const pickup = addresses.find((address) =>
+            String(address.id) === String(shipment.pickupAddressId) &&
+            String(address.ownerUsername) === String(shipment.customerUsername),
+        );
+        const returnAddress = addresses.find((address) =>
+            String(address.id) === String(shipment.returnAddressId) &&
+            String(address.ownerUsername) === String(shipment.customerUsername),
+        );
+        const routeParts = [
+            pickup ? [pickup.houseNumber, pickup.district, pickup.city].filter(Boolean).join(", ") : "Không tìm thấy địa chỉ đón",
+            shipment.centerName || "Trung tâm",
+        ];
+        if (shipment.transportType === "round-trip") {
+            routeParts.push(returnAddress
+                ? [returnAddress.houseNumber, returnAddress.district, returnAddress.city].filter(Boolean).join(", ")
+                : "Không tìm thấy địa chỉ trả");
+        }
+        const route = routeParts.join(" → ");
+        const fields = [
+            `#${shipment.id} · lịch #${shipment.scheduleId || linkedSchedule?.id || "—"}`,
+            customer,
+            shipment.petName || "Thú cưng",
+            route,
+            `${shipment.distanceKm ?? "—"} km (mô phỏng) · ${formatCurrency(shipment.totalFee) || "—"}`,
+        ];
+        fields.forEach((value) => {
+            const cell = document.createElement("td");
+            cell.textContent = value;
+            row.appendChild(cell);
+        });
+
+        const statusCell = document.createElement("td");
+        const badge = document.createElement("span");
+        badge.className = "care-status-badge";
+        badge.textContent = shipment.status || SHIPMENT_STATUS.PENDING;
+        statusCell.appendChild(badge);
+        (shipment.statusHistory || []).forEach((entry) => {
+            const history = document.createElement("small");
+            history.className = "shipment-history-entry";
+            history.textContent = `${entry.status} · ${formatDateTime(entry.changedAt)}`;
+            statusCell.appendChild(history);
+        });
+        row.appendChild(statusCell);
+
+        const actions = document.createElement("td");
+        getShipmentNextStatuses(shipment.status || SHIPMENT_STATUS.PENDING).forEach((status) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = status === SHIPMENT_STATUS.CANCELLED ? "care-btn-delete" : "care-btn-confirm";
+            button.dataset.action = "shipment-status";
+            button.dataset.shipmentId = String(shipment.id);
+            button.dataset.status = status;
+            button.textContent = status;
+            actions.appendChild(button);
+        });
+        if (!actions.childElementCount) actions.textContent = "Không còn bước tiếp theo";
+        row.appendChild(actions);
+        shipmentList.appendChild(row);
+    });
+
+    shipmentEmpty.hidden = shipments.length > 0;
+}
+
+function setAdminShipmentStatus(shipmentId, nextStatus) {
+    const shipments = getShipmentStorage();
+    const shipment = shipments.find((item) => String(item.id) === String(shipmentId));
+    if (!shipment) {
+        showMessage("Không tìm thấy đơn vận chuyển. Hãy tải lại danh sách.", "error");
+        return;
+    }
+    const updated = updateShipmentStatus(shipment, nextStatus, "admin");
+    if (!updated) {
+        showMessage("Chuyển trạng thái vận chuyển không hợp lệ. Hãy tải lại danh sách.", "error");
+        return;
+    }
+    const nextShipments = shipments.map((item) =>
+        String(item.id) === String(shipmentId) ? updated : item,
+    );
+    if (!saveShipmentStorage(nextShipments)) {
+        showMessage("Không thể lưu trạng thái vận chuyển. Vui lòng thử lại.", "error");
+        return;
+    }
+    if (nextStatus === SHIPMENT_STATUS.CANCELLED) {
+        const linkedSchedule = schedules.find((item) =>
+            String(item.id) === String(shipment.scheduleId) ||
+            String(item.shipping?.id) === String(shipment.id),
+        );
+        if (linkedSchedule && [STATUS_PENDING, STATUS_CONFIRMED].includes(getScheduleStatus(linkedSchedule))) {
+            const nextSchedules = schedules.map((item) =>
+                item === linkedSchedule
+                    ? { ...item, status: STATUS_CANCELLED, cancelledAt: new Date().toISOString() }
+                    : item,
+            );
+            if (!saveSchedules(nextSchedules)) {
+                saveShipmentStorage(shipments);
+                showMessage("Không thể đồng bộ trạng thái lịch. Đơn vận chuyển đã được khôi phục.", "error");
+                return;
+            }
+            schedules = nextSchedules;
+        }
+    }
+    showMessage(`Đã cập nhật vận chuyển #${shipmentId}: ${nextStatus}.`, "success");
+    render();
 }
 
 function createStatusCell(status) {
@@ -332,8 +478,24 @@ function getFormData() {
         date: dateInput.value,
         time: timeInput.value,
         note: noteInput.value.trim(),
-        status: statusInput.value,
     };
+}
+
+function populateCareTypes() {
+    if (!careTypeInput) return;
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "-- Chọn loại chăm sóc --";
+    const options = CARE_TYPES.map(({ value, price }) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = `${value} - ${formatCurrency(price)}`;
+        return option;
+    });
+    const other = document.createElement("option");
+    other.value = CARE_TYPE_OTHER;
+    other.textContent = "Khác - theo yêu cầu";
+    careTypeInput.replaceChildren(placeholder, ...options, other);
 }
 
 function syncCareTypeOther() {
@@ -390,6 +552,7 @@ function addSchedule() {
     const schedule = {
         id: getNextScheduleId(schedules),
         ...getFormData(),
+        status: SCHEDULE_STATUS.PENDING,
         source: "admin",
         createdAt: new Date().toISOString(),
     };
@@ -430,6 +593,10 @@ function updateSchedule(id) {
 function editSchedule(id) {
     const schedule = schedules.find((item) => Number(item.id) === id);
     if (!schedule) return;
+    if ([STATUS_COMPLETED, STATUS_CANCELLED].includes(getScheduleStatus(schedule))) {
+        showMessage("Lịch đã hoàn thành hoặc đã hủy không thể chỉnh sửa.", "error");
+        return;
+    }
 
     idInput.value = schedule.id;
     petNameInput.value = schedule.petName || "";
@@ -440,7 +607,9 @@ function editSchedule(id) {
     setCareType(schedule.careType);
     dateInput.value = schedule.date || "";
     setTime(schedule.time);
-    statusInput.value = getScheduleStatus(schedule);    noteInput.value = schedule.note || "";
+    statusInput.value = getScheduleStatus(schedule);
+    statusInput.disabled = true;
+    noteInput.value = schedule.note || "";
     saveBtn.textContent = "Cập nhật lịch";
     showMessage(hasDetailedServices
         ? "Lịch có nhiều dịch vụ do khách chọn; dịch vụ và giá được giữ nguyên khi cập nhật."
@@ -450,11 +619,64 @@ function editSchedule(id) {
 }
 
 function setStatus(id, nextStatus, extra = {}) {
+    const schedule = schedules.find((item) => Number(item.id) === id);
+    const currentStatus = schedule ? getScheduleStatus(schedule) : "";
+    const allowedNextStatuses = {
+        [STATUS_PENDING]: [STATUS_CONFIRMED, STATUS_CANCELLED],
+        [STATUS_CONFIRMED]: [STATUS_COMPLETED, STATUS_CANCELLED],
+    };
+    if (!schedule || !allowedNextStatuses[currentStatus]?.includes(nextStatus)) {
+        showMessage("Chuyển trạng thái lịch không hợp lệ.", "error");
+        return false;
+    }
+
+    let shipmentsBefore = null;
+    let shipmentsAfter = null;
+    if (schedule.shipping) {
+        shipmentsBefore = getShipmentStorage();
+        const linkedShipment = shipmentsBefore.find((item) =>
+            String(item.id) === String(schedule.shipping.id) &&
+            String(item.customerUsername) === String(schedule.customerUsername || schedule.ownerUsername),
+        );
+        if (!linkedShipment) {
+            showMessage("Không tìm thấy đơn vận chuyển liên kết. Lịch chưa được cập nhật.", "error");
+            return false;
+        }
+
+        let updatedShipment = linkedShipment;
+        if (nextStatus === STATUS_CONFIRMED && linkedShipment.status === SHIPMENT_STATUS.PENDING) {
+            updatedShipment = updateShipmentStatus(linkedShipment, SHIPMENT_STATUS.CONFIRMED, "admin");
+        } else if (nextStatus === STATUS_CONFIRMED && linkedShipment.status !== SHIPMENT_STATUS.CONFIRMED) {
+            showMessage("Trạng thái vận chuyển không phù hợp để xác nhận lịch.", "error");
+            return false;
+        } else if (nextStatus === STATUS_CANCELLED && linkedShipment.status !== SHIPMENT_STATUS.CANCELLED) {
+            updatedShipment = updateShipmentStatus(linkedShipment, SHIPMENT_STATUS.CANCELLED, "admin");
+        } else if (nextStatus === STATUS_COMPLETED && linkedShipment.status !== SHIPMENT_STATUS.COMPLETED) {
+            showMessage("Hãy hoàn tất đơn vận chuyển trước khi hoàn thành lịch chăm sóc.", "error");
+            return false;
+        }
+
+        if (!updatedShipment) {
+            showMessage("Đơn vận chuyển đã bắt đầu hoặc kết thúc nên không thể chuyển trạng thái lịch này.", "error");
+            return false;
+        }
+        if (updatedShipment !== linkedShipment) {
+            shipmentsAfter = shipmentsBefore.map((item) =>
+                String(item.id) === String(linkedShipment.id) ? updatedShipment : item,
+            );
+            if (!saveShipmentStorage(shipmentsAfter)) {
+                showMessage("Không thể đồng bộ đơn vận chuyển. Lịch chưa được cập nhật.", "error");
+                return false;
+            }
+        }
+    }
+
     const nextSchedules = schedules.map((item) =>
         Number(item.id) === id ? { ...item, status: nextStatus, ...extra } : item,
     );
 
     if (!saveSchedules(nextSchedules)) {
+        if (shipmentsAfter) saveShipmentStorage(shipmentsBefore);
         showMessage("Không thể cập nhật trạng thái lịch. Vui lòng thử lại.", "error");
         return false;
     }
@@ -480,26 +702,32 @@ function confirmSchedule(id) {
     render();
 }
 
-function toggleCompleted(id) {
+function completeSchedule(id) {
     const schedule = schedules.find((item) => Number(item.id) === id);
     if (!schedule) return;
 
     const status = getScheduleStatus(schedule);
-    const isCompleted = status === STATUS_COMPLETED;
-    if (!isCompleted && status === STATUS_CANCELLED) {
-        showMessage("Lịch đã hủy không thể đánh dấu hoàn thành.", "error");
+    if (status !== STATUS_CONFIRMED) {
+        showMessage("Chỉ lịch đã xác nhận mới có thể hoàn thành.", "error");
         return;
     }
 
-    const saved = setStatus(id, isCompleted ? STATUS_CONFIRMED : STATUS_COMPLETED, {
-        completedAt: isCompleted ? "" : new Date().toISOString(),
-    });
+    const saved = setStatus(id, STATUS_COMPLETED, { completedAt: new Date().toISOString() });
     if (!saved) return;
 
-    showMessage(
-        isCompleted ? `Đã bỏ đánh dấu hoàn thành lịch #${id}.` : `Đã đánh dấu lịch #${id} hoàn thành.`,
-        "success",
-    );
+    showMessage(`Đã đánh dấu lịch #${id} hoàn thành.`, "success");
+    render();
+}
+
+function cancelSchedule(id) {
+    const schedule = schedules.find((item) => Number(item.id) === id);
+    if (!schedule || ![STATUS_PENDING, STATUS_CONFIRMED].includes(getScheduleStatus(schedule))) {
+        showMessage("Chỉ có thể hủy lịch đang chờ hoặc đã xác nhận.", "error");
+        return;
+    }
+    if (!confirm(`Hủy lịch chăm sóc #${id}?`)) return;
+    if (!setStatus(id, STATUS_CANCELLED, { cancelledAt: new Date().toISOString() })) return;
+    showMessage(`Đã hủy lịch #${id}.`, "success");
     render();
 }
 
@@ -541,6 +769,10 @@ function resetForm() {
     if (petNameInput) petNameInput.disabled = false;
     if (careTypeInput) careTypeInput.disabled = false;
     if (careTypeOtherInput) careTypeOtherInput.disabled = false;
+    if (statusInput) {
+        statusInput.value = STATUS_PENDING;
+        statusInput.disabled = true;
+    }
     if (saveBtn) saveBtn.textContent = "Lưu lịch";
     syncCareTypeOther();
 }
