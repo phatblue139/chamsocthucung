@@ -357,7 +357,7 @@ function initUserView(user) {
     const placeholder = document.createElement("option");
     placeholder.value = "";
     placeholder.textContent = "-- Chọn giờ --";
-    const options = getTimeOptions({ open: "00:00", close: "23:55" }).map((value) => {
+    const options = getTimeOptions().map((value) => {
       const option = document.createElement("option");
       option.value = value;
       option.textContent = value;
@@ -373,7 +373,7 @@ function initUserView(user) {
     const placeholder = document.createElement("option");
     placeholder.value = "";
     placeholder.textContent = "-- Chọn giờ --";
-    const options = getTimeOptions({ open: "00:00", close: "23:55" }).map((value) => {
+    const options = getTimeOptions().map((value) => {
       const option = document.createElement("option");
       option.value = value;
       option.textContent = value;
@@ -386,8 +386,8 @@ function initUserView(user) {
   function applyTimeLimits() {
     if (!timeInput) return;
     const isPetSitting = isPetSittingSelected();
-    const openingTime = isPetSitting ? "00:00" : OPEN_TIME;
-    const closingTime = isPetSitting ? "23:55" : CLOSE_TIME;
+    const openingTime = OPEN_TIME;
+    const closingTime = CLOSE_TIME;
     const earliest =
       dateInput?.value === dateInput.min && currentTime() > openingTime
         ? ceilToFiveMinutes(currentTime())
@@ -552,12 +552,10 @@ function initUserView(user) {
       showMessage("Giờ đặt lịch không hợp lệ. Vui lòng chọn lại giờ.", "error");
       return;
     }
-    const earliestTime = isPetSitting ? "00:00" : OPEN_TIME;
-    const latestTime = isPetSitting ? "23:55" : CLOSE_TIME;
+    const earliestTime = OPEN_TIME;
+    const latestTime = CLOSE_TIME;
     if (time && (time < earliestTime || time > latestTime)) {
-      showMessage(isPetSitting
-        ? "Giờ nhận thú cưng phải trong khoảng 00:00 đến 23:55."
-        : "Thời gian đặt lịch chỉ từ 08:00 đến 19:00.", "error");
+      showMessage(`Giờ nhận thú cưng phải trong giờ làm việc (${OPEN_TIME} đến ${CLOSE_TIME}).`, "error");
       return;
     }
     if (time && Number(time.split(":")[1]) % 5 !== 0) {
@@ -581,6 +579,10 @@ function initUserView(user) {
     }
     if (isPetSitting && endDate === today && endTime < currentTime()) {
       showMessage("Giờ trả không được ở quá khứ.", "error");
+      return;
+    }
+    if (isPetSitting && endTime && (endTime < OPEN_TIME || endTime > CLOSE_TIME)) {
+      showMessage(`Giờ trả thú cưng phải trong giờ làm việc (${OPEN_TIME} đến ${CLOSE_TIME}).`, "error");
       return;
     }
     if (isPetSitting && (!isValidDate(endDate) || !isValidTime(endTime))) {

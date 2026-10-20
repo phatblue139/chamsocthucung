@@ -166,7 +166,7 @@ test("dashboard statistics ignore unknown status values", () => {
 });
 
 test("simulated shipping fees use distance and selected pet size", () => {
-  assert.equal(getDistanceForLocation("A", "CENTER_1")?.distanceKm, 2);
+  assert.equal(getDistanceForLocation("A", "CENTER_2")?.distanceKm, 3);
   assert.deepEqual(getDistanceConfig().slice(0, 4).map((row) => row.areaCode), ["A", "B", "C", "D"]);
 
   const oneWay = calculateShipmentFee({
@@ -207,8 +207,8 @@ test("simulated routes use the selected address district", () => {
   const centralDistrict = getAddressAreaCode("Hà Nội", "Ba Đình");
   const outerDistrict = getAddressAreaCode("Hà Nội", "Hà Đông");
 
-  assert.equal(getDistanceForLocation(centralDistrict, "CENTER_1")?.distanceKm, 2);
-  assert.equal(getDistanceForLocation(outerDistrict, "CENTER_1")?.distanceKm, 12);
+  assert.equal(getDistanceForLocation(centralDistrict, "CENTER_2")?.distanceKm, 3);
+  assert.equal(getDistanceForLocation(outerDistrict, "CENTER_2")?.distanceKm, 15);
 });
 
 test("payment preference is saved per user and rejects unknown methods", () => {
