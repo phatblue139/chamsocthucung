@@ -90,13 +90,72 @@ export const CARE_TYPE_PET_SITTING = "Trông coi thú cưng";
 export const PET_SITTING_HOURLY_RATE = 10000;
 export const PET_SITTING_DAILY_RATE = 150000;
 
-export const CARE_TYPES = [
-  { value: "Tắm", price: 100000 },
-  { value: "Cắt móng", price: 50000 },
-  { value: "Tiêm phòng", price: 200000 },
-  { value: "Tẩy giun", price: 150000 },
-  { value: "Cho ăn", price: 50000 },
+export const SERVICE_CATALOG = [
+  {
+    id: "bath",
+    value: "Tắm",
+    name: "Tắm",
+    description: "Làm sạch lông và chăm sóc vệ sinh cho thú cưng.",
+    icon: "🛁",
+    price: 100000,
+    unit: "lần",
+    active: true,
+  },
+  {
+    id: "nail-trim",
+    value: "Cắt móng",
+    name: "Cắt móng",
+    description: "Cắt và chăm sóc móng gọn gàng cho thú cưng.",
+    icon: "✂️",
+    price: 50000,
+    unit: "lần",
+    active: true,
+  },
+  {
+    id: "vaccination",
+    value: "Tiêm phòng",
+    name: "Tiêm phòng",
+    description: "Đặt lịch tiêm phòng theo nhu cầu chăm sóc của thú cưng.",
+    icon: "💉",
+    price: 200000,
+    unit: "lần",
+    active: true,
+  },
+  {
+    id: "deworming",
+    value: "Tẩy giun",
+    name: "Tẩy giun",
+    description: "Hỗ trợ chăm sóc sức khỏe định kỳ cho thú cưng.",
+    icon: "🩺",
+    price: 150000,
+    unit: "lần",
+    active: true,
+  },
+  {
+    id: "feeding",
+    value: "Cho ăn",
+    name: "Cho ăn",
+    description: "Chuẩn bị bữa ăn và chăm sóc thú cưng theo lịch.",
+    icon: "🥣",
+    price: 50000,
+    unit: "lần",
+    active: true,
+  },
+  {
+    id: "pet-sitting",
+    value: CARE_TYPE_PET_SITTING,
+    name: CARE_TYPE_PET_SITTING,
+    description: "Trông nom thú cưng theo thời gian nhận và trả đã đăng ký.",
+    icon: "🏠",
+    hourlyRate: PET_SITTING_HOURLY_RATE,
+    dailyRate: PET_SITTING_DAILY_RATE,
+    active: true,
+  },
 ];
+
+export const CARE_TYPES = SERVICE_CATALOG
+  .filter((service) => service.active && Number.isFinite(service.price))
+  .map(({ value, price }) => ({ value, price }));
 
 const CARE_TYPE_PRICES = CARE_TYPES.reduce((map, item) => {
   map[item.value] = item.price;
@@ -109,6 +168,15 @@ export function getCareTypePrice(careType) {
     : String(careType || "").split(" · ");
   return services.reduce((total, service) => total + (CARE_TYPE_PRICES[String(service || "").trim()] ?? 0), 0);
 }
+
+export function isKnownCareType(careType) {
+  return Object.prototype.hasOwnProperty.call(CARE_TYPE_PRICES, String(careType || "").trim());
+}
+
+/*
+ * Keep existing schedule snapshots priced as created; this catalog is the
+ * source for new bookings and public price displays.
+ */
 
 export function getPetSittingPrice(startDate, startTime, endDate, endTime) {
   const toMinutes = (dateValue, timeValue) => {
@@ -125,10 +193,6 @@ export function getPetSittingPrice(startDate, startTime, endDate, endTime) {
   const remainingHours = Math.ceil((duration % (24 * 60)) / 60);
   const remainingPrice = Math.min(remainingHours * PET_SITTING_HOURLY_RATE, PET_SITTING_DAILY_RATE);
   return fullDays * PET_SITTING_DAILY_RATE + remainingPrice;
-}
-
-export function isKnownCareType(careType) {
-  return Object.prototype.hasOwnProperty.call(CARE_TYPE_PRICES, String(careType || "").trim());
 }
 
 export function formatCurrency(value) {
@@ -290,6 +354,63 @@ export function getNextScheduleId(schedules = loadSchedules()) {
     .map((schedule) => Number(schedule?.id))
     .filter((id) => Number.isInteger(id) && id > 0);
   return ids.length ? Math.max(...ids) + 1 : 1;
+}
+
+export function hasScheduleConflict(schedules, candidate) {
+  const candidateStart = `${candidate.date || ""} ${candidate.time || ""}`;
+  const candidateHasRange = Boolean(candidate.endDate && candidate.endTime);
+  const candidateEnd = `${candidate.endDate || ""} ${candidate.endTime || ""}`;
+  const candidatePetIds = getSchedulePetIds(candidate);
+  const candidateHasSitting = hasPetSittingService(candidate);
+
+  return (Array.isArray(schedules) ? schedules : []).some((schedule) => {
+    if (
+      schedule.deletedAt ||
+      ![SCHEDULE_STATUS.PENDING, SCHEDULE_STATUS.CONFIRMED].includes(resolveScheduleStatus(schedule))
+    ) return false;
+
+    const sharedPet = getSchedulePetIds(schedule).some((petId) => candidatePetIds.has(petId));
+    if (!sharedPet) return false;
+
+    const scheduleStart = `${schedule.date || ""} ${schedule.time || ""}`;
+    const scheduleHasRange = Boolean(schedule.endDate && schedule.endTime);
+    const scheduleEnd = `${schedule.endDate || ""} ${schedule.endTime || ""}`;
+    const scheduleHasSitting = hasPetSittingService(schedule);
+
+    if (candidateHasRange && scheduleHasRange) {
+      return candidateStart < scheduleEnd && scheduleStart < candidateEnd;
+    }
+    if (candidateHasRange) {
+      return candidateHasSitting
+        ? candidateStart <= scheduleStart && scheduleStart < candidateEnd
+        : candidateStart === scheduleStart;
+    }
+    if (scheduleHasRange) {
+      return scheduleHasSitting
+        ? scheduleStart <= candidateStart && candidateStart < scheduleEnd
+        : scheduleStart === candidateStart;
+    }
+    return candidateStart === scheduleStart;
+  });
+}
+
+function getSchedulePetIds(schedule) {
+  const values = [
+    ...(Array.isArray(schedule?.petIds) ? schedule.petIds : []),
+    ...(Array.isArray(schedule?.petServices) ? schedule.petServices.map((item) => item.petId) : []),
+    schedule?.petId,
+  ];
+  return new Set(values.filter((value) => value !== "" && value !== null && value !== undefined).map(String));
+}
+
+function hasPetSittingService(schedule) {
+  return Boolean(
+    schedule?.endDate ||
+    (Array.isArray(schedule?.petServices) && schedule.petServices.some(
+      (item) => Array.isArray(item.services) && item.services.includes(CARE_TYPE_PET_SITTING),
+    )) ||
+    String(schedule?.careType || "").includes(CARE_TYPE_PET_SITTING),
+  );
 }
 
 export function clearSchedules() {

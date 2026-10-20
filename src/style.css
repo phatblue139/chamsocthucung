@@ -343,6 +343,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .service-icon-link:focus-visible { outline: 3px solid var(--primary-dark); outline-offset: 3px; }
 .service-card h3 { margin-bottom: 10px; }
 .service-card p { color: var(--muted); font-size: 15px; }
+.service-card .service-price { margin-top: 14px; color: var(--primary); font-weight: 800; }
 
 /* ===== Why ===== */
 .why { background: var(--primary-soft); padding: 96px 0; overflow: hidden; }
@@ -405,6 +406,8 @@ ul { margin: 0; padding: 0; list-style: none; }
 .price-card h3 { font-size: 22px; }
 .price { font-size: 38px; font-weight: 800; color: var(--ink); }
 .price span { font-size: 15px; font-weight: 600; color: var(--muted); }
+.catalog-service-card .price { font-size: 25px; line-height: 1.35; }
+.catalog-service-card .section-desc { margin: 0; }
 .price-card ul { display: flex; flex-direction: column; gap: 10px; flex: 1; }
 .price-card li { position: relative; padding-left: 26px; color: var(--text); font-size: 15px; }
 .price-card li::before {
@@ -2924,6 +2927,15 @@ body.user-page {
 .species-filter { width: 180px; }
 .admin-pet-table { min-width: 850px; }
 .admin-care-table { min-width: 1250px; }
+.admin-shipping-section { margin-top: 52px; }
+.admin-section-heading { margin: 0 auto 18px; }
+.admin-section-heading h2 { margin-bottom: 8px; }
+.admin-section-heading p,
+.shipment-history-entry { display: block; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.admin-shipping-table { min-width: 1150px; }
+.admin-shipping-table td { vertical-align: top; }
+.admin-shipping-table td:last-child button { display: block; margin: 0 0 6px; white-space: nowrap; }
+.shipment-history-entry { margin-top: 6px; }
 .admin-payment-metrics .admin-metric { min-height: 132px; }
 .admin-payment-toolbar select { flex: 0 0 220px; }
 .admin-payment-table { min-width: 960px; }

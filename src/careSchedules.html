@@ -72,8 +72,8 @@
           </div>
 
           <div class="care-form-group">
-            <label for="status">Trạng thái</label>
-            <select id="status" required>
+            <label for="status">Trạng thái hiện tại</label>
+            <select id="status" disabled>
               <option value="Chờ xác nhận">Chờ xác nhận</option>
               <option value="Đã xác nhận">Đã xác nhận</option>
               <option value="Đã hoàn thành">Đã hoàn thành</option>
@@ -146,6 +146,30 @@
         </div>
 
         <p id="emptyMsg" class="care-empty" hidden>Không có lịch chăm sóc nào.</p>
+
+        <section class="admin-shipping-section" aria-labelledby="shipmentHeading">
+          <header class="admin-section-heading">
+            <h2 id="shipmentHeading">Vận chuyển mô phỏng</h2>
+            <p>Khoảng cách theo khu vực dùng để tham khảo phí trong bản demo, không phải quãng đường thực tế.</p>
+          </header>
+          <div class="care-table-wrapper">
+            <table class="care-table admin-shipping-table">
+              <thead>
+                <tr>
+                  <th>Đơn / lịch</th>
+                  <th>Khách hàng</th>
+                  <th>Thú cưng</th>
+                  <th>Lộ trình</th>
+                  <th>Khoảng cách / phí</th>
+                  <th>Trạng thái / lịch sử</th>
+                  <th>Cập nhật</th>
+                </tr>
+              </thead>
+              <tbody id="shipmentList"></tbody>
+            </table>
+          </div>
+          <p id="shipmentEmpty" class="care-empty">Chưa có đơn vận chuyển nào.</p>
+        </section>
       </div>
     </main>
 

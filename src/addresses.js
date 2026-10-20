@@ -45,9 +45,19 @@ function initAddressManager(user) {
     if (!form.reportValidity()) return;
 
     const addresses = getAddressStorage();
-    const existingAddress = addresses.find((address) => String(address.id) === String(formId?.value || ""));
+    const editingId = String(formId?.value || "").trim();
+    const existingAddress = editingId
+      ? addresses.find((address) =>
+        String(address.id) === editingId && String(address.ownerUsername) === String(user.username),
+      )
+      : null;
+    if (editingId && !existingAddress) {
+      showMessage("Không tìm thấy địa chỉ thuộc tài khoản của bạn.", "error");
+      formId.value = "";
+      return;
+    }
     const cleaned = {
-      id: formId?.value || `addr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: editingId || `addr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       ownerUsername: user.username,
       contactName: String(contactNameInput.value || "").trim(),
       phone: String(phoneInput.value || "").trim(),
@@ -56,10 +66,10 @@ function initAddressManager(user) {
       ward: String(wardInput.value || "").trim(),
       houseNumber: String(houseNumberInput.value || "").trim(),
       detail: String(detailInput.value || "").trim(),
-      areaCode: getAddressAreaCode(cityInput.value, districtInput.value) || existingAddress?.areaCode || "",
+      areaCode: getAddressAreaCode(cityInput.value, districtInput.value),
       areaName: existingAddress?.areaName || "",
       isDefault: Boolean(defaultInput.checked),
-      createdAt: new Date().toISOString(),
+      createdAt: existingAddress?.createdAt || new Date().toISOString(),
     };
 
     if (!cleaned.contactName || !cleaned.phone || !cleaned.city || !cleaned.district || !cleaned.houseNumber) {
@@ -72,8 +82,8 @@ function initAddressManager(user) {
       return;
     }
 
-    const next = formId?.value
-      ? addresses.map((address) => Number(address.id) === Number(formId.value) || String(address.id) === String(formId.value)
+    const next = editingId
+      ? addresses.map((address) => String(address.id) === editingId && String(address.ownerUsername) === String(user.username)
         ? { ...address, ...cleaned }
         : address)
       : [...addresses, cleaned];
@@ -101,7 +111,7 @@ function initAddressManager(user) {
     formId.value = "";
     populateDistrictOptions();
     populateWardOptions();
-    showMessage(cleaned.id ? "Đã lưu địa chỉ." : "Đã thêm địa chỉ mới.", "success");
+    showMessage(editingId ? "Đã cập nhật địa chỉ." : "Đã thêm địa chỉ mới.", "success");
     renderAddresses();
   });
 
@@ -130,8 +140,22 @@ function initAddressManager(user) {
     if (button.dataset.action === "delete") {
       const confirmed = window.confirm("Xóa địa chỉ này khỏi danh sách đã lưu?");
       if (!confirmed) return;
-      const next = allAddresses.filter((address) => String(address.id) !== String(target.id));
-      saveAddressStorage(next);
+      const next = allAddresses.filter((address) =>
+        !(String(address.id) === String(target.id) && String(address.ownerUsername) === String(user.username)),
+      );
+      const remaining = next.filter((address) => String(address.ownerUsername) === String(user.username));
+      if (!remaining.some((address) => address.isDefault) && remaining.length) {
+        const defaultId = String(remaining[0].id);
+        next.forEach((address) => {
+          if (String(address.ownerUsername) === String(user.username)) {
+            address.isDefault = String(address.id) === defaultId;
+          }
+        });
+      }
+      if (!saveAddressStorage(next)) {
+        showMessage("Không thể xóa địa chỉ. Vui lòng thử lại.", "error");
+        return;
+      }
       if (formId.value === String(target.id)) {
         form.reset();
         formId.value = "";
@@ -148,7 +172,10 @@ function initAddressManager(user) {
           ? { ...address, isDefault: String(address.id) === String(target.id) }
           : address
       ));
-      saveAddressStorage(next);
+      if (!saveAddressStorage(next)) {
+        showMessage("Không thể đặt địa chỉ mặc định. Vui lòng thử lại.", "error");
+        return;
+      }
       showMessage("Đã đặt địa chỉ mặc định.", "success");
       renderAddresses();
     }
@@ -183,7 +210,9 @@ function initAddressManager(user) {
 
       const title = document.createElement("div");
       title.className = "address-card-title";
-      title.innerHTML = `<span>${address.contactName || "Người liên hệ"}</span>`;
+      const contactName = document.createElement("span");
+      contactName.textContent = address.contactName || "Người liên hệ";
+      title.appendChild(contactName);
       if (address.isDefault) {
         const badge = document.createElement("span");
         badge.className = "address-default-badge";
@@ -193,11 +222,15 @@ function initAddressManager(user) {
 
       const meta = document.createElement("div");
       meta.className = "address-card-meta";
-      meta.innerHTML = `
-        <span>${address.phone || "—"}</span>
-        <span>${[address.houseNumber, address.street || address.detail].filter(Boolean).join(", ") || "Địa chỉ chưa có thông tin"}</span>
-        <span>${[address.city, address.district, address.ward].filter(Boolean).join(" - ")}</span>
-      `;
+      [
+        address.phone || "—",
+        [address.houseNumber, address.street || address.detail].filter(Boolean).join(", ") || "Địa chỉ chưa có thông tin",
+        [address.city, address.district, address.ward].filter(Boolean).join(" - "),
+      ].forEach((value) => {
+        const line = document.createElement("span");
+        line.textContent = value;
+        meta.appendChild(line);
+      });
 
       main.append(title, meta);
 

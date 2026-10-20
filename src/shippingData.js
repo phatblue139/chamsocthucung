@@ -14,6 +14,33 @@ export const SHIPMENT_STATUS = {
 };
 
 export const SHIPMENT_STATUS_OPTIONS = Object.values(SHIPMENT_STATUS);
+const SHIPMENT_STATUS_TRANSITIONS = {
+  [SHIPMENT_STATUS.PENDING]: [SHIPMENT_STATUS.CONFIRMED, SHIPMENT_STATUS.CANCELLED],
+  [SHIPMENT_STATUS.CONFIRMED]: [SHIPMENT_STATUS.PICKUP_EN_ROUTE, SHIPMENT_STATUS.CANCELLED],
+  [SHIPMENT_STATUS.PICKUP_EN_ROUTE]: [SHIPMENT_STATUS.PICKED_UP],
+  [SHIPMENT_STATUS.PICKED_UP]: [SHIPMENT_STATUS.IN_TRANSIT],
+  [SHIPMENT_STATUS.IN_TRANSIT]: [SHIPMENT_STATUS.ARRIVED],
+  [SHIPMENT_STATUS.ARRIVED]: [SHIPMENT_STATUS.COMPLETED],
+};
+
+export function getShipmentNextStatuses(status) {
+  return [...(SHIPMENT_STATUS_TRANSITIONS[String(status || "").trim()] || [])];
+}
+
+export function updateShipmentStatus(shipment, nextStatus, changedBy, changedAt = new Date().toISOString()) {
+  const currentStatus = String(shipment?.status || SHIPMENT_STATUS.PENDING).trim();
+  if (!getShipmentNextStatuses(currentStatus).includes(nextStatus)) return null;
+
+  return {
+    ...shipment,
+    status: nextStatus,
+    updatedAt: changedAt,
+    statusHistory: [
+      ...(Array.isArray(shipment.statusHistory) ? shipment.statusHistory : []),
+      { status: nextStatus, changedAt, changedBy: String(changedBy || "admin") },
+    ],
+  };
+}
 
 export const DEFAULT_DISTANCE_CONFIG = [
   { areaCode: "A", areaName: "Khu vực A", centerCode: "CENTER_1", centerName: "Trung tâm 1", distanceKm: 2 },
@@ -148,8 +175,15 @@ export function calculateShipmentFee({ distanceKm, petSize, transportType }) {
   const distance = Number(distanceKm);
   const size = normalizePetSize(petSize);
   const normalizedTransport = String(transportType || "").trim().toLowerCase();
-  const type = normalizedTransport === "round-trip" || normalizedTransport === "hai-chieu" ? "round-trip" : "one-way";
+  const type = normalizedTransport === "round-trip" || normalizedTransport === "hai-chieu"
+    ? "round-trip"
+    : normalizedTransport === "one-way" || normalizedTransport === "mot-chieu"
+      ? "one-way"
+      : "";
 
+  if (!type) {
+    return { valid: false, message: "Vui lòng chọn hình thức vận chuyển hợp lệ." };
+  }
   if (!Number.isFinite(distance) || distance < 0) {
     return { valid: false, message: "Thiếu thông tin khoảng cách mô phỏng để tính phí ship." };
   }
@@ -191,7 +225,14 @@ export function calculateShipmentFee({ distanceKm, petSize, transportType }) {
 }
 
 export function validateShipmentAddress(address) {
-  return Boolean(address && String(address.ownerUsername || "").trim() && String(address.name || "").trim());
+  return Boolean(
+    address &&
+    String(address.ownerUsername || "").trim() &&
+    String(address.contactName || "").trim() &&
+    String(address.city || "").trim() &&
+    String(address.district || "").trim() &&
+    String(address.houseNumber || "").trim(),
+  );
 }
 
 export function getAddressStorage() {
