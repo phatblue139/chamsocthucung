@@ -29,6 +29,16 @@ import {
   saveSchedules,
 } from "./careScheduleData.js";
 import {
+  canReviewSchedule,
+  createReviewRecord,
+  getNextReviewId,
+  getReviewForSchedule,
+  loadReviews,
+  REVIEW_STORAGE_KEY,
+  saveReviews,
+  validateReview,
+} from "./reviewData.js";
+import {
   SHIPMENT_STATUS,
   SHIPMENT_STORAGE_KEY,
   SHIPMENT_CENTERS,
@@ -69,6 +79,7 @@ function initUserView(user) {
   const completedStat = document.getElementById("userStatCompletedCount");
   let defaultPaymentMethod = loadPaymentPreference(user.username);
   let schedules = loadSchedules();
+  let reviews = loadReviews();
   setBookingPaymentMethod(defaultPaymentMethod);
 
   function setBookingPaymentMethod(method) {
@@ -1154,6 +1165,12 @@ function initUserView(user) {
   });
 
   window.addEventListener("storage", (event) => {
+    if (event.key !== REVIEW_STORAGE_KEY) return;
+    reviews = loadReviews();
+    render();
+  });
+
+  window.addEventListener("storage", (event) => {
     if (event.key === SHIPMENT_STORAGE_KEY) render();
   });
 
@@ -1319,6 +1336,10 @@ function initUserView(user) {
         createScheduleRow("Ghi chú", schedule.note || "Không có"),
       );
 
+      if (statusValue === SCHEDULE_STATUS.COMPLETED) {
+        more.appendChild(createReviewEditor(schedule));
+      }
+
       const canCancelShipment = !schedule.shipping || (
         scheduleShipment &&
         (
@@ -1364,6 +1385,132 @@ function initUserView(user) {
 
     row.append(term, desc);
     return row;
+  }
+
+  function createReviewEditor(schedule) {
+    const section = document.createElement("section");
+    section.className = "user-review-editor";
+
+    const heading = document.createElement("h4");
+    heading.textContent = "Đánh giá dịch vụ";
+    section.appendChild(heading);
+
+    const existingReview = getReviewForSchedule(reviews, schedule.id, user.username);
+    const anyReview = getReviewForSchedule(reviews, schedule.id);
+    if (anyReview && !existingReview) {
+      const notice = document.createElement("p");
+      notice.className = "user-review-notice";
+      notice.textContent = "Lịch này đã có đánh giá.";
+      section.appendChild(notice);
+      return section;
+    }
+
+    const reviewForm = document.createElement("form");
+    reviewForm.className = "user-review-form";
+
+    const ratingGroup = document.createElement("div");
+    ratingGroup.className = "care-form-group";
+    const ratingLabel = document.createElement("label");
+    ratingLabel.htmlFor = `reviewRating-${schedule.id}`;
+    ratingLabel.textContent = "Mức đánh giá";
+    const ratingSelect = document.createElement("select");
+    ratingSelect.id = `reviewRating-${schedule.id}`;
+    ratingSelect.required = true;
+    [
+      ["5", "5 sao - Rất hài lòng"],
+      ["4", "4 sao - Hài lòng"],
+      ["3", "3 sao - Bình thường"],
+      ["2", "2 sao - Chưa hài lòng"],
+      ["1", "1 sao - Không hài lòng"],
+    ].forEach(([value, label]) => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = label;
+      ratingSelect.appendChild(option);
+    });
+    if (existingReview) ratingSelect.value = String(existingReview.rating);
+    ratingGroup.append(ratingLabel, ratingSelect);
+
+    const commentGroup = document.createElement("div");
+    commentGroup.className = "care-form-group";
+    const commentLabel = document.createElement("label");
+    commentLabel.htmlFor = `reviewComment-${schedule.id}`;
+    commentLabel.textContent = "Bình luận";
+    const commentInput = document.createElement("textarea");
+    commentInput.id = `reviewComment-${schedule.id}`;
+    commentInput.required = true;
+    commentInput.maxLength = 1000;
+    commentInput.rows = 3;
+    commentInput.placeholder = "Chia sẻ trải nghiệm chăm sóc thú cưng của bạn";
+    commentInput.value = existingReview?.comment || "";
+    commentGroup.append(commentLabel, commentInput);
+
+    const saveButton = document.createElement("button");
+    saveButton.type = "submit";
+    saveButton.className = "care-btn care-btn-add";
+    saveButton.textContent = existingReview ? "Cập nhật đánh giá" : "Gửi đánh giá";
+    reviewForm.append(ratingGroup, commentGroup, saveButton);
+    reviewForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const validationError = validateReview({
+        schedule,
+        username: user.username,
+        rating: ratingSelect.value,
+        comment: commentInput.value,
+      });
+      if (validationError) {
+        showMessage(validationError, "error");
+        return;
+      }
+
+      if (existingReview) {
+        const nextReviews = reviews.map((review) =>
+          String(review.id) === String(existingReview.id)
+            ? { ...review, rating: Number(ratingSelect.value), comment: commentInput.value.trim(), updatedAt: new Date().toISOString() }
+            : review,
+        );
+        if (!saveReviews(nextReviews)) {
+          showMessage("Không thể cập nhật đánh giá. Vui lòng thử lại.", "error");
+          return;
+        }
+        reviews = nextReviews;
+      } else {
+        if (getReviewForSchedule(reviews, schedule.id)) {
+          showMessage("Lịch này đã có đánh giá.", "error");
+          render();
+          return;
+        }
+        if (!canReviewSchedule(schedule, user.username)) {
+          showMessage("Chỉ có thể đánh giá lịch đã hoàn thành của bạn.", "error");
+          return;
+        }
+        const review = createReviewRecord({
+          id: getNextReviewId(reviews),
+          schedule,
+          user,
+          rating: Number(ratingSelect.value),
+          comment: commentInput.value,
+        });
+        const nextReviews = [...reviews, review];
+        if (!saveReviews(nextReviews)) {
+          showMessage("Không thể gửi đánh giá. Vui lòng thử lại.", "error");
+          return;
+        }
+        reviews = nextReviews;
+      }
+
+      render();
+      showMessage(existingReview ? "Đã cập nhật đánh giá." : "Cảm ơn bạn đã gửi đánh giá.", "success");
+    });
+
+    if (existingReview) {
+      const status = document.createElement("p");
+      status.className = "user-review-notice";
+      status.textContent = `Đánh giá hiện tại: ${existingReview.rating}/5 sao`;
+      section.appendChild(status);
+    }
+    section.appendChild(reviewForm);
+    return section;
   }
 
   render();

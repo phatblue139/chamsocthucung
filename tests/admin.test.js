@@ -41,6 +41,16 @@ import {
   PAYMENT_STATUS_PAID,
   PAYMENT_STATUS_UNPAID,
 } from "../src/paymentAdminData.js";
+import {
+  canReviewSchedule,
+  createReviewRecord,
+  getNextReviewId,
+  getReviewForSchedule,
+  loadReviews,
+  REVIEW_STORAGE_KEY,
+  saveReviews,
+  validateReview,
+} from "../src/reviewData.js";
 
 class MemoryStorage {
   values = new Map();
@@ -191,6 +201,48 @@ test("simulated shipping fees use distance and selected pet size", () => {
   const invalid = calculateShipmentFee({ distanceKm: 20, petSize: "medium", transportType: "one-way" });
   assert.equal(invalid.valid, false);
   assert.match(invalid.message, /xác nhận/);
+});
+
+test("reviews are limited to completed schedules owned by the current user", () => {
+  const schedule = {
+    id: 42,
+    customerUsername: "sample",
+    petName: "Milu",
+    careType: "Tắm",
+    status: SCHEDULE_STATUS.COMPLETED,
+  };
+  assert.equal(canReviewSchedule(schedule, "sample"), true);
+  assert.equal(canReviewSchedule(schedule, "other"), false);
+  assert.equal(canReviewSchedule({ ...schedule, status: SCHEDULE_STATUS.CONFIRMED }, "sample"), false);
+  assert.equal(canReviewSchedule({ ...schedule, deletedAt: "now" }, "sample"), false);
+
+  assert.equal(validateReview({ schedule, username: "sample", rating: 5, comment: "Rất tốt" }), "");
+  assert.match(validateReview({ schedule, username: "other", rating: 5, comment: "Rất tốt" }), /lịch đã hoàn thành/);
+  assert.match(validateReview({ schedule, username: "sample", rating: 6, comment: "Rất tốt" }), /số sao/);
+  assert.match(validateReview({ schedule, username: "sample", rating: 4, comment: "  " }), /nội dung đánh giá/);
+});
+
+test("reviews persist with schedule and customer identity", () => {
+  localStorage.removeItem(REVIEW_STORAGE_KEY);
+  const schedule = {
+    id: 7,
+    customerUsername: "sample",
+    petName: "Misa",
+    careType: "Tiêm phòng",
+    status: SCHEDULE_STATUS.COMPLETED,
+  };
+  const review = createReviewRecord({
+    id: getNextReviewId([]),
+    schedule,
+    user: { username: "sample", fullName: "Minh Anh" },
+    rating: 4,
+    comment: "Tư vấn tốt",
+    now: "2026-10-20T10:00:00.000Z",
+  });
+  assert.equal(saveReviews([review]), true);
+  assert.equal(getReviewForSchedule(loadReviews(), 7, "sample").authorName, "Minh Anh");
+  assert.equal(getReviewForSchedule(loadReviews(), 7, "other"), null);
+  assert.equal(getNextReviewId([{ id: 1 }, { id: 5 }]), 6);
 });
 
 test("pet sizes are normalized and validated safely", () => {

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quản lý đánh giá | NEKO Admin</title>
+    <link rel="stylesheet" href="./style.css" />
+    <script>
+      try {
+        if (localStorage.getItem("neko:admin") !== "true") location.replace("/");
+      } catch (error) {
+        location.replace("/");
+      }
+    </script>
+  </head>
+  <body>
+    <main class="care-page admin-page">
+      <div class="container">
+        <header class="admin-topbar">
+          <a class="admin-brand" href="/src/admin.html">NEKO <span>ADMIN</span></a>
+          <nav class="admin-nav" aria-label="Quản trị">
+            <a href="/src/admin.html">Tổng quan</a>
+            <a href="/src/adminPets.html">Thú cưng</a>
+            <a href="/src/careSchedules.html">Lịch chăm sóc</a>
+            <a href="/src/adminPayments.html">Thanh toán</a>
+            <a class="is-current" href="/src/adminReviews.html" aria-current="page">Đánh giá</a>
+          </nav>
+          <button type="button" class="care-btn care-btn-reset" id="logoutBtn">Đăng xuất</button>
+        </header>
+
+        <section class="admin-heading">
+          <p class="admin-kicker">NEKO · QUẢN TRỊ</p>
+          <h1>Đánh giá &amp; bình luận</h1>
+          <p id="reviewCount">0 đánh giá</p>
+        </section>
+
+        <form id="reviewForm" class="care-form admin-review-form">
+          <input type="hidden" id="reviewId" />
+          <div class="care-form-group">
+            <label for="reviewSchedule">Lịch đã hoàn thành</label>
+            <select id="reviewSchedule" required></select>
+          </div>
+          <div class="care-form-group">
+            <label for="reviewRating">Mức đánh giá</label>
+            <select id="reviewRating" required>
+              <option value="5">5 sao - Rất hài lòng</option>
+              <option value="4">4 sao - Hài lòng</option>
+              <option value="3">3 sao - Bình thường</option>
+              <option value="2">2 sao - Chưa hài lòng</option>
+              <option value="1">1 sao - Không hài lòng</option>
+            </select>
+          </div>
+          <div class="care-form-group care-form-full">
+            <label for="reviewComment">Bình luận</label>
+            <textarea id="reviewComment" rows="4" maxlength="1000" required placeholder="Nhập nội dung đánh giá"></textarea>
+          </div>
+          <div class="care-form-actions">
+            <button type="submit" class="care-btn care-btn-add" id="reviewSaveButton">Thêm đánh giá</button>
+            <button type="button" class="care-btn care-btn-cancel" id="reviewCancelButton" hidden>Hủy sửa</button>
+          </div>
+        </form>
+        <p id="reviewMessage" class="user-form-message" role="status" aria-live="polite"></p>
+
+        <div class="admin-review-toolbar">
+          <input type="search" id="reviewSearch" class="care-search" placeholder="Tìm khách hàng, thú cưng, dịch vụ hoặc nội dung..." aria-label="Tìm đánh giá" />
+        </div>
+
+        <div class="care-table-wrapper">
+          <table class="care-table admin-review-table">
+            <thead>
+              <tr>
+                <th>Lịch</th>
+                <th>Khách hàng</th>
+                <th>Thú cưng / dịch vụ</th>
+                <th>Đánh giá</th>
+                <th>Bình luận</th>
+                <th>Ngày gửi</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="reviewList"></tbody>
+          </table>
+        </div>
+        <p id="reviewEmpty" class="care-empty" hidden>Chưa có đánh giá phù hợp.</p>
+      </div>
+    </main>
+    <script type="module" src="./adminReviews.js"></script>
+  </body>
+</html>

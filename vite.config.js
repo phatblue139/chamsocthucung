@@ -10,6 +10,7 @@ export default defineConfig({
         admin: resolve(import.meta.dirname, 'src/admin.html'),
         adminPets: resolve(import.meta.dirname, 'src/adminPets.html'),
         adminPayments: resolve(import.meta.dirname, 'src/adminPayments.html'),
+        adminReviews: resolve(import.meta.dirname, 'src/adminReviews.html'),
         services: resolve(import.meta.dirname, 'services.html'),
         pricing: resolve(import.meta.dirname, 'pricing.html'),
         booking: resolve(import.meta.dirname, 'booking.html'),
