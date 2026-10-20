@@ -463,6 +463,31 @@ ul { margin: 0; padding: 0; list-style: none; }
 }
 .testi-user strong { color: #fff; display: block; font-size: 15px; }
 .testi-user em { font-style: normal; color: #a99d96; font-size: 13px; }
+.review-summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: -24px auto 34px;
+  color: #d8d0cb;
+  font-size: 14px;
+}
+.review-summary-stars { color: var(--primary); letter-spacing: 2px; }
+.review-summary strong { color: #fff; font-size: 18px; }
+.home-review-card { min-width: 0; }
+.home-review-comment {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.review-empty {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius);
+  color: #d8d0cb;
+  text-align: center;
+}
 
 /* ===== Contact ===== */
 .contact { padding: 96px 0; background: var(--primary-soft); }
@@ -2960,6 +2985,78 @@ body.user-page {
   color: var(--muted);
   font-size: 13px;
 }
+.admin-review-form {
+  max-width: 1080px;
+  margin: 0 auto 10px;
+  padding: 22px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.admin-review-form textarea,
+.user-review-form textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+  resize: vertical;
+}
+.admin-review-form textarea:focus,
+.user-review-form textarea:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+.admin-review-toolbar {
+  max-width: 1080px;
+  margin: 24px auto 14px;
+}
+.admin-review-toolbar .care-search { width: 100%; }
+.admin-review-table { min-width: 1000px; }
+.admin-review-table td:nth-child(5) {
+  min-width: 220px;
+  max-width: 380px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.user-review-editor {
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #f8fbf9;
+}
+.user-review-editor h4 {
+  margin-bottom: 10px;
+  color: var(--ink);
+}
+.user-review-form {
+  display: grid;
+  gap: 10px;
+}
+.user-review-form .care-form-group { gap: 6px; }
+.user-review-form .care-form-group label {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+.user-review-form select {
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+}
+.user-review-form .care-btn { justify-self: start; }
+.user-review-notice {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
 :is(.admin-pet-table, .admin-care-table) th,
 :is(.admin-pet-table, .admin-care-table) td { padding: 12px 14px; }
 .admin-care-stats { max-width: 1080px; }
@@ -2980,6 +3077,7 @@ body.user-page {
 @media (max-width: 520px) {
   .admin-heading h1 { font-size: 30px; }
   :is(.admin-pet-form, .admin-care-form) { grid-template-columns: 1fr; }
+  .admin-review-form { grid-template-columns: 1fr; }
   :is(.admin-pet-toolbar, .admin-care-toolbar) { align-items: stretch; flex-direction: column; }
   .admin-payment-toolbar select { flex-basis: auto; width: 100%; }
   .species-filter { width: 100%; }
