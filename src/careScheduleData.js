@@ -369,7 +369,7 @@ export function hasScheduleConflict(schedules, candidate) {
       ![SCHEDULE_STATUS.PENDING, SCHEDULE_STATUS.CONFIRMED].includes(resolveScheduleStatus(schedule))
     ) return false;
 
-    const sharedPet = getSchedulePetIds(schedule).some((petId) => candidatePetIds.has(petId));
+    const sharedPet = Array.from(getSchedulePetIds(schedule)).some((petId) => candidatePetIds.has(petId));
     if (!sharedPet) return false;
 
     const scheduleStart = `${schedule.date || ""} ${schedule.time || ""}`;

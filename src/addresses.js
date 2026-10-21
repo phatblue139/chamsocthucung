@@ -20,8 +20,6 @@ if (!currentUser) {
 function initAddressManager(user) {
   const form = document.getElementById("addressForm");
   const formId = document.getElementById("addressId");
-  const contactNameInput = document.getElementById("addressContactName");
-  const phoneInput = document.getElementById("addressPhone");
   const cityInput = document.getElementById("addressCity");
   const districtInput = document.getElementById("addressDistrict");
   const wardInput = document.getElementById("addressWard");
@@ -59,8 +57,6 @@ function initAddressManager(user) {
     const cleaned = {
       id: editingId || `addr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       ownerUsername: user.username,
-      contactName: String(contactNameInput.value || "").trim(),
-      phone: String(phoneInput.value || "").trim(),
       city: String(cityInput.value || "").trim(),
       district: String(districtInput.value || "").trim(),
       ward: String(wardInput.value || "").trim(),
@@ -72,7 +68,7 @@ function initAddressManager(user) {
       createdAt: existingAddress?.createdAt || new Date().toISOString(),
     };
 
-    if (!cleaned.contactName || !cleaned.phone || !cleaned.city || !cleaned.district || !cleaned.houseNumber) {
+    if (!cleaned.city || !cleaned.district || !cleaned.houseNumber) {
       showMessage("Vui lòng điền đầy đủ thông tin bắt buộc của địa chỉ.", "error");
       return;
     }
@@ -125,8 +121,6 @@ function initAddressManager(user) {
 
     if (button.dataset.action === "edit") {
       formId.value = target.id;
-      contactNameInput.value = target.contactName || "";
-      phoneInput.value = target.phone || "";
       populateCityOptions(target.city || "");
       populateDistrictOptions(target.district || "");
       populateWardOptions(target.ward || "");
@@ -210,9 +204,10 @@ function initAddressManager(user) {
 
       const title = document.createElement("div");
       title.className = "address-card-title";
-      const contactName = document.createElement("span");
-      contactName.textContent = address.contactName || "Người liên hệ";
-      title.appendChild(contactName);
+      const addressLabel = document.createElement("span");
+      addressLabel.textContent =
+        [address.houseNumber, address.street || address.detail].filter(Boolean).join(", ") || "Địa chỉ chưa có thông tin";
+      title.appendChild(addressLabel);
       if (address.isDefault) {
         const badge = document.createElement("span");
         badge.className = "address-default-badge";
@@ -223,9 +218,7 @@ function initAddressManager(user) {
       const meta = document.createElement("div");
       meta.className = "address-card-meta";
       [
-        address.phone || "—",
-        [address.houseNumber, address.street || address.detail].filter(Boolean).join(", ") || "Địa chỉ chưa có thông tin",
-        [address.city, address.district, address.ward].filter(Boolean).join(" - "),
+        [address.city, address.district, address.ward].filter(Boolean).join(" - ") || "Chưa có thông tin khu vực",
       ].forEach((value) => {
         const line = document.createElement("span");
         line.textContent = value;

@@ -103,7 +103,7 @@ function initUserView(user) {
   const shipToggle = document.getElementById("userShipToggle");
   const shipPanel = document.getElementById("userShipPanel");
   const shipQuoteText = document.getElementById("userShipQuoteText");
-  const shipmentPetSelect = document.getElementById("userShipmentPet");
+  const shipmentPetsContainer = document.getElementById("userShipmentPets");
   const pickupAddressSelect = document.getElementById("userPickupAddress");
   const returnAddressSelect = document.getElementById("userReturnAddress");
   const shipCenterSelect = document.getElementById("userShipCenter");
@@ -111,6 +111,11 @@ function initUserView(user) {
   const returnAddressGroup = document.getElementById("userReturnAddressGroup");
   let currentShippingFee = 0;
   let activePetId = "";
+
+  const dateInput = form?.elements.namedItem("date");
+  const timeInput = form?.elements.namedItem("time");
+  const returnDateInput = form?.elements.namedItem("endDate");
+  const returnTimeInput = form?.elements.namedItem("endTime");
 
   renderPets();
   renderPetSelect();
@@ -127,16 +132,15 @@ function initUserView(user) {
     syncShippingRequirements();
     updateShipQuote();
   });
-  shipmentPetSelect?.addEventListener("change", updateShipQuote);
+  shipmentPetsContainer?.addEventListener("change", (event) => {
+    if (event.target.matches('input[name="shipmentPetIds"]')) updateShipQuote();
+  });
   pickupAddressSelect?.addEventListener("change", updateShipQuote);
+  returnAddressSelect?.addEventListener("change", updateShipQuote);
   shipCenterSelect?.addEventListener("change", updateShipQuote);
   syncPetSpeciesOther();
   petSpeciesInput?.addEventListener("change", syncPetSpeciesOther);
 
-  const dateInput = form?.elements.namedItem("date");
-  const timeInput = form?.elements.namedItem("time");
-  const returnDateInput = form?.elements.namedItem("endDate");
-  const returnTimeInput = form?.elements.namedItem("endTime");
   const returnDateGroup = document.getElementById("userScheduleReturnDateGroup");
   const returnTimeGroup = document.getElementById("userScheduleReturnTimeGroup");
   const scheduleDateLabel = form?.querySelector('label[for="userScheduleDate"]');
@@ -181,14 +185,18 @@ function initUserView(user) {
       if (options.some(({ value }) => String(value) === previous)) select.value = previous;
     };
 
-    populate(shipmentPetSelect, pets.map((pet) => ({
-      value: pet.id,
-      label: `${pet.name || `Thú cưng #${pet.id}`} · ${pet.species || "Khác"}`,
-    })), "-- Chọn thú cưng --");
-    const addressOptions = addresses.map((address) => ({
-      value: address.id,
-      label: `${address.contactName || "Người liên hệ"} · ${[address.city, address.district].filter(Boolean).join(" ")}`.trim(),
-    }));
+    renderShipmentPetChoices();
+    const addressOptions = addresses.map((address) => {
+      const addressLine = [address.houseNumber, address.street || address.detail]
+        .filter(Boolean)
+        .join(", ");
+      const locationLine = [address.ward, address.district, address.city].filter(Boolean).join(", ");
+      const label = [addressLine, locationLine].filter(Boolean).join(", ") || "Địa chỉ";
+      return {
+        value: address.id,
+        label,
+      };
+    });
     populate(pickupAddressSelect, addressOptions, "-- Chọn địa chỉ đón --");
     populate(returnAddressSelect, addressOptions, "-- Chọn địa chỉ trả --");
     populate(shipCenterSelect, SHIPMENT_CENTERS.map((center) => ({ value: center.code, label: center.name })), "-- Chọn trung tâm --");
@@ -198,9 +206,50 @@ function initUserView(user) {
     updateShipQuote();
   }
 
+  function renderShipmentPetChoices() {
+    if (!shipmentPetsContainer) return;
+    const selected = new Set(
+      Array.from(shipmentPetsContainer.querySelectorAll('input[name="shipmentPetIds"]:checked'), (input) => input.value),
+    );
+    shipmentPetsContainer.replaceChildren();
+
+    if (!pets.length) {
+      const empty = document.createElement("p");
+      empty.className = "user-pet-choice-empty";
+      empty.textContent = "Bạn chưa đăng ký thú cưng nào.";
+      shipmentPetsContainer.appendChild(empty);
+      return;
+    }
+
+    pets.forEach((pet) => {
+      const choice = document.createElement("label");
+      choice.className = "user-pet-choice";
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.name = "shipmentPetIds";
+      checkbox.value = String(pet.id);
+      checkbox.checked = selected.has(String(pet.id));
+      const name = document.createElement("span");
+      name.textContent = `${pet.name || `Thú cưng #${pet.id}`} · ${pet.species || "Khác"}`;
+      const select = document.createElement("span");
+      select.className = "user-pet-choice-select";
+      select.append(checkbox, name);
+      choice.appendChild(select);
+      shipmentPetsContainer.appendChild(choice);
+    });
+  }
+
+  function getSelectedShipmentPets() {
+    if (!shipmentPetsContainer) return [];
+    const ids = Array.from(
+      shipmentPetsContainer.querySelectorAll('input[name="shipmentPetIds"]:checked'),
+      (input) => input.value,
+    );
+    return pets.filter((pet) => ids.includes(String(pet.id)));
+  }
+
   function syncShippingRequirements() {
     const shippingEnabled = Boolean(shipToggle?.checked);
-    if (shipmentPetSelect) shipmentPetSelect.required = shippingEnabled;
     if (pickupAddressSelect) pickupAddressSelect.required = shippingEnabled;
     if (shipCenterSelect) shipCenterSelect.required = true;
     if (returnAddressSelect) returnAddressSelect.required = shippingEnabled && shipTypeSelect?.value === "round-trip";
@@ -214,14 +263,16 @@ function initUserView(user) {
       return;
     }
 
-    if (hasScheduleConflict(latestSchedules, schedule)) {
-      showMessage("Thú cưng đã có lịch trùng thời gian. Vui lòng chọn giờ khác.", "error");
-      return;
-    }
-
-    const paymentMethod = String(formData.get("paymentMethod") || "");
-    if (!["at-center", "bank-transfer", "wallet"].includes(paymentMethod)) {
-      showMessage("Phương thức thanh toán không hợp lệ. Vui lòng chọn lại.", "error");
+    const selectedPetIds = Array.from(getSelectedPetIds());
+    const candidate = {
+      date: dateInput?.value || "",
+      time: timeInput?.value || "",
+      endDate: returnDateInput?.value || "",
+      endTime: returnTimeInput?.value || "",
+      petIds: selectedPetIds,
+    };
+    if (hasScheduleConflict(loadSchedules(), candidate)) {
+      if (shipQuoteText) shipQuoteText.textContent = "Thú cưng đã có lịch trùng thời gian. Vui lòng chọn giờ khác.";
       return;
     }
 
@@ -231,57 +282,97 @@ function initUserView(user) {
       return;
     }
 
-    const pet = pets.find((item) => String(item.id) === String(shipmentPetSelect?.value || ""));
-    const address = getAddressStorage().find((item) => String(item.id) === String(pickupAddressSelect?.value || "") && String(item.ownerUsername) === String(user.username));
+    const shipmentPets = getSelectedShipmentPets();
+    const addresses = getAddressStorage().filter((item) => String(item.ownerUsername) === String(user.username));
+    const address = addresses.find((item) => String(item.id) === String(pickupAddressSelect?.value || ""));
     const center = SHIPMENT_CENTERS.find((item) => item.code === String(shipCenterSelect?.value || ""));
-    if (!pet || !address || !center) {
+    if (!shipmentPets.length || !address || !center) {
       if (shipQuoteText) shipQuoteText.textContent = "Vui lòng chọn thú cưng, địa chỉ và trung tâm để xem phí ship.";
       return;
     }
 
-    const petValidation = validateShippingPet(pet);
-    if (!petValidation.valid) {
-      if (shipQuoteText) shipQuoteText.textContent = petValidation.message;
+    for (const pet of shipmentPets) {
+      const petValidation = validateShippingPet(pet);
+      if (!petValidation.valid) {
+        if (shipQuoteText) shipQuoteText.textContent = petValidation.message;
+        return;
+      }
+    }
+
+    const transportType = shipTypeSelect?.value || "one-way";
+    const returnAddress = transportType === "round-trip"
+      ? addresses.find((item) => String(item.id) === String(returnAddressSelect?.value || ""))
+      : null;
+    if (transportType === "round-trip" && !returnAddress) {
+      if (shipQuoteText) shipQuoteText.textContent = "Vui lòng chọn địa chỉ trả cho hình thức vận chuyển hai chiều.";
       return;
     }
 
-    const areaCode = getAddressAreaCode(address.city, address.district) || address.areaCode;
-    const route = getDistanceForLocation(areaCode, center.code);
+    const route = resolveShipmentRoute(address, returnAddress, center);
     if (!route) {
       if (shipQuoteText) shipQuoteText.textContent = "Không tìm thấy khoảng cách mô phỏng cho khu vực đã chọn.";
       return;
     }
-    const quote = calculateShipmentFee({
-      distanceKm: route.distanceKm,
-      petSize: pet.size,
-      transportType: shipTypeSelect?.value || "one-way",
-    });
+
+    let total = 0;
+    let lastMessage = "";
+    for (const pet of shipmentPets) {
+      const quote = calculateShipmentFee({
+        distanceKm: route.distanceKm,
+        petSize: pet.size,
+        transportType,
+      });
+      if (!quote.valid) {
+        if (shipQuoteText) shipQuoteText.textContent = quote.message;
+        return;
+      }
+      total += quote.total;
+      lastMessage = quote.message;
+    }
+
     if (shipQuoteText) {
-      shipQuoteText.textContent = quote.valid
-        ? `Khoảng cách mô phỏng: ${route.distanceKm} km · ${quote.message} Tổng: ${formatCurrency(quote.total)}.`
-        : quote.message;
+      const petLabel = shipmentPets.length > 1 ? `${shipmentPets.length} thú cưng` : "1 thú cưng";
+      shipQuoteText.textContent = `Khoảng cách mô phỏng: ${route.distanceKm} km · ${lastMessage} ${petLabel}: Tổng ${formatCurrency(total)}.`;
     }
-    if (quote.valid) {
-      currentShippingFee = quote.total;
-      updateScheduleTotal();
-    }
+    currentShippingFee = total;
+    updateScheduleTotal();
+  }
+
+  function resolveShipmentRoute(pickupAddress, returnAddress, center) {
+    const pickupRoute = resolveAddressRoute(pickupAddress, center);
+    if (!pickupRoute) return null;
+    if (!returnAddress) return pickupRoute;
+
+    const returnRoute = resolveAddressRoute(returnAddress, center);
+    if (!returnRoute) return null;
+
+    return {
+      ...pickupRoute,
+      distanceKm: pickupRoute.distanceKm + returnRoute.distanceKm,
+    };
+  }
+
+  function resolveAddressRoute(address, center) {
+    const areaCode = getAddressAreaCode(address?.city, address?.district) || address?.areaCode;
+    return getDistanceForLocation(areaCode, center.code);
   }
 
   function createShippingRecord(scheduledPetIds, scheduleId) {
     if (!shipToggle?.checked) return null;
 
-    const pet = pets.find((item) => String(item.id) === String(shipmentPetSelect?.value || ""));
+    const shipmentPets = getSelectedShipmentPets();
     const addresses = getAddressStorage().filter((item) => String(item.ownerUsername) === String(user.username));
     const pickupAddress = addresses.find((item) => String(item.id) === String(pickupAddressSelect?.value || ""));
     const center = SHIPMENT_CENTERS.find((item) => item.code === String(shipCenterSelect?.value || ""));
     const transportType = shipTypeSelect?.value || "one-way";
     const returnAddress = addresses.find((item) => String(item.id) === String(returnAddressSelect?.value || ""));
 
-    if (!pet || !pickupAddress || !center) {
+    if (!shipmentPets.length || !pickupAddress || !center) {
       showMessage("Vui lòng chọn thú cưng, địa chỉ đón và trung tâm ship.", "error");
       return false;
     }
-    if (!scheduledPetIds.includes(String(pet.id))) {
+    const outsideSchedule = shipmentPets.find((pet) => !scheduledPetIds.includes(String(pet.id)));
+    if (outsideSchedule) {
       showMessage("Thú cưng được vận chuyển phải nằm trong yêu cầu chăm sóc này.", "error");
       return false;
     }
@@ -289,26 +380,32 @@ function initUserView(user) {
       showMessage("Vui lòng chọn địa chỉ trả cho hình thức vận chuyển hai chiều.", "error");
       return false;
     }
-    const validation = validateShippingPet(pet);
-    if (!validation.valid) {
-      showMessage(validation.message, "error");
-      return false;
+    for (const pet of shipmentPets) {
+      const validation = validateShippingPet(pet);
+      if (!validation.valid) {
+        showMessage(validation.message, "error");
+        return false;
+      }
     }
 
-    const areaCode = getAddressAreaCode(pickupAddress.city, pickupAddress.district) || pickupAddress.areaCode;
-    const route = getDistanceForLocation(areaCode, center.code);
+    const route = resolveShipmentRoute(pickupAddress, transportType === "round-trip" ? returnAddress : null, center);
     if (!route) {
       showMessage("Không tìm được khoảng cách mô phỏng cho địa chỉ đã chọn.", "error");
       return false;
     }
-    const quote = calculateShipmentFee({
-      distanceKm: route.distanceKm,
-      petSize: pet.size,
-      transportType,
-    });
-    if (!quote.valid) {
-      showMessage(quote.message, "error");
-      return false;
+
+    let totalFee = 0;
+    for (const pet of shipmentPets) {
+      const quote = calculateShipmentFee({
+        distanceKm: route.distanceKm,
+        petSize: pet.size,
+        transportType,
+      });
+      if (!quote.valid) {
+        showMessage(quote.message, "error");
+        return false;
+      }
+      totalFee += quote.total;
     }
 
     return {
@@ -317,16 +414,18 @@ function initUserView(user) {
       customerUsername: user.username,
       customerName: user.fullName || user.username,
       customerPhone: user.phone || "",
-      petId: Number(pet.id),
-      petName: pet.name || "Thú cưng",
+      petId: Number(shipmentPets[0].id),
+      petName: shipmentPets.map((pet) => pet.name || `Thú cưng #${pet.id}`).join(", "),
+      petIds: shipmentPets.map((pet) => Number(pet.id)),
+      petNames: shipmentPets.map((pet) => pet.name || `Thú cưng #${pet.id}`),
       pickupAddressId: String(pickupAddress.id),
       returnAddressId: transportType === "round-trip" ? String(returnAddress.id) : "",
       centerCode: center.code,
       centerName: center.name,
-      areaCode,
+      areaCode: getAddressAreaCode(pickupAddress.city, pickupAddress.district) || pickupAddress.areaCode,
       transportType,
       distanceKm: route.distanceKm,
-      totalFee: quote.total,
+      totalFee,
       status: SHIPMENT_STATUS.PENDING,
       createdAt: new Date().toISOString(),
       statusHistory: [{

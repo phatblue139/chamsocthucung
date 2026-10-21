@@ -373,10 +373,13 @@ function renderShipments() {
                 : "Không tìm thấy địa chỉ trả");
         }
         const route = routeParts.join(" → ");
+        const petLabel = Array.isArray(shipment.petNames) && shipment.petNames.length
+            ? shipment.petNames.join(", ")
+            : shipment.petName || "Thú cưng";
         const fields = [
             `#${shipment.id} · lịch #${shipment.scheduleId || linkedSchedule?.id || "—"}`,
             customer,
-            shipment.petName || "Thú cưng",
+            petLabel,
             route,
             `${shipment.distanceKm ?? "—"} km (mô phỏng) · ${formatCurrency(shipment.totalFee) || "—"}`,
         ];

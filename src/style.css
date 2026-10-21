@@ -1905,6 +1905,14 @@ body.user-page {
   gap: 14px;
 }
 
+.user-ship-pet-list {
+  max-height: 160px;
+}
+
+.user-ship-pet-list .user-pet-choice {
+  justify-content: flex-start;
+}
+
 .user-ship-summary {
   grid-column: 1 / -1;
   border: 1px solid var(--border);
