@@ -21,6 +21,7 @@ import {
   SCHEDULE_STATUS,
   getCareTypePrice,
   getPetSittingPrice,
+  hasScheduleConflict,
   mergeScheduleUpdate,
   getScheduleStatusClass,
   normalizeStatus,
@@ -137,6 +138,20 @@ test("pet sitting price uses hourly rates with a daily cap per 24 hours", () => 
   assert.equal(getPetSittingPrice("2026-10-15", "08:00", "2026-10-16", "08:00"), 150000);
   assert.equal(getPetSittingPrice("2026-10-15", "08:00", "2026-10-16", "09:00"), 160000);
   assert.equal(getPetSittingPrice("2026-10-15", "08:00", "2026-10-15", "07:55"), 0);
+});
+
+test("schedule conflict checks handle pet ID sets", () => {
+  const existing = [{
+    petIds: [4],
+    date: "2026-10-22",
+    time: "12:30",
+    status: SCHEDULE_STATUS.PENDING,
+    customerUsername: "sample",
+  }];
+
+  assert.equal(hasScheduleConflict(existing, { petIds: [4], date: "2026-10-22", time: "12:30" }), true);
+  assert.equal(hasScheduleConflict(existing, { petIds: [4], date: "2026-10-22", time: "12:35" }), false);
+  assert.equal(hasScheduleConflict(existing, { petIds: [5], date: "2026-10-22", time: "12:30" }), false);
 });
 
 test("admin edits preserve detailed customer services and their total price", () => {
