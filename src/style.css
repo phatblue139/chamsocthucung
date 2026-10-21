@@ -1496,7 +1496,9 @@ body.user-page {
   gap: 8px;
 }
 
-.user-wallet-topup-controls input {
+.user-wallet-topup-controls input,
+.user-wallet-topup > input,
+.user-wallet-topup > select {
   min-width: 0;
   height: 42px;
   padding: 8px 10px;

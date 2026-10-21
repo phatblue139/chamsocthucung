@@ -62,14 +62,22 @@ function initPaymentAccount(user) {
 
   withdrawForm?.addEventListener("submit", (event) => {
     event.preventDefault();
-    const amount = Number(new FormData(withdrawForm).get("amount"));
-    if (!requestWalletWithdrawal(user.username, amount)) {
-      if (withdrawMessage) withdrawMessage.textContent = "Số dư khả dụng không đủ hoặc số tiền rút không hợp lệ.";
+    const formData = new FormData(withdrawForm);
+    const amount = Number(formData.get("amount"));
+    const destination = {
+      bank: formData.get("bank"),
+      accountNumber: formData.get("accountNumber"),
+      accountName: formData.get("accountName"),
+    };
+    if (!requestWalletWithdrawal(user.username, amount, destination)) {
+      if (withdrawMessage) withdrawMessage.textContent = "Vui lòng kiểm tra thông tin ngân hàng, số tài khoản, tên chủ tài khoản và số dư khả dụng.";
       return;
     }
 
     withdrawForm.reset();
-    if (withdrawMessage) withdrawMessage.textContent = `Đã ghi nhận yêu cầu rút ${formatCurrency(amount)} ở trạng thái chờ xử lý (mô phỏng).`;
+    if (withdrawMessage) {
+      withdrawMessage.textContent = `Đã ghi nhận yêu cầu rút ${formatCurrency(amount)} về ${destination.bank}, tài khoản ${destination.accountNumber} (${destination.accountName}), đang chờ xử lý (mô phỏng).`;
+    }
     renderWallet();
     window.dispatchEvent(new Event("neko:wallet-updated"));
   });
@@ -85,6 +93,10 @@ function initPaymentAccount(user) {
       const description = document.createElement("span");
       description.textContent = transaction.description ||
         (transaction.type === "payment" ? "Thanh toán" : transaction.type === "withdrawal" ? "Rút tiền" : "Nạp ví");
+      if (transaction.type === "withdrawal" && transaction.destination) {
+        const { bank, accountNumber, accountName } = transaction.destination;
+        description.textContent = `Rút tiền · ${bank} · ${accountNumber} · ${accountName}`;
+      }
       const date = document.createElement("small");
       const dateLabel = new Date(transaction.createdAt).toLocaleDateString("vi-VN");
       date.textContent = transaction.type === "withdrawal" && transaction.status === "pending"

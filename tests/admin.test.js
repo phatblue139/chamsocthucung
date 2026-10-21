@@ -228,9 +228,16 @@ test("wallet tracks demo top-ups and charges without allowing a negative balance
   assert.equal(topUpWallet(username, 100000), true);
   assert.equal(chargeWallet(username, 35000), true);
   assert.equal(loadWallet(username).balance, 65000);
-  assert.equal(requestWalletWithdrawal(username, 40000), true);
+  const destination = {
+    bank: "Vietcombank",
+    accountNumber: "0123456789",
+    accountName: "NGUYEN VAN A",
+  };
+  assert.equal(requestWalletWithdrawal(username, 40000, destination), true);
   assert.equal(loadWallet(username).balance, 25000);
-  assert.equal(requestWalletWithdrawal(username, 30000), false);
+  assert.deepEqual(loadWallet(username).transactions.at(-1).destination, destination);
+  assert.equal(requestWalletWithdrawal(username, 10000, { ...destination, accountNumber: "123" }), false);
+  assert.equal(requestWalletWithdrawal(username, 30000, destination), false);
   assert.equal(loadWallet(username).transactions.length, 3);
   assert.equal(loadWallet(username).transactions.at(-1).status, "pending");
   assert.equal(topUpWallet(username, -1), false);

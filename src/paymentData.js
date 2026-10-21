@@ -78,7 +78,7 @@ export function loadWallet(username) {
   return { balance: Math.max(0, balance), transactions };
 }
 
-function recordWalletTransaction(username, type, amount, description) {
+function recordWalletTransaction(username, type, amount, description, details = {}) {
   const storage = getStorage();
   const storageKey = getWalletKey(username);
   if (!storage || !storageKey || !Number.isSafeInteger(amount) || amount <= 0) return false;
@@ -94,6 +94,7 @@ function recordWalletTransaction(username, type, amount, description) {
     type,
     amount,
     description,
+    ...details,
     status: type === "withdrawal" ? "pending" : "completed",
     createdAt: new Date().toISOString(),
   });
@@ -114,7 +115,22 @@ export function chargeWallet(username, amount, description = "Thanh toán lịch
   return recordWalletTransaction(username, "payment", amount, description);
 }
 
-export function requestWalletWithdrawal(username, amount) {
-  if (!Number.isSafeInteger(amount) || amount <= 0) return false;
-  return recordWalletTransaction(username, "withdrawal", amount, "Yêu cầu rút tiền (mô phỏng)");
+export function requestWalletWithdrawal(username, amount, destination) {
+  const bank = String(destination?.bank || "").trim();
+  const accountNumber = String(destination?.accountNumber || "").trim();
+  const accountName = String(destination?.accountName || "").trim();
+  if (
+    !Number.isSafeInteger(amount) || amount <= 0 ||
+    bank.length < 2 || bank.length > 80 ||
+    !/^\d{6,20}$/.test(accountNumber) ||
+    accountName.length < 2 || accountName.length > 100
+  ) return false;
+
+  return recordWalletTransaction(
+    username,
+    "withdrawal",
+    amount,
+    "Yêu cầu rút tiền (mô phỏng)",
+    { destination: { bank, accountNumber, accountName } },
+  );
 }

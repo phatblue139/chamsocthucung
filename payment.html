@@ -48,9 +48,33 @@
           <section class="user-wallet-withdraw" aria-labelledby="walletWithdrawTitle">
             <div>
               <h2 id="walletWithdrawTitle">Rút tiền</h2>
-              <p>Gửi yêu cầu rút thử nghiệm. Số tiền sẽ tạm trừ khỏi số dư khả dụng trong khi chờ xử lý; ứng dụng chưa chuyển tiền thật.</p>
+              <p>Chọn ngân hàng và nhập đúng thông tin tài khoản nhận tiền. Số tiền sẽ tạm trừ khỏi số dư khả dụng trong khi chờ xử lý; ứng dụng chưa chuyển tiền thật.</p>
             </div>
             <form id="userWalletWithdrawForm" class="user-wallet-topup">
+              <label for="userWalletWithdrawBank">Ngân hàng nhận tiền</label>
+              <select id="userWalletWithdrawBank" name="bank" required>
+                <option value="" selected disabled>Chọn ngân hàng</option>
+                <option value="Agribank">Agribank</option>
+                <option value="ACB">ACB</option>
+                <option value="BIDV">BIDV</option>
+                <option value="HDBank">HDBank</option>
+                <option value="MB">MB</option>
+                <option value="MSB">MSB</option>
+                <option value="OCB">OCB</option>
+                <option value="Sacombank">Sacombank</option>
+                <option value="SeABank">SeABank</option>
+                <option value="SHB">SHB</option>
+                <option value="Techcombank">Techcombank</option>
+                <option value="TPBank">TPBank</option>
+                <option value="VIB">VIB</option>
+                <option value="Vietcombank">Vietcombank</option>
+                <option value="VietinBank">VietinBank</option>
+                <option value="VPBank">VPBank</option>
+              </select>
+              <label for="userWalletWithdrawAccountNumber">Số tài khoản nhận tiền</label>
+              <input type="text" id="userWalletWithdrawAccountNumber" name="accountNumber" inputmode="numeric" pattern="[0-9]{6,20}" maxlength="20" autocomplete="off" placeholder="Nhập từ 6 đến 20 chữ số" required />
+              <label for="userWalletWithdrawAccountName">Tên chủ tài khoản</label>
+              <input type="text" id="userWalletWithdrawAccountName" name="accountName" autocomplete="name" placeholder="Tên không dấu như trên tài khoản" required />
               <label for="userWalletWithdrawAmount">Số tiền muốn rút</label>
               <div class="user-wallet-topup-controls">
                 <input type="number" id="userWalletWithdrawAmount" name="amount" min="10000" step="10000" required />
