@@ -214,17 +214,6 @@ function initUserView(user) {
       return;
     }
 
-    if (hasScheduleConflict(latestSchedules, schedule)) {
-      showMessage("Thú cưng đã có lịch trùng thời gian. Vui lòng chọn giờ khác.", "error");
-      return;
-    }
-
-    const paymentMethod = String(formData.get("paymentMethod") || "");
-    if (!["at-center", "bank-transfer", "wallet"].includes(paymentMethod)) {
-      showMessage("Phương thức thanh toán không hợp lệ. Vui lòng chọn lại.", "error");
-      return;
-    }
-
     const hasSavedAddress = getAddressStorage().some((address) => String(address.ownerUsername) === String(user.username));
     if (!hasSavedAddress) {
       if (shipQuoteText) shipQuoteText.textContent = "Tài khoản chưa có địa chỉ. Hãy thêm địa chỉ để tiếp tục đặt ship.";
@@ -542,6 +531,12 @@ function initUserView(user) {
     }
 
     const formData = new FormData(form);
+    const paymentMethod = String(formData.get("paymentMethod") || "");
+    if (!["at-center", "bank-transfer", "wallet"].includes(paymentMethod)) {
+      showMessage("Phương thức thanh toán không hợp lệ. Vui lòng chọn lại.", "error");
+      return;
+    }
+
     const isPetSitting = isPetSittingSelected();
     const today = currentDate();
     if (String(formData.get("date") || "") < today) {
@@ -679,6 +674,11 @@ function initUserView(user) {
       source: "user",
       createdAt: new Date().toISOString(),
     };
+
+    if (hasScheduleConflict(latestSchedules, schedule)) {
+      showMessage("Thú cưng đã có lịch trùng thời gian. Vui lòng chọn giờ khác.", "error");
+      return;
+    }
 
     if (schedule.note.length > 500) {
       showMessage("Ghi chú không được vượt quá 500 ký tự.", "error");
