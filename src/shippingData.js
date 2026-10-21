@@ -177,11 +177,14 @@ export function calculateShipmentFee({ distanceKm, petSize, transportType }) {
 
   const baseFee = type === "round-trip" ? 35000 : 20000;
 
+  const maxDistance = type === "round-trip" ? 30 : 15;
   let distanceFee = 0;
-  if (distance > 15) {
+  if (distance > maxDistance) {
     return { valid: false, message: "Khoảng cách vượt phạm vi hỗ trợ hiện tại. Vui lòng xác nhận thủ công với NEKO." };
   }
-  if (distance > 10) distanceFee = 40000;
+  if (distance > 20) distanceFee = 70000;
+  else if (distance > 15) distanceFee = 55000;
+  else if (distance > 10) distanceFee = 40000;
   else if (distance > 5) distanceFee = 25000;
   else if (distance > 3) distanceFee = 10000;
 
@@ -212,7 +215,6 @@ export function validateShipmentAddress(address) {
   return Boolean(
     address &&
     String(address.ownerUsername || "").trim() &&
-    String(address.contactName || "").trim() &&
     String(address.city || "").trim() &&
     String(address.district || "").trim() &&
     String(address.houseNumber || "").trim(),
