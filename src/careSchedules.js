@@ -6,6 +6,7 @@ import {
     formatCurrency,
     getCareTypePrice,
     getNextScheduleId,
+    getPetSittingCageType,
     getScheduleStatusClass,
     mergeScheduleUpdate,
     getTimeOptions,
@@ -229,6 +230,12 @@ function createCareTypeCell(schedule) {
         const services = document.createElement("span");
         services.textContent = Array.isArray(item.services) ? item.services.join(", ") : "Chăm sóc";
         entry.append(petName, document.createTextNode(": "), services);
+        if (item.cageType) {
+            const cage = document.createElement("span");
+            cage.className = "care-type-cage";
+            cage.textContent = ` (${getPetSittingCageType(item.cageType).label})`;
+            entry.appendChild(cage);
+        }
         cell.appendChild(entry);
     });
 

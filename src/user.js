@@ -12,17 +12,26 @@ import {
   CARE_TYPE_PET_SITTING,
   CLOSE_TIME,
   OPEN_TIME,
+  PET_SITTING_CAGE_TYPES,
+  PET_SITTING_CAPACITY,
   PET_SITTING_DAILY_RATE,
   PET_SITTING_HOURLY_RATE,
+  SCHEDULE_BUFFER_MINUTES,
+  SCHEDULE_CONFLICT_OVERLAP,
   SCHEDULE_STATUS,
   SCHEDULE_STORAGE_KEY,
   formatCurrency,
   getCareTypePrice,
+  getCageTypeForPetSize,
   getNextScheduleId,
+  getPetSittingCageType,
+  getPetSittingCageUsage,
+  getScheduleConflictType,
+  getSchedulePetSittingIds,
   getScheduleStatusClass,
   getTimeOptions,
   getPetSittingPrice,
-  hasScheduleConflict,
+  findScheduleConflicts,
   isKnownCareType,
   loadSchedules,
   resolveScheduleStatus,
@@ -116,6 +125,19 @@ function initUserView(user) {
   const timeInput = form?.elements.namedItem("time");
   const returnDateInput = form?.elements.namedItem("endDate");
   const returnTimeInput = form?.elements.namedItem("endTime");
+  const noteInput = form?.elements.namedItem("note");
+  const submitButton = form?.querySelector('button[type="submit"]');
+  const editBanner = document.getElementById("userScheduleEditBanner");
+  const editBannerText = document.getElementById("userScheduleEditText");
+  const editCancelButton = document.getElementById("userScheduleEditCancelBtn");
+  const confirmDialog = document.getElementById("userScheduleConfirmDialog");
+  const confirmLead = document.getElementById("userScheduleConfirmLead");
+  const confirmList = document.getElementById("userScheduleConfirmList");
+  const confirmSubmitButton = document.getElementById("userScheduleConfirmSubmit");
+  const confirmCancelButton = document.getElementById("userScheduleConfirmCancel");
+  let editingScheduleId = null;
+  let editingScheduleSnapshot = null;
+  let pendingConfirmation = null;
 
   renderPets();
   renderPetSelect();
@@ -154,6 +176,10 @@ function initUserView(user) {
     if (returnDateInput) returnDateInput.min = dateInput.value || currentDate();
     applyTimeLimits();
     updateScheduleTotal();
+  });
+  editCancelButton?.addEventListener("click", () => {
+    stopEditSchedule({ resetForm: true });
+    showMessage("Đã huỷ chỉnh sửa lịch.", "success");
   });
   applyTimeLimits();
   timeInput?.addEventListener("change", updateScheduleTotal);
@@ -209,7 +235,9 @@ function initUserView(user) {
   function renderShipmentPetChoices() {
     if (!shipmentPetsContainer) return;
     const selected = new Set(
-      Array.from(shipmentPetsContainer.querySelectorAll('input[name="shipmentPetIds"]:checked'), (input) => input.value),
+      Array.from(shipmentPetsContainer.querySelectorAll('input[name="shipmentPetIds"]'))
+        .filter((input) => input.checked)
+        .map((input) => input.value),
     );
     shipmentPetsContainer.replaceChildren();
 
@@ -242,9 +270,10 @@ function initUserView(user) {
   function getSelectedShipmentPets() {
     if (!shipmentPetsContainer) return [];
     const ids = Array.from(
-      shipmentPetsContainer.querySelectorAll('input[name="shipmentPetIds"]:checked'),
-      (input) => input.value,
-    );
+      shipmentPetsContainer.querySelectorAll('input[name="shipmentPetIds"]'),
+    )
+      .filter((input) => input.checked)
+      .map((input) => input.value);
     return pets.filter((pet) => ids.includes(String(pet.id)));
   }
 
@@ -480,6 +509,81 @@ function initUserView(user) {
     if (previous) returnTimeInput.value = previous;
   }
 
+  /* Keeps a stored time visible even when it is outside the usual slots. */
+  function ensureTimeOption(select, value) {
+    const time = String(value || "").trim();
+    if (!select || !time) return;
+    if (Array.from(select.options).some((option) => option.value === time)) return;
+    const option = document.createElement("option");
+    option.value = time;
+    option.textContent = time;
+    select.appendChild(option);
+  }
+
+  function startEditSchedule(schedule) {
+    editingScheduleId = schedule.id;
+    editingScheduleSnapshot = schedule;
+    const petIds = new Set(
+      [...(Array.isArray(schedule.petIds) ? schedule.petIds : []), schedule.petId]
+        .filter((value) => value !== "" && value !== null && value !== undefined)
+        .map(String),
+    );
+    petSelect?.querySelectorAll('input[name="petIds"]').forEach((input) => {
+      input.checked = petIds.has(input.value);
+    });
+    if (petIds.size) activePetId = String([...petIds][0]);
+    renderPetServiceChoices();
+
+    const servicesByPet = new Map(
+      (Array.isArray(schedule.petServices) ? schedule.petServices : []).map((item) => [
+        String(item.petId),
+        Array.isArray(item.services) ? item.services : [],
+      ]),
+    );
+    petServicesContainer?.querySelectorAll(".user-pet-service-group").forEach((group) => {
+      const wanted = servicesByPet.get(String(group.dataset.petId)) || [];
+      group.querySelectorAll('input[name="careTypes"]').forEach((input) => {
+        input.checked = wanted.includes(input.value);
+      });
+    });
+
+    if (dateInput) dateInput.value = schedule.date || "";
+    if (returnDateInput) returnDateInput.value = schedule.endDate || "";
+    if (noteInput) noteInput.value = schedule.note || "";
+
+    syncPetSittingFields();
+    ensureTimeOption(timeInput, schedule.time);
+    if (timeInput) timeInput.value = schedule.time || "";
+    ensureTimeOption(returnTimeInput, schedule.endTime);
+    if (returnTimeInput) returnTimeInput.value = schedule.endTime || "";
+    applyScheduleLimits();
+    updateScheduleTotal();
+
+    if (editBannerText) {
+      editBannerText.textContent = `Đang sửa lịch #${schedule.id} (${schedule.petName || "thú cưng"}). ` +
+        "Đổi thời gian hoặc thêm thú cưng vào lần trông giữ này rồi bấm Cập nhật lịch.";
+    }
+    editBanner?.removeAttribute("hidden");
+    if (submitButton) submitButton.textContent = `Cập nhật lịch #${schedule.id}`;
+    form?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+    dateInput?.focus?.();
+  }
+
+  function stopEditSchedule({ resetForm = false } = {}) {
+    editingScheduleId = null;
+    editingScheduleSnapshot = null;
+    editBanner?.setAttribute("hidden", "");
+    if (submitButton) submitButton.textContent = "Đăng ký lịch";
+    if (resetForm) {
+      if (typeof form?.reset === "function") form.reset();
+      setBookingPaymentMethod(defaultPaymentMethod);
+      renderPetServiceChoices();
+      syncPetSittingFields();
+      applyScheduleLimits();
+      updateScheduleTotal();
+    }
+  }
+
   function applyTimeLimits() {
     if (!timeInput) return;
     const isPetSitting = isPetSittingSelected();
@@ -502,7 +606,13 @@ function initUserView(user) {
         option.textContent = value;
         timeInput.appendChild(option);
       });
-    if (previous && timeInput.value !== previous) timeInput.value = previous;
+    if (previous && !Array.from(timeInput.options).some((option) => option.value === previous)) {
+      const option = document.createElement("option");
+      option.value = previous;
+      option.textContent = previous;
+      timeInput.appendChild(option);
+    }
+    if (previous) timeInput.value = previous;
     if (!timeInput.value) timeInput.selectedIndex = 0;
   }
 
@@ -524,38 +634,48 @@ function initUserView(user) {
   }
 
   function applyScheduleLimits() {
-    if (dateInput) dateInput.min = currentDate();
-    if (returnDateInput) returnDateInput.min = dateInput?.value || currentDate();
+    const minDate = editingScheduleSnapshot?.date || currentDate();
+    if (dateInput) dateInput.min = minDate;
+    if (returnDateInput) returnDateInput.min = dateInput?.value || minDate;
     applyTimeLimits();
   }
 
   function isPetSittingSelected() {
     const selectedPetIds = getSelectedPetIds();
     return Array.from(petServicesContainer?.querySelectorAll(".user-pet-service-group") || [])
-      .some((group) => selectedPetIds.has(group.dataset.petId) && group.querySelector(
-        `input[name="careTypes"][value="${CARE_TYPE_PET_SITTING}"]:checked`,
-      ));
+      .some((group) => selectedPetIds.has(group.dataset.petId) && getCheckedCareTypes(group)
+        .includes(CARE_TYPE_PET_SITTING));
+  }
+
+  function getCheckedCareTypes(group) {
+    return Array.from(group?.querySelectorAll('input[name="careTypes"]') || [])
+      .filter((input) => input.checked)
+      .map((input) => input.value);
   }
 
   function getSelectedPetIds() {
     return new Set(Array.from(
-      petSelect?.querySelectorAll('input[name="petIds"]:checked') || [],
-      (input) => input.value,
-    ));
+      petSelect?.querySelectorAll('input[name="petIds"]') || [],
+    )
+      .filter((input) => input.checked)
+      .map((input) => input.value));
   }
 
   function syncPetSittingFields() {
     const isPetSitting = isPetSittingSelected();
     if (returnDateGroup) returnDateGroup.hidden = !isPetSitting;
     if (returnTimeGroup) returnTimeGroup.hidden = !isPetSitting;
+    // While editing a schedule the stay window of the booking must survive
+    // a change of the selected pets.
+    const keepStayWindow = Boolean(editingScheduleId);
     if (returnDateInput) {
       returnDateInput.required = isPetSitting;
       returnDateInput.min = dateInput?.value || currentDate();
-      if (!isPetSitting) returnDateInput.value = "";
+      if (!isPetSitting && !keepStayWindow) returnDateInput.value = "";
     }
     if (returnTimeInput) {
       returnTimeInput.required = isPetSitting;
-      if (!isPetSitting) returnTimeInput.value = "";
+      if (!isPetSitting && !keepStayWindow) returnTimeInput.value = "";
     }
     if (scheduleDateLabel) scheduleDateLabel.textContent = isPetSitting ? "Ngày nhận thú cưng" : "Ngày";
     if (scheduleTimeLabel) scheduleTimeLabel.textContent = isPetSitting ? "Giờ nhận thú cưng" : "Giờ";
@@ -572,18 +692,23 @@ function initUserView(user) {
     let total = 0;
     let hasSelectedService = false;
     let hasUnpricedPetSitting = false;
+    const petServices = [];
 
     selectedGroups.forEach((group) => {
-      const services = Array.from(group.querySelectorAll('input[name="careTypes"]:checked'), (input) => input.value);
+      const services = getCheckedCareTypes(group);
       if (!services.length) return;
       hasSelectedService = true;
       total += getCareTypePrice(services);
+      const petId = Number(group.dataset.petId);
+      const cageType = getPetCageType(petId);
+      petServices.push({ petId, services, cageType });
       if (services.includes(CARE_TYPE_PET_SITTING)) {
         const sittingPrice = getPetSittingPrice(
           dateInput?.value,
           timeInput?.value,
           returnDateInput?.value,
           returnTimeInput?.value,
+          cageType,
         );
         if (sittingPrice) total += sittingPrice;
         else hasUnpricedPetSitting = true;
@@ -592,18 +717,49 @@ function initUserView(user) {
 
     scheduleTotal.hidden = !hasSelectedService;
     if (!hasSelectedService) return;
+    const cageLabel = getCageLabel(petServices);
     if (hasUnpricedPetSitting) {
       scheduleTotal.textContent = total
-        ? `Dịch vụ: ${formatCurrency(total)} · Chưa gồm phí trông giữ; chọn ngày giờ nhận và trả để tính đủ.`
+        ? `Dịch vụ: ${formatCurrency(total)} · Chưa gồm phí trông giữ; chọn ngày giờ nhận và trả để tính đủ.${cageLabel}`
         : "Chọn ngày giờ nhận và trả để xem tổng tiền dịch vụ.";
       return;
     }
     if (shipToggle?.checked && !currentShippingFee) {
-      scheduleTotal.textContent = `Dịch vụ: ${formatCurrency(total) || "0đ"} · Phí vận chuyển đang chờ báo giá.`;
+      scheduleTotal.textContent = `Dịch vụ: ${formatCurrency(total) || "0đ"} · Phí vận chuyển đang chờ báo giá.${cageLabel}`;
       return;
     }
     const shippingLabel = currentShippingFee ? ` · Vận chuyển: ${formatCurrency(currentShippingFee)}` : "";
-    scheduleTotal.textContent = `Dịch vụ: ${formatCurrency(total) || "0đ"}${shippingLabel} · Tổng thanh toán: ${formatCurrency(total + currentShippingFee) || "0đ"}.`;
+    scheduleTotal.textContent = `Dịch vụ: ${formatCurrency(total) || "0đ"}${shippingLabel} · Tổng thanh toán: ${formatCurrency(total + currentShippingFee) || "0đ"}.${cageLabel}`;
+  }
+
+  /* Cage type of a pet, based on its size. */
+  function getPetCageType(petId) {
+    const pet = pets.find((item) => Number(item.id) === Number(petId));
+    return getCageTypeForPetSize(pet?.size);
+  }
+
+  /* Shows how many of the centre's pet sitting cages are still free. */
+  function getCageLabel(petServices) {
+    const hasSitting = petServices.some((item) => item.services.includes(CARE_TYPE_PET_SITTING));
+    if (!hasSitting) return "";
+    const usage = getPetSittingCageUsage(
+      loadSchedules(),
+      {
+        date: dateInput?.value || "",
+        time: timeInput?.value || "",
+        endDate: returnDateInput?.value || "",
+        endTime: returnTimeInput?.value || "",
+        petServices,
+      },
+      { excludeScheduleId: editingScheduleId, pets },
+    );
+    const detail = PET_SITTING_CAGE_TYPES
+      .map((cage) => {
+        const info = usage.byType[cage.code];
+        return `${cage.label.replace("Chuồng ", "")} ${info.used}/${info.capacity}`;
+      })
+      .join(" · ");
+    return ` · Chuồng trông giữ: ${detail} — còn ${usage.free}/${usage.capacity} chỗ trống.`;
   }
 
   let isSubmitting = false;
@@ -616,10 +772,119 @@ function initUserView(user) {
     try {
       submitSchedule();
     } finally {
-      isSubmitting = false;
-      if (submitButton) submitButton.disabled = false;
+      if (!pendingConfirmation) {
+        isSubmitting = false;
+        if (submitButton) submitButton.disabled = false;
+      }
     }
   });
+
+  confirmSubmitButton?.addEventListener("click", () => {
+    const payload = pendingConfirmation;
+    closeScheduleConfirm();
+    pendingConfirmation = null;
+    if (payload) commitSchedule(payload);
+  });
+  confirmCancelButton?.addEventListener("click", () => {
+    closeScheduleConfirm();
+    pendingConfirmation = null;
+    setSubmittingState(false);
+  });
+  confirmDialog?.addEventListener("close", () => {
+    pendingConfirmation = null;
+    setSubmittingState(false);
+  });
+  confirmDialog?.addEventListener("click", (event) => {
+    if (event.target !== confirmDialog) return;
+    closeScheduleConfirm();
+    pendingConfirmation = null;
+    setSubmittingState(false);
+  });
+
+  function setSubmittingState(value) {
+    isSubmitting = value;
+    const button = form?.querySelector('button[type="submit"]');
+    if (button) button.disabled = value;
+  }
+
+  function closeScheduleConfirm() {
+    if (confirmDialog?.open && typeof confirmDialog.close === "function") confirmDialog.close();
+  }
+
+  /* Summary of the booking, shown before the schedule is sent to NEKO. */
+  function buildScheduleSummary(schedule) {
+    const rows = [];
+    const petDetails = (Array.isArray(schedule.petServices) ? schedule.petServices : [])
+      .map((item) => {
+        const services = Array.isArray(item.services) ? item.services.join(", ") : "Chăm sóc";
+        const cage = item.cageType ? ` · ${getPetSittingCageType(item.cageType).label}` : "";
+        return `${item.petName || "Thú cưng"} (${services}${cage})`;
+      });
+    rows.push({ label: "Thú cưng", value: petDetails.join(", ") || schedule.petName || "—" });
+    rows.push({
+      label: "Thời gian",
+      value: `${formatDate(schedule.date)} · ${schedule.time || ""}${schedule.endDate ? ` → ${formatDate(schedule.endDate)} ${schedule.endTime || ""}` : ""}`.trim(),
+    });
+    rows.push({ label: "Trung tâm", value: schedule.centerName || "—" });
+    if (schedule.endDate) {
+      const cageUsage = getPetSittingCageUsage(
+        loadSchedules(),
+        schedule,
+        { excludeScheduleId: editingScheduleId, pets },
+      );
+      rows.push({
+        label: "Chuồng trông giữ",
+        value: PET_SITTING_CAGE_TYPES
+          .map((cage) => `${cage.label.replace("Chuồng ", "")} ${cageUsage.byType[cage.code].used}/${cageUsage.byType[cage.code].capacity}`)
+          .join(" · "),
+      });
+    }
+    rows.push({ label: "Dịch vụ", value: formatCurrency(schedule.price) || "0đ" });
+    if (currentShippingFee) {
+      rows.push({ label: "Phí vận chuyển", value: formatCurrency(currentShippingFee) });
+      rows.push({ label: "Tổng thanh toán", value: formatCurrency(schedule.price + currentShippingFee) });
+    }
+    return rows;
+  }
+
+  function requestScheduleConfirmation(payload) {
+    const summary = buildScheduleSummary(payload.schedule);
+    pendingConfirmation = payload;
+
+    if (confirmList) {
+      confirmList.replaceChildren();
+      summary.forEach(({ label, value }) => {
+        const term = document.createElement("dt");
+        term.textContent = label;
+        const description = document.createElement("dd");
+        description.textContent = value;
+        confirmList.append(term, description);
+      });
+    }
+    if (confirmLead) {
+      confirmLead.textContent = payload.editingSchedule
+        ? `Kiểm tra lại thông tin trước khi cập nhật lịch #${payload.schedule.id}.`
+        : "Kiểm tra lại thông tin lịch trước khi gửi tới NEKO.";
+    }
+    if (confirmSubmitButton) {
+      confirmSubmitButton.textContent = payload.editingSchedule ? "Xác nhận cập nhật" : "Xác nhận đăng ký";
+    }
+
+    if (confirmDialog && typeof confirmDialog.showModal === "function") {
+      confirmDialog.showModal();
+      return;
+    }
+
+    // Fallback for browsers without the <dialog> element.
+    const summaryText = summary.map(({ label, value }) => `${label}: ${value}`).join("\n");
+    if (typeof window.confirm === "function" && !window.confirm(summaryText)) {
+      pendingConfirmation = null;
+      setSubmittingState(false);
+      return;
+    }
+    pendingConfirmation = null;
+    commitSchedule(payload);
+  }
 
   function submitSchedule() {
     if (!form.checkValidity()) {
@@ -636,18 +901,50 @@ function initUserView(user) {
 
     const isPetSitting = isPetSittingSelected();
     const today = currentDate();
-    if (String(formData.get("date") || "") < today) {
+    const date = String(formData.get("date") || "").trim();
+    const time = String(formData.get("time") || "").trim();
+    const endDate = String(formData.get("endDate") || "").trim();
+    const endTime = String(formData.get("endTime") || "").trim();
+    const latestSchedules = loadSchedules();
+    const editingSchedule = editingScheduleId
+      ? latestSchedules.find((item) =>
+        Number(item.id) === Number(editingScheduleId) &&
+        (item.customerUsername || item.ownerUsername) === user.username &&
+        !item.deletedAt,
+      )
+      : null;
+    if (editingScheduleId && !editingSchedule) {
+      stopEditSchedule({ resetForm: true });
+      showMessage("Không tìm thấy lịch để sửa. Vui lòng tải lại trang.", "error");
+      return;
+    }
+    if (editingSchedule && ![SCHEDULE_STATUS.PENDING, SCHEDULE_STATUS.CONFIRMED].includes(resolveScheduleStatus(editingSchedule))) {
+      stopEditSchedule({ resetForm: true });
+      showMessage("Lịch này không thể sửa vì đã được xác nhận hoàn thành hoặc hủy.", "error");
+      return;
+    }
+    if (editingSchedule?.shipping) {
+      stopEditSchedule({ resetForm: true });
+      showMessage("Lịch đã kèm vận chuyển nên không thể sửa. Vui lòng hủy lịch và đặt lại.", "error");
+      return;
+    }
+
+    /* Lịch cũ đã bắt đầu từ trước (hoặc có giờ trả ngoài giờ làm việc) vẫn được sửa
+       khi khung giờ được giữ nguyên; chỉ yêu cầu hợp lệ khi khách đổi khung giờ. */
+    const keepStart = Boolean(editingSchedule) && date === editingSchedule.date && time === editingSchedule.time;
+    const keepEnd = Boolean(editingSchedule) && endDate === editingSchedule.endDate && endTime === editingSchedule.endTime;
+
+    if (date < today && !keepStart) {
       showMessage("Bạn không thể chọn ngày đã qua. Vui lòng chọn từ hôm nay trở đi.", "error");
       return;
     }
 
-    const time = String(formData.get("time") || "").trim();
     const selectedCenter = SHIPMENT_CENTERS.find((item) => item.code === String(shipCenterSelect?.value || ""));
     if (!selectedCenter) {
       showMessage("Vui lòng chọn trung tâm chăm sóc.", "error");
       return;
     }
-    if (!isValidDate(String(formData.get("date") || ""))) {
+    if (!isValidDate(date)) {
       showMessage("Ngày đặt lịch không hợp lệ. Vui lòng chọn lại ngày.", "error");
       return;
     }
@@ -657,7 +954,7 @@ function initUserView(user) {
     }
     const earliestTime = OPEN_TIME;
     const latestTime = CLOSE_TIME;
-    if (time && (time < earliestTime || time > latestTime)) {
+    if (time && (time < earliestTime || time > latestTime) && !keepStart) {
       showMessage(`Giờ nhận thú cưng phải trong giờ làm việc (${OPEN_TIME} đến ${CLOSE_TIME}).`, "error");
       return;
     }
@@ -665,26 +962,24 @@ function initUserView(user) {
       showMessage("Giờ đặt lịch chỉ chọn các mốc 00, 05, 10... phút.", "error");
       return;
     }
-    if (formData.get("date") === today && time && time < currentTime()) {
+    if (date === today && time && time < currentTime() && !keepStart) {
       showMessage("Thời gian nhận không được ở quá khứ.", "error");
       return;
     }
 
-    const endDate = String(formData.get("endDate") || "").trim();
-    const endTime = String(formData.get("endTime") || "").trim();
-    if (isPetSitting && endDate < String(formData.get("date") || "")) {
+    if (isPetSitting && endDate < date) {
       showMessage("Ngày trả thú cưng phải từ ngày nhận trở đi.", "error");
       return;
     }
-    if (isPetSitting && endDate === String(formData.get("date") || "") && endTime <= time) {
+    if (isPetSitting && endDate === date && endTime <= time) {
       showMessage("Giờ trả thú cưng phải sau giờ nhận.", "error");
       return;
     }
-    if (isPetSitting && endDate === today && endTime < currentTime()) {
+    if (isPetSitting && endDate === today && endTime < currentTime() && !keepEnd) {
       showMessage("Giờ trả không được ở quá khứ.", "error");
       return;
     }
-    if (isPetSitting && endTime && (endTime < OPEN_TIME || endTime > CLOSE_TIME)) {
+    if (isPetSitting && endTime && (endTime < OPEN_TIME || endTime > CLOSE_TIME) && !keepEnd) {
       showMessage(`Giờ trả thú cưng phải trong giờ làm việc (${OPEN_TIME} đến ${CLOSE_TIME}).`, "error");
       return;
     }
@@ -693,13 +988,11 @@ function initUserView(user) {
       return;
     }
 
-    const latestSchedules = loadSchedules();
     const selectedPetIds = getSelectedPetIds();
     const petServiceSelections = pets.filter((pet) => selectedPetIds.has(String(pet.id))).map((pet) => {
       const group = Array.from(petServicesContainer?.querySelectorAll(".user-pet-service-group") || [])
         .find((item) => item.dataset.petId === String(pet.id));
-      const services = Array.from(group?.querySelectorAll('input[name="careTypes"]:checked') || [])
-        .map((input) => input.value);
+      const services = getCheckedCareTypes(group);
       return { pet, services };
     });
 
@@ -729,22 +1022,31 @@ function initUserView(user) {
 
     const selectedPets = billedPetServices.map(({ pet }) => pet);
     const petNames = selectedPets.map((pet) => pet.name || `Thú cưng #${pet.id}`);
-    const petServices = billedPetServices.map(({ pet, services }, index) => ({
-      petId: Number(pet.id),
-      petName: petNames[index],
-      services,
-      petSittingPrice: services.includes(CARE_TYPE_PET_SITTING)
-        ? getPetSittingPrice(formData.get("date"), time, endDate, endTime)
-        : 0,
-      price: services.reduce((total, service) => total + getCareTypePrice(service), 0) +
-        (services.includes(CARE_TYPE_PET_SITTING)
-          ? getPetSittingPrice(formData.get("date"), time, endDate, endTime)
-          : 0),
-    }));
-    const careType = petServices.map(({ petName, services }) => `${petName}: ${services.join(", ")}`).join(" | ");
+    const petServices = billedPetServices.map(({ pet, services }, index) => {
+      const cageType = getCageTypeForPetSize(pet.size);
+      const sittingPrice = services.includes(CARE_TYPE_PET_SITTING)
+        ? getPetSittingPrice(formData.get("date"), time, endDate, endTime, cageType)
+        : 0;
+      return {
+        petId: Number(pet.id),
+        petName: petNames[index],
+        services,
+        cageType,
+        petSittingPrice: sittingPrice,
+        price: services.reduce((total, service) => total + getCareTypePrice(service), 0) + sittingPrice,
+      };
+    });
+    const careType = petServices
+      .map(({ petName, services, cageType }) => {
+        const cages = services.includes(CARE_TYPE_PET_SITTING)
+          ? ` (${getPetSittingCageType(cageType).label})`
+          : "";
+        return `${petName}: ${services.join(", ")}${cages}`;
+      })
+      .join(" | ");
 
     const schedule = {
-      id: getNextScheduleId(latestSchedules),
+      id: editingSchedule ? editingSchedule.id : getNextScheduleId(latestSchedules),
       petId: selectedPets.length === 1 ? Number(selectedPets[0].id) : "",
       petIds: selectedPets.map((pet) => Number(pet.id)),
       petNames,
@@ -762,18 +1064,54 @@ function initUserView(user) {
       customerUsername: user.username,
       customerName: user.fullName || user.username,
       customerPhone: user.phone || "",
-      payment: {
-        method: paymentMethod,
-        status: "Chưa thanh toán",
-        amount: 0,
-      },
-      status: "Chờ xác nhận",
-      source: "user",
-      createdAt: new Date().toISOString(),
+      payment: editingSchedule?.payment
+        ? { ...editingSchedule.payment }
+        : {
+          method: paymentMethod,
+          status: "Chưa thanh toán",
+          amount: 0,
+        },
+      status: editingSchedule?.status || "Chờ xác nhận",
+      source: editingSchedule?.source || "user",
+      createdAt: editingSchedule?.createdAt || new Date().toISOString(),
     };
 
-    if (hasScheduleConflict(latestSchedules, schedule)) {
-      showMessage("Thú cưng đã có lịch trùng thời gian. Vui lòng chọn giờ khác.", "error");
+    const conflicts = findScheduleConflicts(
+      editingSchedule
+        ? latestSchedules.filter((item) => Number(item.id) !== Number(editingSchedule.id))
+        : latestSchedules,
+      schedule,
+    );
+    if (conflicts.length) {
+      showMessage(describeScheduleConflicts(conflicts, schedule), "error");
+      return;
+    }
+
+    const cageUsage = getPetSittingCageUsage(
+      latestSchedules,
+      schedule,
+      { excludeScheduleId: editingSchedule?.id ?? null, pets },
+    );
+    const fullCages = PET_SITTING_CAGE_TYPES.filter(
+      (cage) => cageUsage.byType[cage.code].used > cage.capacity,
+    );
+    if (fullCages.length) {
+      const detail = fullCages
+        .map((cage) => `${cage.label} (${cageUsage.byType[cage.code].used}/${cage.capacity})`)
+        .join(", ");
+      showMessage(
+        `Trung tâm đã hết ${detail} trong khoảng trông giữ này. ` +
+        "Vui lòng rút ngắn thời gian trông giữ hoặc chọn thời gian khác.",
+        "error",
+      );
+      return;
+    }
+    if (cageUsage.used > cageUsage.capacity) {
+      showMessage(
+        `Trung tâm chỉ có ${cageUsage.capacity} chuồng trông giữ và đã có ${cageUsage.used} thú cưng trong khoảng này. ` +
+        "Vui lòng rút ngắn thời gian trông giữ hoặc chọn thời gian khác.",
+        "error",
+      );
       return;
     }
 
@@ -782,34 +1120,56 @@ function initUserView(user) {
       return;
     }
 
-    const shippingRecord = createShippingRecord(
-      selectedPets.map((pet) => String(pet.id)),
-      schedule.id,
-    );
-    if (shippingRecord === false) return;
-    if (shippingRecord) {
-      schedule.shipping = {
-        id: shippingRecord.id,
-        centerName: shippingRecord.centerName,
-        transportType: shippingRecord.transportType,
-        totalFee: shippingRecord.totalFee,
-        distanceKm: shippingRecord.distanceKm,
-      };
-    }
-    schedule.payment.amount = schedule.price + (shippingRecord?.totalFee || 0);
+    requestScheduleConfirmation({ schedule, editingSchedule, latestSchedules });
+  }
 
-    if (schedule.payment.method === "wallet") {
-      const wallet = loadWallet(user.username);
-      if (wallet.balance < schedule.payment.amount) {
-        showMessage(`Số dư ví ${formatCurrency(wallet.balance) || "0đ"} chưa đủ. Cần ${formatCurrency(schedule.payment.amount)} để thanh toán lịch này.`, "error");
+  function commitSchedule({ schedule, editingSchedule, latestSchedules }) {
+    let shippingRecord = null;
+    if (editingSchedule) {
+      schedule.payment.amount = schedule.price;
+      if (schedule.payment.status === "Đã thanh toán" &&
+        Number(editingSchedule.payment?.amount) !== schedule.price) {
+        schedule.payment.status = "Chưa thanh toán";
+      }
+    } else {
+      shippingRecord = createShippingRecord(
+        (Array.isArray(schedule.petIds) ? schedule.petIds : []).map((petId) => String(petId)),
+        schedule.id,
+      );
+      if (shippingRecord === false) {
+        setSubmittingState(false);
         return;
       }
-      schedule.payment.status = "Đã thanh toán";
+      if (shippingRecord) {
+        schedule.shipping = {
+          id: shippingRecord.id,
+          centerName: shippingRecord.centerName,
+          transportType: shippingRecord.transportType,
+          totalFee: shippingRecord.totalFee,
+          distanceKm: shippingRecord.distanceKm,
+        };
+      }
+      schedule.payment.amount = schedule.price + (shippingRecord?.totalFee || 0);
+
+      if (schedule.payment.method === "wallet") {
+        const wallet = loadWallet(user.username);
+        if (wallet.balance < schedule.payment.amount) {
+          showMessage(`Số dư ví ${formatCurrency(wallet.balance) || "0đ"} chưa đủ. Cần ${formatCurrency(schedule.payment.amount)} để thanh toán lịch này.`, "error");
+          setSubmittingState(false);
+          return;
+        }
+        schedule.payment.status = "Đã thanh toán";
+      }
     }
 
-    const nextSchedules = [...latestSchedules, schedule];
+    const nextSchedules = editingSchedule
+      ? latestSchedules.map((item) =>
+        Number(item.id) === Number(editingSchedule.id) ? schedule : item,
+      )
+      : [...latestSchedules, schedule];
     if (!saveSchedules(nextSchedules)) {
       showMessage("Không thể lưu lịch. Vui lòng thử lại.", "error");
+      setSubmittingState(false);
       return;
     }
 
@@ -817,28 +1177,35 @@ function initUserView(user) {
     if (shippingRecord && !saveShipmentStorage([...shipmentsBeforeBooking, shippingRecord])) {
       saveSchedules(latestSchedules);
       showMessage("Không thể lưu đơn ship. Lịch chưa được tạo; vui lòng thử lại.", "error");
+      setSubmittingState(false);
       return;
     }
 
-    if (schedule.payment.method === "wallet" && !chargeWallet(user.username, schedule.payment.amount, `Thanh toán lịch #${schedule.id}`)) {
+    if (!editingSchedule && schedule.payment.method === "wallet" && !chargeWallet(user.username, schedule.payment.amount, `Thanh toán lịch #${schedule.id}`)) {
       saveSchedules(latestSchedules);
       if (shippingRecord) saveShipmentStorage(shipmentsBeforeBooking);
       showMessage("Không thể trừ số dư ví. Lịch chưa được tạo; vui lòng kiểm tra lại số dư.", "error");
+      setSubmittingState(false);
       return;
     }
     if (schedule.payment.method === "wallet") window.dispatchEvent(new Event("neko:wallet-updated"));
 
     schedules = nextSchedules;
-    form.reset();
-    setBookingPaymentMethod(defaultPaymentMethod);
-    renderPetServiceChoices();
+    const wasEditing = Boolean(editingSchedule);
+    stopEditSchedule({ resetForm: true });
     if (shipToggle) shipToggle.checked = false;
     if (shipPanel) shipPanel.hidden = true;
     populateShipControls();
     syncPetSittingFields();
     applyScheduleLimits();
     render();
-    showMessage("Đã gửi lịch chăm sóc tới NEKO. Chúng tôi sẽ liên hệ xác nhận sớm nhất.", "success");
+    setSubmittingState(false);
+    showMessage(
+      wasEditing
+        ? `Đã cập nhật lịch #${schedule.id}.`
+        : "Đã gửi lịch chăm sóc tới NEKO. Chúng tôi sẽ liên hệ xác nhận sớm nhất.",
+      "success",
+    );
   }
 
   function showMessage(text, type) {
@@ -847,13 +1214,49 @@ function initUserView(user) {
     message.className = `user-form-message ${type}`;
   }
 
+  function describeScheduleConflicts(conflicts, candidate) {
+    const isOverlap = (conflict) =>
+      getScheduleConflictType(conflict, candidate) === SCHEDULE_CONFLICT_OVERLAP;
+    const hasSitting = (conflict) => getSchedulePetSittingIds(conflict).size > 0;
+
+    const details = conflicts.slice(0, 2).map((conflict) => {
+      const petName = conflict.petName || "Thú cưng";
+      const service = conflict.petServices?.length
+        ? conflict.petServices.map((item) => item.services?.join(", ")).filter(Boolean).join(" / ")
+        : conflict.careType || "";
+      const slot = conflict.endDate && conflict.endTime
+        ? `${formatDate(conflict.date)} ${conflict.time} → ${formatDate(conflict.endDate)} ${conflict.endTime}`
+        : `${formatDate(conflict.date)} ${conflict.time || ""}`.trim();
+      const label = [petName, service].filter(Boolean).join(" · ");
+      return isOverlap(conflict)
+        ? `lịch #${conflict.id} (${label}) đang chiếm ${slot}`
+        : `lịch #${conflict.id} (${label}) ${slot}`;
+    });
+
+    const suffix = conflicts.length > 2 ? ` và ${conflicts.length - 2} lịch khác` : "";
+    const ids = conflicts.map((conflict) => `#${conflict.id}`).join(", ");
+    const head = `Thú cưng đã có lịch trùng thời gian: ${details.join(", ")}${suffix}. `;
+    if (conflicts.some(isOverlap)) {
+      const cageSummary = PET_SITTING_CAGE_TYPES
+        .map((cage) => `${cage.capacity} ${cage.label.replace("Chuồng ", "")}`)
+        .join(", ");
+      const expandHint = conflicts.some(hasSitting)
+        ? ` Nếu bạn muốn trông giữ thêm thú cưng trong khoảng này, hãy mở rộng lịch ${ids} ` +
+          `(tối đa ${PET_SITTING_CAPACITY} chuồng trông giữ: ${cageSummary}) thay vì đặt lịch mới.`
+        : "";
+      return `${head}Vui lòng chọn thời gian ngoài khoảng đang có lịch, hoặc sửa/hủy lịch ${ids}.${expandHint}`;
+    }
+    return `${head}Hai lịch cần cách nhau tối thiểu ${SCHEDULE_BUFFER_MINUTES} phút. Vui lòng chọn giờ khác.`;
+  }
+
   petForm?.addEventListener("submit", (event) => {
     event.preventDefault();
     if (!petForm.reportValidity()) return;
 
     const editId = document.getElementById("userPetEditId")?.value || "";
     const petName = String(petForm.elements.namedItem("name")?.value || "").trim();
-    const size = petForm.querySelector('input[name="size"]:checked')?.value || "";
+    const size = Array.from(petForm.querySelectorAll('input[name="size"]'))
+      .find((input) => input.checked)?.value || "";
     if (!petName) {
       showPetMessage("Vui lòng nhập tên thú cưng.", "error");
       return;
@@ -1022,12 +1425,13 @@ function initUserView(user) {
           return;
         }
         if (!confirm(`Xóa hồ sơ thú cưng ${pet.name}?`)) return;
-        const nextPets = pets.filter((item) => Number(item.id) !== Number(pet.id));
-        if (!savePets(loadPets().filter((item) => !(item.ownerUsername === user.username && Number(item.id) === Number(pet.id))))) {
+        const remainingPets = loadPets().filter((item) =>
+          !(String(item.ownerUsername) === String(user.username) && Number(item.id) === Number(pet.id)));
+        if (!savePets(remainingPets)) {
           showPetMessage("Không thể xóa hồ sơ. Vui lòng thử lại.", "error");
           return;
         }
-        pets = nextPets;
+        pets = remainingPets.filter((item) => String(item.ownerUsername) === String(user.username));
         renderPets();
         renderPetSelect();
         populateShipControls();
@@ -1044,7 +1448,9 @@ function initUserView(user) {
   function renderPetSelect() {
     if (!petSelect) return;
     const selectedIds = new Set(
-      Array.from(petSelect.querySelectorAll('input[name="petIds"]:checked'), (input) => input.value),
+      Array.from(petSelect.querySelectorAll('input[name="petIds"]'))
+        .filter((input) => input.checked)
+        .map((input) => input.value),
     );
     petSelect.replaceChildren();
 
@@ -1103,7 +1509,9 @@ function initUserView(user) {
   function renderPetServiceChoices() {
     if (!petServicesContainer) return;
     const selectedIds = new Set(
-      Array.from(petSelect?.querySelectorAll('input[name="petIds"]:checked') || [], (input) => input.value),
+      Array.from(petSelect?.querySelectorAll('input[name="petIds"]') || [])
+        .filter((input) => input.checked)
+        .map((input) => input.value),
     );
     const selectedPets = pets.filter((pet) => selectedIds.has(String(pet.id)));
     const existingGroups = new Map(
@@ -1160,6 +1568,7 @@ function initUserView(user) {
     const legend = document.createElement("legend");
     legend.textContent = `Dịch vụ cho ${pet.name || `Thú cưng #${pet.id}`}`;
 
+    const cage = getPetSittingCageType(getCageTypeForPetSize(pet.size));
     const options = document.createElement("div");
     options.className = "user-care-option-list";
     [...CARE_TYPES, { value: CARE_TYPE_PET_SITTING, petSitting: true }].forEach(({ value, price, petSitting }) => {
@@ -1171,7 +1580,7 @@ function initUserView(user) {
       checkbox.value = value;
       const text = document.createElement("span");
       text.textContent = petSitting
-        ? `${value.replace(/(thú)\s+(cưng)/i, "$1\u00A0$2")} - ${formatCurrency(PET_SITTING_HOURLY_RATE)}/giờ, ${formatCurrency(PET_SITTING_DAILY_RATE)}/ngày`
+        ? `${value.replace(/(thú)\s+(cưng)/i, "$1\u00A0$2")} (${cage.label}) - ${formatCurrency(PET_SITTING_HOURLY_RATE)}/giờ, ${formatCurrency(PET_SITTING_DAILY_RATE)}/ngày + ${formatCurrency(cage.fee)} phí chuồng`
         : `${value} - ${formatCurrency(price)}`;
       label.append(checkbox, text);
       options.appendChild(label);
@@ -1401,7 +1810,10 @@ function initUserView(user) {
         schedule.petServices.forEach((item) => {
           const serviceNames = Array.isArray(item.services) ? item.services.join(", ") : "Chăm sóc";
           const servicePrice = formatCurrency(item.price) || "Theo yêu cầu";
-          more.appendChild(createScheduleRow(item.petName || "Thú cưng", `${serviceNames} · ${servicePrice}`));
+          const cageLabel = item.cageType
+            ? ` · ${getPetSittingCageType(item.cageType).label}`
+            : "";
+          more.appendChild(createScheduleRow(item.petName || "Thú cưng", `${serviceNames}${cageLabel} · ${servicePrice}`));
         });
       } else {
         more.append(
@@ -1451,6 +1863,22 @@ function initUserView(user) {
         cancelButton.textContent = "Hủy lịch";
         cancelButton.addEventListener("click", () => cancelUserSchedule(schedule.id));
         more.appendChild(cancelButton);
+      }
+
+      if ([SCHEDULE_STATUS.PENDING, SCHEDULE_STATUS.CONFIRMED].includes(statusValue) && !schedule.shipping) {
+        const editButton = document.createElement("button");
+        editButton.type = "button";
+        editButton.className = "user-schedule-edit";
+        editButton.textContent = "Sửa lịch";
+        editButton.addEventListener("click", () => {
+          startEditSchedule(schedule);
+          showMessage(
+            `Đang sửa lịch #${schedule.id}. Đổi thời gian hoặc thêm thú cưng (tối đa ${PET_SITTING_CAPACITY} chuồng) rồi bấm "Cập nhật lịch".`,
+            "success",
+          );
+          toggle();
+        });
+        more.appendChild(editButton);
       }
       card.appendChild(more);
 

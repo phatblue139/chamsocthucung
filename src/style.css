@@ -896,6 +896,11 @@ ul { margin: 0; padding: 0; list-style: none; }
   border-top: 1px solid var(--border);
 }
 
+.care-type-cage {
+  color: var(--muted);
+  font-weight: 600;
+}
+
 .care-table tbody tr:hover {
     background: var(--primary-soft);
 }
@@ -1154,6 +1159,48 @@ ul { margin: 0; padding: 0; list-style: none; }
 .login-dialog::backdrop {
   background: rgba(43, 35, 32, 0.5);
   backdrop-filter: blur(2px);
+}
+
+.user-confirm-dialog {
+  border: none;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 28px;
+  width: min(94%, 460px);
+  color: var(--text);
+}
+.user-confirm-dialog::backdrop {
+  background: rgba(43, 35, 32, 0.5);
+  backdrop-filter: blur(2px);
+}
+.user-confirm-dialog h2 {
+  margin-bottom: 6px;
+}
+.user-confirm-lead {
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+.user-confirm-list {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 8px 14px;
+  margin: 0 0 22px;
+  font-size: 14px;
+}
+.user-confirm-list dt {
+  color: var(--muted);
+  font-weight: 700;
+}
+.user-confirm-list dd {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 600;
+}
+.user-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 .login-dialog h2 { margin-bottom: 6px; }
 .login-sub {
@@ -2436,6 +2483,49 @@ body.user-page {
   border-radius: 8px;
   background: #ffe8e8;
   color: #c0392b;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.user-schedule-edit {
+  align-self: flex-start;
+  margin-top: 6px;
+  padding: 8px 14px;
+  border: 1px solid #b8d4ff;
+  border-radius: 8px;
+  background: #eaf1ff;
+  color: #1f4fa3;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.user-schedule-edit-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0 0;
+  padding: 12px 16px;
+  border: 1px dashed #b8d4ff;
+  border-radius: 10px;
+  background: #f2f7ff;
+  color: #1f3f77;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.user-schedule-edit-banner[hidden] {
+  display: none;
+}
+
+.user-schedule-edit-cancel {
+  padding: 6px 12px;
+  border: 1px solid #b8d4ff;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f3f77;
   font: inherit;
   font-weight: 700;
   cursor: pointer;

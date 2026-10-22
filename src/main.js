@@ -18,6 +18,12 @@ function getPriceLabel(service) {
   if (Number.isFinite(service.price)) {
     return `${formatCurrency(service.price)}/${service.unit || 'lần'}`
   }
+  if (Array.isArray(service.cageTypes) && service.cageTypes.length) {
+    const fees = service.cageTypes
+      .map((cage) => `${cage.label.replace('Chuồng ', '')} ${formatCurrency(cage.fee)}`)
+      .join(' · ')
+    return `${formatCurrency(service.hourlyRate)}/giờ · tối đa ${formatCurrency(service.dailyRate)}/ngày + phí chuồng: ${fees}`
+  }
   return `${formatCurrency(service.hourlyRate)}/giờ · tối đa ${formatCurrency(service.dailyRate)}/ngày`
 }
 
