@@ -222,11 +222,22 @@
                 <label for="userScheduleNote">Ghi chú</label>
                 <textarea id="userScheduleNote" name="note" rows="3" maxlength="500" placeholder="Thông tin thêm cho NEKO..."></textarea>
               </div>
+              <p class="user-schedule-edit-banner" id="userScheduleEditBanner" hidden><span id="userScheduleEditText"></span><button type="button" class="user-schedule-edit-cancel" id="userScheduleEditCancelBtn">Huỷ sửa</button></p>
               <div class="care-form-actions">
                 <button type="submit" class="care-btn care-btn-add">Đăng ký lịch</button>
               </div>
             </form>
             <p class="user-form-message" id="userScheduleMessage" role="status" aria-live="polite"></p>
+
+            <dialog id="userScheduleConfirmDialog" class="user-confirm-dialog" aria-labelledby="userScheduleConfirmTitle">
+              <h2 id="userScheduleConfirmTitle">Xác nhận đăng ký lịch</h2>
+              <p class="user-confirm-lead" id="userScheduleConfirmLead">Kiểm tra lại thông tin lịch trước khi gửi tới NEKO.</p>
+              <dl class="user-confirm-list" id="userScheduleConfirmList"></dl>
+              <div class="user-confirm-actions">
+                <button type="button" class="btn btn-outline" id="userScheduleConfirmCancel">Huỷ</button>
+                <button type="button" class="btn" id="userScheduleConfirmSubmit">Xác nhận đăng ký</button>
+              </div>
+            </dialog>
           </section>
 
           <section class="user-panel user-history-panel">

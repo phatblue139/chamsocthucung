@@ -19,14 +19,26 @@ import {
 } from "../src/paymentData.js";
 import {
   SCHEDULE_STATUS,
+  SCHEDULE_CONFLICT_OVERLAP,
+  SCHEDULE_CONFLICT_TOO_CLOSE,
+  PET_SITTING_CAPACITY,
+  PET_SITTING_CAGE_TYPES,
+  getCageTypeForPetSize,
   getCareTypePrice,
   getPetSittingPrice,
+  findScheduleConflicts,
+  getPetSittingCapacityUsage,
+  getPetSittingCageUsage,
+  getPetSittingPeakLoad,
+  getScheduleConflictType,
+  getSchedulePetSittingIds,
   hasScheduleConflict,
   mergeScheduleUpdate,
   getScheduleStatusClass,
   normalizeStatus,
   resolveScheduleStatus,
 } from "../src/careScheduleData.js";
+import { getNextPetId, PET_ID_SEQUENCE_KEY, PET_STORAGE_KEY } from "../src/petData.js";
 import {
   calculateShipmentFee,
   getDistanceConfig,
@@ -138,9 +150,15 @@ test("pet sitting price uses hourly rates with a daily cap per 24 hours", () => 
   assert.equal(getPetSittingPrice("2026-10-15", "08:00", "2026-10-16", "08:00"), 150000);
   assert.equal(getPetSittingPrice("2026-10-15", "08:00", "2026-10-16", "09:00"), 160000);
   assert.equal(getPetSittingPrice("2026-10-15", "08:00", "2026-10-15", "07:55"), 0);
+
+  // the cage fee is added on top of the shared hourly price
+  assert.equal(getPetSittingPrice("2026-10-15", "08:00", "2026-10-16", "08:00", "small"), 170000);
+  assert.equal(getPetSittingPrice("2026-10-15", "08:00", "2026-10-16", "08:00", "medium"), 180000);
+  assert.equal(getPetSittingPrice("2026-10-15", "08:00", "2026-10-16", "08:00", "large"), 200000);
+  assert.equal(getPetSittingPrice("2026-10-15", "22:00", "2026-10-16", "02:00", "large"), 90000);
 });
 
-test("schedule conflict checks handle pet ID sets", () => {
+test("schedule conflict checks handle pet ID sets and the 30 minute buffer", () => {
   const existing = [{
     petIds: [4],
     date: "2026-10-22",
@@ -150,8 +168,288 @@ test("schedule conflict checks handle pet ID sets", () => {
   }];
 
   assert.equal(hasScheduleConflict(existing, { petIds: [4], date: "2026-10-22", time: "12:30" }), true);
-  assert.equal(hasScheduleConflict(existing, { petIds: [4], date: "2026-10-22", time: "12:35" }), false);
+  assert.equal(hasScheduleConflict(existing, { petIds: [4], date: "2026-10-22", time: "12:35" }), true);
+  assert.equal(hasScheduleConflict(existing, { petIds: [4], date: "2026-10-22", time: "12:55" }), true);
+  assert.equal(hasScheduleConflict(existing, { petIds: [4], date: "2026-10-22", time: "13:00" }), false);
+  assert.equal(hasScheduleConflict(existing, { petIds: [4], date: "2026-10-22", time: "12:00" }), false);
+  assert.equal(hasScheduleConflict(existing, { petIds: [4], date: "2026-10-22", time: "12:05" }), true);
   assert.equal(hasScheduleConflict(existing, { petIds: [5], date: "2026-10-22", time: "12:30" }), false);
+  assert.equal(hasScheduleConflict(existing, { petIds: [4], date: "2026-10-23", time: "12:30" }), false);
+});
+
+test("pet sitting ranges keep the 30 minute buffer on both sides", () => {
+  const existing = [{
+    id: 3,
+    petIds: [4],
+    petName: "Bông",
+    date: "2026-10-22",
+    time: "08:00",
+    endDate: "2026-10-22",
+    endTime: "12:00",
+    status: SCHEDULE_STATUS.CONFIRMED,
+    customerUsername: "sample",
+  }];
+
+  // inside the range
+  assert.equal(hasScheduleConflict(existing, { petIds: [4], date: "2026-10-22", time: "10:00" }), true);
+  // right after the range, still within the buffer
+  assert.equal(hasScheduleConflict(existing, { petIds: [4], date: "2026-10-22", time: "12:20" }), true);
+  // buffer respected
+  assert.equal(hasScheduleConflict(existing, { petIds: [4], date: "2026-10-22", time: "12:30" }), false);
+  // right before the range, still within the buffer
+  assert.equal(hasScheduleConflict(existing, { petIds: [4], date: "2026-10-22", time: "07:45" }), true);
+  assert.equal(hasScheduleConflict(existing, { petIds: [4], date: "2026-10-22", time: "07:30" }), false);
+});
+
+test("schedules of other customers never clash even when pet ids repeat", () => {
+  const existing = [{
+    id: 1,
+    petIds: [1],
+    petName: "Milu",
+    date: "2026-10-22",
+    time: "12:30",
+    status: SCHEDULE_STATUS.PENDING,
+    customerUsername: "sample",
+  }];
+
+  assert.equal(
+    hasScheduleConflict(existing, { petIds: [1], date: "2026-10-22", time: "12:30", customerUsername: "tester" }),
+    false,
+  );
+  assert.equal(
+    hasScheduleConflict(existing, { petIds: [1], date: "2026-10-22", time: "12:30", customerUsername: "sample" }),
+    true,
+  );
+});
+
+test("conflicting schedules are reported with their details", () => {
+  const existing = [{
+    id: 7,
+    petIds: [3],
+    petName: "Lucky",
+    petServices: [{ petId: 3, services: ["Tắm"] }],
+    date: "2026-10-22",
+    time: "12:30",
+    status: SCHEDULE_STATUS.CONFIRMED,
+    customerUsername: "sample",
+  }];
+
+  const conflicts = findScheduleConflicts(existing, {
+    petIds: [3],
+    date: "2026-10-22",
+    time: "12:30",
+    customerUsername: "sample",
+  });
+
+  assert.equal(conflicts.length, 1);
+  assert.equal(conflicts[0].id, 7);
+  assert.equal(conflicts[0].petName, "Lucky");
+  assert.equal(findScheduleConflicts(existing, {
+    petIds: [3],
+    date: "2026-10-23",
+    time: "12:30",
+    customerUsername: "sample",
+  }).length, 0);
+});
+
+test("conflict types tell an overlapping stay apart from a too close stay", () => {
+  const sitting = {
+    id: 17,
+    petIds: [9],
+    petName: "eee",
+    date: "2026-10-17",
+    time: "10:00",
+    endDate: "2026-10-23",
+    endTime: "00:35",
+    customerUsername: "sample",
+  };
+
+  // inside the stay -> overlap
+  assert.equal(
+    getScheduleConflictType(sitting, { petIds: [9], date: "2026-10-22", time: "12:00" }),
+    SCHEDULE_CONFLICT_OVERLAP,
+  );
+  // same slot -> overlap
+  assert.equal(
+    getScheduleConflictType(sitting, { petIds: [9], date: "2026-10-17", time: "10:00" }),
+    SCHEDULE_CONFLICT_OVERLAP,
+  );
+  // right after the stay but inside the buffer -> too close
+  assert.equal(
+    getScheduleConflictType(sitting, { petIds: [9], date: "2026-10-23", time: "00:50" }),
+    SCHEDULE_CONFLICT_TOO_CLOSE,
+  );
+  // far enough after the stay -> no conflict
+  assert.equal(
+    getScheduleConflictType(sitting, { petIds: [9], date: "2026-10-23", time: "01:05" }),
+    null,
+  );
+  // another pet never conflicts
+  assert.equal(
+    getScheduleConflictType(sitting, { petIds: [10], date: "2026-10-22", time: "12:00" }),
+    null,
+  );
+});
+
+test("pet sitting cages are limited to ten pets at the same time", () => {
+  const sitting = (id, petId, date, endDate) => ({
+    id,
+    petIds: [petId],
+    petName: `Pet ${petId}`,
+    petServices: [{ petId, petName: `Pet ${petId}`, services: ["Trông coi thú cưng"] }],
+    date,
+    time: "10:00",
+    endDate,
+    endTime: "18:00",
+    status: SCHEDULE_STATUS.CONFIRMED,
+    customerUsername: "sample",
+  });
+
+  const full = Array.from({ length: PET_SITTING_CAPACITY }, (_, index) =>
+    sitting(index + 1, index + 1, "2026-10-22", "2026-10-22"));
+  const candidate = {
+    petIds: [99],
+    petServices: [{ petId: 99, services: ["Trông coi thú cưng"] }],
+    date: "2026-10-22",
+    time: "10:00",
+    endDate: "2026-10-22",
+    endTime: "18:00",
+  };
+
+  assert.equal(getPetSittingPeakLoad(full, candidate), PET_SITTING_CAPACITY + 1);
+  assert.equal(getPetSittingCapacityUsage(full, candidate).free, 0);
+
+  // one cage free again
+  const withFreeCage = full.slice(0, PET_SITTING_CAPACITY - 1);
+  assert.equal(getPetSittingCapacityUsage(withFreeCage, candidate).used, PET_SITTING_CAPACITY);
+  assert.equal(getPetSittingCapacityUsage(withFreeCage, candidate).free, 0);
+
+  // a stay on another day does not use the same cages
+  const otherDay = { ...candidate, date: "2026-10-30", endDate: "2026-10-30" };
+  assert.equal(getPetSittingPeakLoad(full, otherDay), 1);
+
+  // the schedule being edited does not block its own cages
+  const edited = { ...candidate, id: 1 };
+  assert.equal(
+    getPetSittingPeakLoad(full, edited, { excludeScheduleId: 1 }),
+    PET_SITTING_CAPACITY,
+  );
+});
+
+test("pet sitting schedules expose the pets that need a cage", () => {
+  assert.deepEqual(
+    [...getSchedulePetSittingIds({
+      petIds: [1, 2],
+      petServices: [
+        { petId: 1, services: ["Tắm"] },
+        { petId: 2, services: ["Trông coi thú cưng"] },
+      ],
+    })],
+    ["2"],
+  );
+  // legacy records only keep the stay window
+  assert.deepEqual(
+    [...getSchedulePetSittingIds({ petIds: [3], endDate: "2026-10-23", endTime: "10:00" })],
+    ["3"],
+  );
+  assert.equal(getSchedulePetSittingIds({ petIds: [4], date: "2026-10-23", time: "10:00" }).size, 0);
+});
+
+test("the centre keeps three small, five medium and two large cages", () => {
+  assert.equal(PET_SITTING_CAGE_TYPES.length, 3);
+  assert.equal(PET_SITTING_CAPACITY, 10);
+
+  const small = PET_SITTING_CAGE_TYPES.find((cage) => cage.code === "small");
+  const medium = PET_SITTING_CAGE_TYPES.find((cage) => cage.code === "medium");
+  const large = PET_SITTING_CAGE_TYPES.find((cage) => cage.code === "large");
+
+  assert.equal(small.capacity, 3);
+  assert.equal(medium.capacity, 5);
+  assert.equal(large.capacity, 2);
+  assert.equal(small.capacity + medium.capacity + large.capacity, PET_SITTING_CAPACITY);
+
+  // every cage type has its own fee on top of the shared hourly price
+  const fees = PET_SITTING_CAGE_TYPES.map((cage) => cage.fee);
+  assert.deepEqual(fees, [20000, 30000, 50000]);
+  assert.equal(new Set(fees).size, 3);
+  assert.ok(small.fee < medium.fee);
+  assert.ok(medium.fee < large.fee);
+});
+
+test("a pet size picks the matching cage and cage type", () => {
+  assert.equal(getCageTypeForPetSize("small"), "small");
+  assert.equal(getCageTypeForPetSize("medium"), "medium");
+  assert.equal(getCageTypeForPetSize("large"), "large");
+  assert.equal(getCageTypeForPetSize(""), "medium");
+
+  const day = ["2026-10-22", "10:00", "2026-10-23", "10:00"];
+  assert.equal(getPetSittingPrice(...day, "small"), 170000);
+  assert.equal(getPetSittingPrice(...day, "medium"), 180000);
+  assert.equal(getPetSittingPrice(...day, "large"), 200000);
+  assert.equal(getPetSittingPrice(...day), 150000);
+});
+
+test("every cage type has its own limited number of cages", () => {
+  const sitting = (id, petId, cageType) => ({
+    id,
+    petIds: [petId],
+    petName: `Pet ${petId}`,
+    petServices: [{
+      petId,
+      petName: `Pet ${petId}`,
+      services: ["Trông coi thú cưng"],
+      cageType,
+    }],
+    date: "2026-10-22",
+    time: "10:00",
+    endDate: "2026-10-22",
+    endTime: "18:00",
+    status: SCHEDULE_STATUS.CONFIRMED,
+    customerUsername: "sample",
+  });
+
+  const candidate = {
+    petIds: [99],
+    petServices: [{ petId: 99, services: ["Trông coi thú cưng"], cageType: "small" }],
+    date: "2026-10-22",
+    time: "10:00",
+    endDate: "2026-10-22",
+    endTime: "18:00",
+  };
+
+  const smalls = Array.from({ length: 3 }, (_, index) => sitting(index + 1, index + 1, "small"));
+  const usage = getPetSittingCageUsage(smalls, candidate);
+  assert.equal(usage.byType.small.used, 4);
+  assert.equal(usage.byType.small.capacity, 3);
+  assert.equal(usage.byType.small.free, 0);
+  assert.equal(usage.byType.medium.used, 0);
+  assert.equal(usage.byType.large.used, 0);
+  assert.equal(usage.used, 4);
+  assert.equal(usage.capacity, PET_SITTING_CAPACITY);
+
+  // the large cages are still free for a large pet
+  const largeCandidate = {
+    ...candidate,
+    petServices: [{ petId: 99, services: ["Trông coi thú cưng"], cageType: "large" }],
+  };
+  const largeUsage = getPetSittingCageUsage(smalls, largeCandidate);
+  assert.equal(largeUsage.byType.large.used, 1);
+  assert.equal(largeUsage.byType.large.free, 1);
+  assert.equal(largeUsage.byType.small.used, 3);
+});
+
+test("pet ids are never reused after a pet is removed", () => {
+  localStorage.removeItem(PET_ID_SEQUENCE_KEY);
+  localStorage.setItem(PET_STORAGE_KEY, JSON.stringify([
+    { id: 1, name: "Milu", ownerUsername: "sample" },
+    { id: 2, name: "Misa", ownerUsername: "sample" },
+  ]));
+
+  const nextId = getNextPetId();
+  assert.equal(nextId, 3);
+
+  localStorage.setItem(PET_STORAGE_KEY, JSON.stringify([{ id: 1, name: "Milu", ownerUsername: "sample" }]));
+  assert.equal(getNextPetId(), 4);
 });
 
 test("admin edits preserve detailed customer services and their total price", () => {

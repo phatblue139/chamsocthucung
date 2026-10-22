@@ -1,6 +1,7 @@
 import samplePets from "./samplePets.json" with { type: "json" };
 
 export const PET_STORAGE_KEY = "neko:pets";
+export const PET_ID_SEQUENCE_KEY = "neko:petIdSequence";
 
 function normalizePetSize(size) {
   const raw = String(size || "").trim().toLowerCase();
@@ -73,5 +74,16 @@ export function getNextPetId(pets = loadPets()) {
   const ids = (Array.isArray(pets) ? pets : [])
     .map((pet) => Number(pet?.id))
     .filter((id) => Number.isInteger(id) && id > 0);
-  return ids.length ? Math.max(...ids) + 1 : 1;
+  const storage = getStorage();
+  const lastIssuedId = Number(storage?.getItem(PET_ID_SEQUENCE_KEY)) || 0;
+  const nextId = Math.max(ids.length ? Math.max(...ids) : 0, lastIssuedId) + 1;
+
+  // Never reuse an id: a new pet must not inherit the schedules of a removed one.
+  try {
+    storage?.setItem(PET_ID_SEQUENCE_KEY, String(nextId));
+  } catch (error) {
+    // Storage is optional, the id is still valid for the current session.
+  }
+
+  return nextId;
 }
