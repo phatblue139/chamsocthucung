@@ -13,14 +13,15 @@ function normalizePetSize(size) {
 
 function normalizePetRecord(pet) {
   const item = pet && typeof pet === "object" ? { ...pet } : {};
-  const weightNumber = Number(item.weightKg ?? item.weight ?? item.weight_kg ?? "");
+  const rawWeight = item.weightKg ?? item.weight ?? item.weight_kg ?? "";
+  const weightNumber = Number(rawWeight);
   const lengthNumber = Number(item.bodyLengthCm ?? item.lengthCm ?? item.bodyLength ?? "");
   const heightNumber = Number(item.bodyHeightCm ?? item.heightCm ?? item.bodyHeight ?? "");
 
   return {
     ...item,
     size: normalizePetSize(item.size || item.sizeCategory || item.petSize || item.groupSize || ""),
-    weightKg: Number.isFinite(weightNumber) ? weightNumber : "",
+    weightKg: String(rawWeight).trim() !== "" && Number.isFinite(weightNumber) ? weightNumber : "",
     bodyLengthCm: Number.isFinite(lengthNumber) ? lengthNumber : "",
     bodyHeightCm: Number.isFinite(heightNumber) ? heightNumber : "",
   };
@@ -74,4 +75,9 @@ export function getNextPetId(pets = loadPets()) {
     .map((pet) => Number(pet?.id))
     .filter((id) => Number.isInteger(id) && id > 0);
   return ids.length ? Math.max(...ids) + 1 : 1;
+}
+
+export function getPetCode(id) {
+  const petId = Number(id);
+  return Number.isInteger(petId) && petId > 0 ? `PET${String(petId).padStart(3, "0")}` : "—";
 }
