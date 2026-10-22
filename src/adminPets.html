@@ -41,8 +41,32 @@
           <p id="petCount">0 hồ sơ</p>
         </section>
 
+        <section class="admin-metrics admin-pet-metrics" aria-label="Thống kê thú cưng">
+          <article class="admin-metric metric-pets">
+            <span>Tổng số thú cưng</span>
+            <strong id="totalPets">0</strong>
+          </article>
+          <article class="admin-metric metric-open">
+            <span>Số chó</span>
+            <strong id="dogCount">0</strong>
+          </article>
+          <article class="admin-metric metric-done">
+            <span>Số mèo</span>
+            <strong id="catCount">0</strong>
+          </article>
+          <article class="admin-metric">
+            <span>Thú cưng đang được chăm sóc</span>
+            <strong id="beingCaredForCount">0</strong>
+          </article>
+        </section>
+
         <form id="petForm" class="care-form admin-pet-form">
           <input type="hidden" id="petId" />
+          <div class="care-form-group">
+            <label for="petCode">Mã thú cưng</label>
+            <input id="petCode" name="petCode" readonly aria-describedby="petCodeHint" />
+            <small id="petCodeHint">Mã được tạo tự động.</small>
+          </div>
           <div class="care-form-group">
             <label for="petName">Tên thú cưng</label>
             <input id="petName" name="name" required maxlength="60" />
@@ -63,6 +87,10 @@
             <input id="petAge" name="age" type="number" min="0" max="40" step="1" required />
           </div>
           <div class="care-form-group">
+            <label for="petWeight">Cân nặng (kg)</label>
+            <input id="petWeight" name="weightKg" type="number" min="0" max="500" step="0.1" />
+          </div>
+          <div class="care-form-group">
             <label for="petOwner">Chủ nuôi</label>
             <input id="petOwner" name="owner" maxlength="80" />
           </div>
@@ -73,6 +101,20 @@
               <option>Chờ lịch</option>
             </select>
           </div>
+          <div class="care-form-group admin-pet-avatar-field">
+            <label for="petAvatar">Ảnh đại diện thú cưng</label>
+            <input id="petAvatar" name="avatar" type="file" accept="image/*" aria-describedby="petAvatarHint" />
+            <small id="petAvatarHint">Ảnh sẽ được thu nhỏ để lưu trong hồ sơ (tối đa 5 MB).</small>
+            <div class="admin-pet-avatar-preview">
+              <img id="petAvatarPreview" alt="Ảnh đại diện thú cưng" hidden />
+              <span id="petAvatarPlaceholder">Chưa có ảnh đại diện</span>
+              <button type="button" id="petAvatarRemove" class="care-btn care-btn-cancel" hidden>Xóa ảnh</button>
+            </div>
+          </div>
+          <div class="care-form-group">
+            <label for="petCreatedAt">Ngày tạo hồ sơ</label>
+            <input id="petCreatedAt" name="createdAt" type="date" readonly />
+          </div>
           <div class="care-form-actions">
             <button type="submit" class="care-btn care-btn-add" id="petSaveButton">Thêm thú cưng</button>
             <button type="button" class="care-btn care-btn-cancel" id="petCancelButton" hidden>Hủy sửa</button>
@@ -81,24 +123,48 @@
         <p id="petMessage" class="user-form-message" role="status" aria-live="polite"></p>
 
         <div class="admin-pet-toolbar">
-          <input id="petSearch" class="care-search" type="search" placeholder="Tìm thú cưng theo tên..." aria-label="Tìm theo tên" />
+          <input id="petSearch" class="care-search" type="search" placeholder="Tìm theo mã thú cưng, tên hoặc chủ nuôi..." aria-label="Tìm theo mã thú cưng, tên thú cưng hoặc tên chủ nuôi" />
           <label class="sr-only" for="speciesFilter">Lọc theo loài</label>
           <select id="speciesFilter" class="care-search species-filter">
             <option value="">Tất cả loài</option>
             <option value="Chó">Chó</option>
             <option value="Mèo">Mèo</option>
           </select>
+          <label class="sr-only" for="statusFilter">Lọc theo trạng thái chăm sóc</label>
+          <select id="statusFilter" class="care-search pet-status-filter">
+            <option value="">Tất cả trạng thái</option>
+            <option value="Đang chăm sóc">Đang chăm sóc</option>
+            <option value="Chờ lịch">Chờ lịch</option>
+          </select>
+          <label class="sr-only" for="petSort">Sắp xếp thú cưng</label>
+          <select id="petSort" class="care-search pet-sort">
+            <option value="">Thứ tự mặc định</option>
+            <option value="name">Tên (A–Z)</option>
+            <option value="age">Tuổi (thấp đến cao)</option>
+          </select>
         </div>
 
         <div class="care-table-wrapper">
           <table class="care-table admin-pet-table">
-            <thead><tr><th>Tên</th><th>Loài</th><th>Giống</th><th>Tuổi</th><th>Chủ nuôi</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+            <thead><tr><th>Ảnh</th><th>Mã thú cưng</th><th>Tên</th><th>Loài</th><th>Giống</th><th>Tuổi</th><th>Cân nặng (kg)</th><th>Chủ nuôi</th><th>Trạng thái</th><th>Ngày tạo hồ sơ</th><th>Thao tác</th></tr></thead>
             <tbody id="petList"></tbody>
           </table>
         </div>
+        <nav id="petPagination" class="admin-pet-pagination" aria-label="Phân trang thú cưng" hidden>
+          <button id="petPreviousPage" type="button" class="care-btn care-btn-cancel">Trang trước</button>
+          <span id="petPageInfo" aria-live="polite"></span>
+          <button id="petNextPage" type="button" class="care-btn care-btn-cancel">Trang sau</button>
+        </nav>
         <p id="petEmpty" class="care-empty" hidden>Không tìm thấy thú cưng phù hợp.</p>
       </div>
     </main>
+    <dialog id="petDetailsDialog" class="admin-pet-details-dialog" aria-labelledby="petDetailsTitle">
+      <div class="admin-pet-details-header">
+        <h2 id="petDetailsTitle">Chi tiết hồ sơ thú cưng</h2>
+        <button id="petDetailsClose" type="button" class="care-btn care-btn-cancel" aria-label="Đóng chi tiết">Đóng</button>
+      </div>
+      <div id="petDetailsContent" class="admin-pet-details-content"></div>
+    </dialog>
     <script type="module" src="./adminPets.js"></script>
   </body>
 </html>

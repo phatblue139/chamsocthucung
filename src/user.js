@@ -6,7 +6,7 @@ import {
   loadPaymentPreference,
   loadWallet,
 } from "./paymentData.js";
-import { getNextPetId, loadPets, PET_STORAGE_KEY, savePets } from "./petData.js";
+import { getNextPetId, getPetCode, loadPets, PET_STORAGE_KEY, savePets } from "./petData.js";
 import {
   CARE_TYPES,
   CARE_TYPE_PET_SITTING,
@@ -1271,9 +1271,11 @@ function initUserView(user) {
       showPetMessage("Không tìm thấy hồ sơ thú cưng thuộc tài khoản của bạn.", "error");
       return;
     }
+    const petId = editId ? Number(editId) : getNextPetId();
     const pet = {
       ...(previousPet || {}),
-      id: editId ? Number(editId) : getNextPetId(),
+      id: petId,
+      petCode: previousPet?.petCode || getPetCode(petId),
       name: petName,
       species: petSpeciesInput?.value === "Khác"
         ? String(petSpeciesOtherInput?.value || "").trim()
@@ -1284,6 +1286,7 @@ function initUserView(user) {
       ownerPhone: String(petForm.elements.namedItem("ownerPhone")?.value || "").trim(),
       ownerUsername: user.username,
       status: "Chờ lịch",
+      createdAt: previousPet ? previousPet.createdAt || "" : new Date().toISOString(),
     };
 
     const allPets = loadPets();
