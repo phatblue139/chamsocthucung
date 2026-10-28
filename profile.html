@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Thông tin tài khoản NEKO" />
+    <title>Thông tin tài khoản | NEKO</title>
+    <script>
+      try {
+        if (localStorage.getItem("neko:admin") === "true" || !localStorage.getItem("neko:user")) {
+          location.replace("/");
+        }
+      } catch (error) {
+        location.replace("/");
+      }
+    </script>
+  </head>
+  <body class="user-page">
+    <div data-site-header></div>
+    <main class="user-main">
+      <div class="container">
+        <section class="user-panel">
+          <div class="user-panel-heading">
+            <div>
+              <p class="eyebrow">Tài khoản</p>
+              <h1>Thông tin người dùng</h1>
+            </div>
+          </div>
+          <div class="user-profile-info">
+            <div class="user-profile-row"><span>Họ và tên</span><strong id="profileFullName"></strong></div>
+            <div class="user-profile-row"><span>Tên đăng nhập</span><strong id="profileUsername"></strong></div>
+            <div class="user-profile-row"><span>Số điện thoại</span><strong id="profilePhone"></strong></div>
+          </div>
+        </section>
+
+        <section class="user-panel">
+          <div class="user-panel-heading">
+            <div>
+              <p class="eyebrow">Thanh toán hoàn tiền</p>
+              <h2>Tài khoản ngân hàng</h2>
+            </div>
+          </div>
+          <p class="user-pet-form-intro">Cung cấp thông tin tài khoản ngân hàng để NEKO hoàn tiền khi hủy lịch (nếu có).</p>
+          <form id="bankAccountForm" class="care-form">
+            <div class="care-form-group">
+              <label for="bankName">Ngân hàng</label>
+              <input type="text" id="bankName" name="bankName" placeholder="Ví dụ: Vietcombank, MB, Techcombank..." maxlength="60" />
+            </div>
+            <div class="care-form-group">
+              <label for="bankAccountNumber">Số tài khoản</label>
+              <input type="text" id="bankAccountNumber" name="bankAccountNumber" placeholder="Nhập số tài khoản" maxlength="30" />
+            </div>
+            <div class="care-form-group user-form-full">
+              <label for="bankAccountName">Tên chủ tài khoản</label>
+              <input type="text" id="bankAccountName" name="bankAccountName" placeholder="Nhập đúng tên chủ tài khoản" maxlength="80" />
+            </div>
+            <div class="care-form-actions">
+              <button type="submit" class="care-btn care-btn-add">Lưu thông tin</button>
+            </div>
+          </form>
+          <p class="user-form-message" id="bankAccountMessage" role="status" aria-live="polite"></p>
+        </section>
+      </div>
+    </main>
+    <script type="module" src="/src/profile.js"></script>
+  </body>
+</html>

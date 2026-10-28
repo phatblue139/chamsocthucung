@@ -210,11 +210,7 @@
                   </label>
                   <label class="user-payment-choice">
                     <input type="radio" name="paymentMethod" value="bank-transfer" required />
-                    <span><strong>Chuyển khoản sau khi xác nhận</strong><small>NEKO sẽ gửi thông tin chuyển khoản. Chưa hỗ trợ thanh toán trực tuyến.</small></span>
-                  </label>
-                  <label class="user-payment-choice">
-                    <input type="radio" name="paymentMethod" value="wallet" required />
-                    <span><strong>Thanh toán bằng ví NEKO</strong><small>Trừ trực tiếp số dư ví khi tạo lịch; cần đủ số dư.</small></span>
+                    <span><strong>Thanh toán bằng mã QR</strong><small>NEKO tạo mã QR sau khi xác nhận lịch để bạn quét và chuyển khoản.</small></span>
                   </label>
                 </div>
               </fieldset>
@@ -236,6 +232,15 @@
               <div class="user-confirm-actions">
                 <button type="button" class="btn btn-outline" id="userScheduleConfirmCancel">Huỷ</button>
                 <button type="button" class="btn" id="userScheduleConfirmSubmit">Xác nhận đăng ký</button>
+              </div>
+            </dialog>
+
+            <dialog id="userBankTransferQrDialog" class="user-confirm-dialog user-qr-dialog" aria-labelledby="userBankTransferQrTitle">
+              <h2 id="userBankTransferQrTitle">Thanh toán bằng mã QR</h2>
+              <p class="user-confirm-lead">Vui lòng quét mã QR bên dưới để chuyển khoản đúng số tiền.</p>
+              <div id="userBankTransferQrContent" class="user-schedule-qr"></div>
+              <div class="user-confirm-actions">
+                <button type="button" class="btn" id="userBankTransferQrClose">Đã xong</button>
               </div>
             </dialog>
           </section>

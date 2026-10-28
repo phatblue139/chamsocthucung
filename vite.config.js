@@ -18,6 +18,7 @@ export default defineConfig({
         payment: resolve(import.meta.dirname, 'payment.html'),
         careSchedules: resolve(import.meta.dirname, 'src/careSchedules.html'),
         user: resolve(import.meta.dirname, 'user.html'),
+        profile: resolve(import.meta.dirname, 'profile.html'),
       },
     },
   },

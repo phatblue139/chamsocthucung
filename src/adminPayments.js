@@ -16,6 +16,32 @@ import {
   PAYMENT_STATUS_REFUNDED,
 } from "./paymentAdminData.js";
 
+const BANK_ACCOUNT_STORAGE_KEY = "neko:bankAccounts";
+
+function getStorage() {
+  try {
+    return typeof localStorage === "undefined" ? null : localStorage;
+  } catch (error) {
+    return null;
+  }
+}
+
+function normalizeUsername(username) {
+  return String(username || "").trim().toLowerCase();
+}
+
+function loadBankAccount(username) {
+  const storage = getStorage();
+  const normalized = normalizeUsername(username);
+  if (!storage || !normalized) return null;
+  try {
+    const parsed = JSON.parse(storage.getItem(BANK_ACCOUNT_STORAGE_KEY) || "{}");
+    return parsed && typeof parsed === "object" ? parsed[normalized] || null : null;
+  } catch (error) {
+    return null;
+  }
+}
+
 const list = document.getElementById("paymentList");
 const empty = document.getElementById("paymentEmpty");
 const message = document.getElementById("paymentMessage");
@@ -156,6 +182,16 @@ function createPaymentRow(schedule) {
   }
   row.appendChild(confirmerCell);
   row.appendChild(actionCell);
+  if (showDetails) {
+    const detailRow = document.createElement("tr");
+    const detailCell = document.createElement("td");
+    detailCell.colSpan = 7;
+    detailCell.style.fontSize = "13px";
+    detailCell.style.color = "var(--muted)";
+    detailCell.textContent = `Người dùng: ${schedule.customerUsername || "-"} | SĐT: ${schedule.customerPhone || "-"} | Ngày: ${schedule.date || "-"} ${schedule.time || ""}${bankInfo}`;
+    detailRow.appendChild(detailCell);
+    row.insertAdjacentElement("afterend", detailRow);
+  }
   return row;
 }
 

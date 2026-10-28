@@ -2,9 +2,8 @@ import "./style.css";
 import { getCurrentUser } from "./auth.js";
 import { initSiteHeader } from "./siteHeader.js";
 import {
-  chargeWallet,
   loadPaymentPreference,
-  loadWallet,
+  savePaymentPreference,
 } from "./paymentData.js";
 import { getNextPetId, getPetCode, loadPets, PET_STORAGE_KEY, savePets } from "./petData.js";
 import {
@@ -97,6 +96,14 @@ function initUserView(user) {
     });
   }
 
+  form?.querySelectorAll('input[name="paymentMethod"]').forEach((input) => {
+    input.addEventListener("change", () => {
+      if (!input.checked) return;
+      defaultPaymentMethod = input.value;
+      savePaymentPreference(user.username, input.value);
+    });
+  });
+
   const petForm = document.getElementById("userPetForm");
   const petSpeciesInput = petForm?.elements.namedItem("species");
   const petSpeciesOtherGroup = document.getElementById("userPetSpeciesOtherGroup");
@@ -135,6 +142,9 @@ function initUserView(user) {
   const confirmList = document.getElementById("userScheduleConfirmList");
   const confirmSubmitButton = document.getElementById("userScheduleConfirmSubmit");
   const confirmCancelButton = document.getElementById("userScheduleConfirmCancel");
+  const qrDialog = document.getElementById("userBankTransferQrDialog");
+  const qrContent = document.getElementById("userBankTransferQrContent");
+  const qrCloseButton = document.getElementById("userBankTransferQrClose");
   let editingScheduleId = null;
   let editingScheduleSnapshot = null;
   let pendingConfirmation = null;
@@ -560,6 +570,7 @@ function initUserView(user) {
       input.checked = petIds.has(input.value);
     });
     if (petIds.size) activePetId = String([...petIds][0]);
+    setBookingPaymentMethod(schedule.payment?.method || defaultPaymentMethod);
     renderPetServiceChoices();
 
     const servicesByPet = new Map(
@@ -815,6 +826,17 @@ function initUserView(user) {
     pendingConfirmation = null;
     if (payload) commitSchedule(payload);
   });
+
+  qrCloseButton?.addEventListener("click", () => {
+    if (qrDialog?.open) qrDialog.close();
+    else qrDialog?.removeAttribute("open");
+  });
+  qrDialog?.addEventListener("click", (event) => {
+    if (event.target === qrDialog) {
+      if (qrDialog.open) qrDialog.close();
+      else qrDialog.removeAttribute("open");
+    }
+  });
   confirmCancelButton?.addEventListener("click", () => {
     closeScheduleConfirm();
     pendingConfirmation = null;
@@ -924,7 +946,7 @@ function initUserView(user) {
 
     const formData = new FormData(form);
     const paymentMethod = String(formData.get("paymentMethod") || "");
-    if (!["at-center", "bank-transfer", "wallet"].includes(paymentMethod)) {
+    if (!["at-center", "bank-transfer"].includes(paymentMethod)) {
       showMessage("Phương thức thanh toán không hợp lệ. Vui lòng chọn lại.", "error");
       return;
     }
@@ -1094,13 +1116,12 @@ function initUserView(user) {
       customerUsername: user.username,
       customerName: user.fullName || user.username,
       customerPhone: user.phone || "",
-      payment: editingSchedule?.payment
-        ? { ...editingSchedule.payment }
-        : {
-          method: paymentMethod,
-          status: "Chưa thanh toán",
-          amount: 0,
-        },
+      payment: {
+        ...(editingSchedule?.payment || {}),
+        method: paymentMethod,
+        status: editingSchedule?.payment?.status || "Chưa thanh toán",
+        amount: editingSchedule?.payment?.amount || 0,
+      },
       status: editingSchedule?.status || "Chờ xác nhận",
       source: editingSchedule?.source || "user",
       createdAt: editingSchedule?.createdAt || new Date().toISOString(),
@@ -1156,8 +1177,13 @@ function initUserView(user) {
   function commitSchedule({ schedule, editingSchedule, latestSchedules }) {
     let shippingRecord = null;
     if (editingSchedule) {
+      const methodChanged = editingSchedule.payment?.method !== schedule.payment.method;
       schedule.payment.amount = schedule.price;
-      if (schedule.payment.status === "Đã thanh toán" &&
+      if (methodChanged) {
+        schedule.payment.status = "Chưa thanh toán";
+        delete schedule.payment.paidAt;
+        delete schedule.payment.receivedBy;
+      } else if (schedule.payment.status === "Đã thanh toán" &&
         Number(editingSchedule.payment?.amount) !== schedule.price) {
         schedule.payment.status = "Chưa thanh toán";
       }
@@ -1181,13 +1207,9 @@ function initUserView(user) {
       }
       schedule.payment.amount = schedule.price + (shippingRecord?.totalFee || 0);
 
-      if (schedule.payment.method === "wallet") {
-        const wallet = loadWallet(user.username);
-        if (wallet.balance < schedule.payment.amount) {
-          showMessage(`Số dư ví ${formatCurrency(wallet.balance) || "0đ"} chưa đủ. Cần ${formatCurrency(schedule.payment.amount)} để thanh toán lịch này.`, "error");
-          setSubmittingState(false);
-          return;
-        }
+      if (schedule.payment.method === "bank-transfer") {
+        schedule.payment.status = "Chưa thanh toán";
+      } else {
         schedule.payment.status = "Đã thanh toán";
       }
     }
@@ -1211,17 +1233,17 @@ function initUserView(user) {
       return;
     }
 
-    if (!editingSchedule && schedule.payment.method === "wallet" && !chargeWallet(user.username, schedule.payment.amount, `Thanh toán lịch #${schedule.id}`)) {
+    if (!editingSchedule && schedule.payment.method === "wallet") {
       saveSchedules(latestSchedules);
       if (shippingRecord) saveShipmentStorage(shipmentsBeforeBooking);
-      showMessage("Không thể trừ số dư ví. Lịch chưa được tạo; vui lòng kiểm tra lại số dư.", "error");
+      showMessage("Phương thức thanh toán bằng ví không còn khả dụng.", "error");
       setSubmittingState(false);
       return;
     }
-    if (schedule.payment.method === "wallet") window.dispatchEvent(new Event("neko:wallet-updated"));
 
     schedules = nextSchedules;
     const wasEditing = Boolean(editingSchedule);
+    defaultPaymentMethod = schedule.payment.method;
     stopEditSchedule({ resetForm: true });
     if (shipToggle) shipToggle.checked = false;
     if (shipPanel) shipPanel.hidden = true;
@@ -1236,6 +1258,22 @@ function initUserView(user) {
         : "Đã gửi lịch chăm sóc tới NEKO. Chúng tôi sẽ liên hệ xác nhận sớm nhất.",
       "success",
     );
+
+    if (!wasEditing && schedule.payment?.method === "bank-transfer" && qrDialog && qrContent) {
+      qrContent.innerHTML = "";
+      const tempSchedule = { ...schedule, payment: { ...schedule.payment, status: "Chưa thanh toán" } };
+      const block = createQrPaymentBlock(tempSchedule, SCHEDULE_STATUS.PENDING);
+      if (block) {
+        qrContent.appendChild(block);
+      }
+      if (!qrDialog.open) {
+        try {
+          qrDialog.showModal();
+        } catch (error) {
+          qrDialog.setAttribute("open", "");
+        }
+      }
+    }
   }
 
   function showMessage(text, type) {
@@ -1872,13 +1910,23 @@ function initUserView(user) {
         });
       }
 
+      const paymentMethodLabel = schedule.payment?.method === "bank-transfer"
+        ? "Thanh toán bằng mã QR"
+        : "Thanh toán tại trung tâm";
       more.append(
         createScheduleRow("Tổng thanh toán", price || "Theo yêu cầu"),
-        createScheduleRow("Phương thức thanh toán", schedule.payment?.method === "bank-transfer" ? "Chuyển khoản sau khi xác nhận" : "Thanh toán tại trung tâm"),
+        createScheduleRow("Phương thức thanh toán", paymentMethodLabel),
         createScheduleRow("Trạng thái thanh toán", schedule.payment?.status || "Chưa thanh toán"),
-        createScheduleRow("Trạng thái", statusValue),
+        createScheduleRow("Trạng thái lịch", statusValue),
+        createScheduleRow("Mã lịch", schedule.id || "-"),
+        createScheduleRow("Trung tâm", schedule.shipCenter || schedule.shipping?.centerName || "-"),
         createScheduleRow("Ghi chú", schedule.note || "Không có"),
       );
+
+      const qrPayment = schedule.payment?.method === "bank-transfer"
+        ? createQrPaymentBlock(schedule, statusValue)
+        : null;
+      if (qrPayment) more.appendChild(qrPayment);
 
       if (statusValue === SCHEDULE_STATUS.COMPLETED) {
         more.appendChild(createReviewEditor(schedule));
@@ -1896,7 +1944,11 @@ function initUserView(user) {
         cancelButton.type = "button";
         cancelButton.className = "user-schedule-cancel";
         cancelButton.textContent = "Hủy lịch";
-        cancelButton.addEventListener("click", () => cancelUserSchedule(schedule.id));
+        cancelButton.addEventListener("click", () => {
+        if (confirm("Bạn có chắc muốn hủy lịch này?")) {
+          cancelUserSchedule(schedule.id);
+        }
+      });
         more.appendChild(cancelButton);
       }
 
@@ -1945,6 +1997,64 @@ function initUserView(user) {
 
     row.append(term, desc);
     return row;
+  }
+
+  function createQrPaymentBlock(schedule, statusValue) {
+    if (statusValue === SCHEDULE_STATUS.CANCELLED) return null;
+
+    const section = document.createElement("section");
+    section.className = "user-schedule-qr";
+
+    const heading = document.createElement("strong");
+    heading.textContent = "Quét mã QR để thanh toán";
+    section.appendChild(heading);
+
+    if (schedule.payment?.status === "Đã thanh toán") {
+      const paidNote = document.createElement("p");
+      paidNote.className = "user-schedule-qr-note";
+      paidNote.textContent = "Khoản thanh toán cho lịch này đã được xác nhận.";
+      section.appendChild(paidNote);
+    } else if (statusValue === SCHEDULE_STATUS.CANCELLED) {
+      return null;
+    }
+    // Hiển thị mã QR ngay cả khi đang chờ xác nhận
+
+    const info = getQrPaymentInfo(schedule);
+
+    const image = document.createElement("img");
+    image.className = "user-schedule-qr-image";
+    image.src = buildQrPaymentUrl(schedule);
+    image.alt = `Mã QR thanh toán cho lịch #${schedule.id ?? ""}`.trim();
+    image.loading = "lazy";
+    image.width = 220;
+    image.height = 220;
+    section.appendChild(image);
+
+    const details = document.createElement("dl");
+    details.className = "user-schedule-qr-info";
+    [
+      ["Ngân hàng", info.bankId],
+      ["Số tài khoản", info.accountNumber],
+      ["Chủ tài khoản", info.accountName],
+      ["Số tiền", formatCurrency(info.amount) || "Theo yêu cầu"],
+      ["Nội dung", info.transferContent],
+    ].forEach(([label, value]) => {
+      const row = document.createElement("div");
+      const term = document.createElement("dt");
+      term.textContent = label;
+      const description = document.createElement("dd");
+      description.textContent = value;
+      row.append(term, description);
+      details.appendChild(row);
+    });
+    section.appendChild(details);
+
+    const note = document.createElement("p");
+    note.className = "user-schedule-qr-note";
+    note.textContent = "Mở ứng dụng ngân hàng và quét mã để chuyển khoản đúng số tiền. NEKO sẽ xác nhận sau khi nhận được tiền.";
+    section.appendChild(note);
+
+    return section;
   }
 
   function createReviewEditor(schedule) {

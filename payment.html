@@ -30,40 +30,7 @@
             </div>
             <span class="user-panel-badge">Ví NEKO</span>
           </div>
-          <div class="user-wallet-overview">
-            <div class="user-wallet-balance">
-              <span>Số dư ví NEKO</span>
-              <strong id="userWalletBalance">0đ</strong>
-              <small>Ví mẫu: nạp thử nghiệm chỉ thay đổi số dư trên thiết bị này, không phải giao dịch tiền thật.</small>
-            </div>
-            <form id="userWalletTopUpForm" class="user-wallet-topup">
-              <label for="userWalletTopUpAmount">Số tiền nạp thử</label>
-              <div class="user-wallet-topup-controls">
-                <input type="number" id="userWalletTopUpAmount" name="amount" min="10000" max="10000000" step="10000" value="100000" required />
-                <button type="submit" class="care-btn care-btn-add">Nạp thử</button>
-              </div>
-            </form>
-          </div>
-          <p class="user-form-message" id="userWalletMessage" role="status" aria-live="polite"></p>
-          <section class="user-wallet-withdraw" aria-labelledby="walletWithdrawTitle">
-            <div>
-              <h2 id="walletWithdrawTitle">Rút tiền</h2>
-              <p>Gửi yêu cầu rút thử nghiệm. Số tiền sẽ tạm trừ khỏi số dư khả dụng trong khi chờ xử lý; ứng dụng chưa chuyển tiền thật.</p>
-            </div>
-            <form id="userWalletWithdrawForm" class="user-wallet-topup">
-              <label for="userWalletWithdrawAmount">Số tiền muốn rút</label>
-              <div class="user-wallet-topup-controls">
-                <input type="number" id="userWalletWithdrawAmount" name="amount" min="10000" step="10000" required />
-                <button type="submit" class="care-btn care-btn-reset">Gửi yêu cầu</button>
-              </div>
-            </form>
-          </section>
-          <p class="user-form-message" id="userWalletWithdrawMessage" role="status" aria-live="polite"></p>
-          <div class="user-wallet-history">
-            <strong>Giao dịch gần đây</strong>
-            <ul class="user-wallet-transactions" id="userWalletTransactions"></ul>
-            <p class="user-wallet-empty" id="userWalletEmpty">Chưa có giao dịch nào.</p>
-          </div>
+
           <p class="user-pet-form-intro">Lưu cách thanh toán bạn thường dùng để điền sẵn khi đặt lịch. NEKO không lưu số thẻ, mật khẩu ví hoặc mã xác thực.</p>
           <form id="userPaymentPreferenceForm" class="user-payment-preference">
             <fieldset class="user-payment-methods">
@@ -75,12 +42,9 @@
                 </label>
                 <label class="user-payment-choice">
                   <input type="radio" name="paymentPreference" value="bank-transfer" required />
-                  <span><strong>Chuyển khoản trực tuyến</strong><small>NEKO gửi thông tin chuyển khoản sau khi xác nhận lịch.</small></span>
+                  <span><strong>Thanh toán bằng mã QR</strong><small>NEKO tạo mã QR sau khi xác nhận lịch để bạn quét và chuyển khoản.</small></span>
                 </label>
-                <label class="user-payment-choice">
-                  <input type="radio" name="paymentPreference" value="wallet" required />
-                  <span><strong>Dùng số dư ví NEKO</strong><small>Thanh toán ngay nếu ví có đủ số dư.</small></span>
-                </label>
+
               </div>
             </fieldset>
             <div class="care-form-actions">
