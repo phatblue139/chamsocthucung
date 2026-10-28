@@ -27,3 +27,17 @@ export function confirmPaymentReceived(schedule, adminUsername = "admin", paidAt
     },
   };
 }
+
+export function revokePaymentReceived(schedule, adminUsername = "admin") {
+  const existingPayment = schedule?.payment && typeof schedule.payment === "object" ? schedule.payment : {};
+  return {
+    ...schedule,
+    payment: {
+      ...existingPayment,
+      amount: getPaymentAmount(schedule),
+      status: PAYMENT_STATUS_UNPAID,
+      paidAt: undefined,
+      receivedBy: undefined,
+    },
+  };
+}

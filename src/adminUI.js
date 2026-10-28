@@ -6,7 +6,7 @@ import {
   registerUser,
 } from "./auth.js";
 import { formatCurrency } from "./careScheduleData.js";
-import { loadWallet } from "./paymentData.js";
+
 
 function getField(form, name) {
   return form?.elements?.namedItem(name) || null;
@@ -68,7 +68,6 @@ export function initAdminUI() {
   const userLinks = document.querySelectorAll(".user-link");
   const contactCta = document.querySelector("[data-contact-cta]");
   const userGreeting = document.querySelector("[data-user-greeting]");
-  const walletBalance = document.querySelector("[data-user-wallet-balance]");
 
   function updateAuthUI() {
     const role = getCurrentRole();
@@ -93,11 +92,11 @@ export function initAdminUI() {
 
       userGreeting.textContent = displayName;
       userGreeting.hidden = !displayName;
-    }
-
-    if (walletBalance) {
-      const balance = role === "user" && currentUser ? loadWallet(currentUser.username).balance : 0;
-      walletBalance.textContent = formatCurrency(balance) || "0đ";
+      if (role === "admin") {
+        userGreeting.href = "/src/admin.html";
+      } else {
+        userGreeting.href = "/profile.html";
+      }
     }
   }
 
@@ -218,7 +217,6 @@ export function initAdminUI() {
   }
 
   window.addEventListener("storage", updateAuthUI);
-  window.addEventListener("neko:wallet-updated", updateAuthUI);
   updateAuthUI();
 }
 

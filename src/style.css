@@ -868,12 +868,17 @@ ul { margin: 0; padding: 0; list-style: none; }
 }
 
 .care-table-wrapper {
+    width: 100%;
+    max-width: 100%;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .care-table {
     width: 100%;
+    max-width: 100%;
     border-collapse: collapse;
+    table-layout: fixed;
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: var(--radius);
@@ -882,18 +887,21 @@ ul { margin: 0; padding: 0; list-style: none; }
 }
 
 .care-table th {
-    padding: 14px 12px;
+    padding: 10px 8px;
     background: var(--ink);
     color: #fff;
     text-align: left;
-    font-size: 14px;
+    font-size: 13px;
 }
 
 .care-table td {
-    padding: 13px 12px;
+    padding: 10px 8px;
     border-bottom: 1px solid var(--border);
     color: var(--text);
-    font-size: 14px;
+    font-size: 13px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    white-space: normal;
 }
 
 .care-type-cell {
@@ -1159,6 +1167,11 @@ ul { margin: 0; padding: 0; list-style: none; }
   white-space: nowrap;
   font-size: 15px;
   font-weight: 700;
+  text-decoration: none;
+}
+
+.nav-greeting:hover {
+  color: var(--accent);
 }
 
 .login-dialog {
@@ -2552,6 +2565,65 @@ body.user-page {
   gap: 8px;
 }
 
+.user-schedule-qr {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  margin-top: 4px;
+  padding: 14px;
+  border: 1px dashed #b8d4ff;
+  border-radius: 10px;
+  background: #f2f7ff;
+}
+
+.user-schedule-qr > strong {
+  color: #1f3f77;
+  font-size: 14px;
+}
+
+.user-schedule-qr-image {
+  width: 220px;
+  max-width: 100%;
+  height: auto;
+  padding: 8px;
+  border: 1px solid #dbe6f7;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.user-schedule-qr-info {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  margin: 0;
+}
+
+.user-schedule-qr-info > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 13px;
+}
+
+.user-schedule-qr-info dt {
+  color: var(--muted);
+}
+
+.user-schedule-qr-info dd {
+  margin: 0;
+  color: var(--text);
+  font-weight: 600;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.user-schedule-qr-note {
+  margin: 0;
+  color: #1f3f77;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .user-schedule-detail-row {
   display: grid;
   grid-template-columns: minmax(88px, 0.35fr) minmax(0, 1fr);
@@ -3063,7 +3135,18 @@ body.user-page {
 :is(.admin-pet-toolbar, .admin-care-toolbar) input { flex: 1; }
 .species-filter { width: 180px; }
 .admin-pet-table { min-width: 850px; }
-.admin-care-table { min-width: 1250px; }
+.admin-care-table { width: 100%; max-width: 100%; min-width: 1000px; table-layout: fixed; }
+.admin-care-table .col-id { width: 4%; }
+.admin-care-table .col-customer { width: 10%; }
+.admin-care-table .col-phone { width: 9%; }
+.admin-care-table .col-pet { width: 7%; }
+.admin-care-table .col-care-type { width: 14%; }
+.admin-care-table .col-price { width: 6%; }
+.admin-care-table .col-date { width: 8%; }
+.admin-care-table .col-time { width: 6%; }
+.admin-care-table .col-note { width: 8%; }
+.admin-care-table .col-status { width: 10%; }
+.admin-care-table .col-actions { width: 18%; }
 .admin-shipping-section { margin-top: 52px; }
 .admin-section-heading { margin: 0 auto 18px; }
 .admin-section-heading h2 { margin-bottom: 8px; }
@@ -3171,6 +3254,23 @@ body.user-page {
 }
 :is(.admin-pet-table, .admin-care-table) th,
 :is(.admin-pet-table, .admin-care-table) td { padding: 12px 14px; }
+.admin-care-table th,
+.admin-care-table td { padding: 9px 7px; font-size: 12.5px; }
+.admin-care-table .care-type-cell { min-width: 0; }
+.admin-care-table td:nth-child(2),
+.admin-care-table td:nth-child(5),
+.admin-care-table td:nth-child(9) { white-space: normal; overflow-wrap: anywhere; }
+.admin-care-table .care-status-badge { white-space: normal; text-align: center; line-height: 1.3; }
+.admin-care-table .care-actions {
+  flex-wrap: wrap;
+  gap: 6px;
+  white-space: normal;
+}
+.admin-care-table .care-actions button {
+  padding: 6px 9px;
+  font-size: 12px;
+  white-space: nowrap;
+}
 .admin-care-stats { max-width: 1080px; }
 .admin-care-stats { flex-wrap: nowrap; overflow-x: auto; }
 .admin-care-stats > button { flex: 0 0 auto; }

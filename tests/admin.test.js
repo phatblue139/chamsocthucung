@@ -64,6 +64,7 @@ import {
   saveReviews,
   validateReview,
 } from "../src/reviewData.js";
+import { buildQrPaymentUrl, getQrPaymentInfo } from "../src/paymentQr.js";
 
 class MemoryStorage {
   values = new Map();
@@ -617,4 +618,22 @@ test("admin payment helpers include shipping and confirm receipt metadata", () =
   assert.equal(confirmed.payment.receivedBy, "admin");
   assert.equal(confirmed.payment.paidAt, "2026-10-19T10:00:00.000Z");
   assert.equal(schedule.payment.status, "Chờ thanh toán");
+});
+
+test("QR payment info uses the schedule amount and transfer reference", () => {
+  const schedule = {
+    id: 18,
+    price: 100000,
+    shipping: { totalFee: 25000 },
+    payment: { amount: 125000 },
+  };
+  const info = getQrPaymentInfo(schedule);
+  assert.equal(info.amount, 125000);
+  assert.equal(info.transferContent, "NEKO LICH 18");
+
+  const url = new URL(buildQrPaymentUrl(schedule));
+  assert.equal(url.hostname, "img.vietqr.io");
+  assert.equal(url.searchParams.get("amount"), "125000");
+  assert.equal(url.searchParams.get("addInfo"), "NEKO LICH 18");
+  assert.equal(url.searchParams.get("accountName"), info.accountName);
 });

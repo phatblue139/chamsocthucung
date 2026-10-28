@@ -6,7 +6,34 @@ import {
   getPaymentStatus,
   PAYMENT_STATUS_PAID,
   PAYMENT_STATUS_UNPAID,
+  revokePaymentReceived,
 } from "./paymentAdminData.js";
+
+const BANK_ACCOUNT_STORAGE_KEY = "neko:bankAccounts";
+
+function getStorage() {
+  try {
+    return typeof localStorage === "undefined" ? null : localStorage;
+  } catch (error) {
+    return null;
+  }
+}
+
+function normalizeUsername(username) {
+  return String(username || "").trim().toLowerCase();
+}
+
+function loadBankAccount(username) {
+  const storage = getStorage();
+  const normalized = normalizeUsername(username);
+  if (!storage || !normalized) return null;
+  try {
+    const parsed = JSON.parse(storage.getItem(BANK_ACCOUNT_STORAGE_KEY) || "{}");
+    return parsed && typeof parsed === "object" ? parsed[normalized] || null : null;
+  } catch (error) {
+    return null;
+  }
+}
 
 const list = document.getElementById("paymentList");
 const empty = document.getElementById("paymentEmpty");
@@ -14,6 +41,8 @@ const message = document.getElementById("paymentMessage");
 const searchInput = document.getElementById("paymentSearch");
 const filterInput = document.getElementById("paymentFilter");
 const logoutButton = document.getElementById("logoutBtn");
+const detailToggle = document.getElementById("paymentDetailToggle");
+let showDetails = false;
 
 logoutButton?.addEventListener("click", () => {
   logout();
@@ -22,6 +51,11 @@ logoutButton?.addEventListener("click", () => {
 
 searchInput?.addEventListener("input", render);
 filterInput?.addEventListener("change", render);
+detailToggle?.addEventListener("click", () => {
+  showDetails = !showDetails;
+  detailToggle.textContent = showDetails ? "Ẩn chi tiết" : "Xem chi tiết";
+  render();
+});
 window.addEventListener("storage", render);
 render();
 
@@ -60,12 +94,14 @@ function render() {
 function createPaymentRow(schedule) {
   const row = document.createElement("tr");
   const paymentMethod = schedule.payment?.method;
-  const methodLabel = paymentMethod === "wallet"
-    ? "Ví NEKO"
-    : paymentMethod === "bank-transfer"
-      ? "Chuyển khoản"
-      : "Tại trung tâm";
+  const methodLabel = paymentMethod === "bank-transfer"
+    ? "Chuyển khoản QR"
+    : "Tại trung tâm";
   const status = getPaymentStatus(schedule);
+  const bank = loadBankAccount(schedule.customerUsername);
+  const bankInfo = bank
+    ? ` | NH: ${bank.bankName || "-"} | STK: ${bank.bankAccountNumber || "-"} | Chủ TK: ${bank.bankAccountName || "-"}`
+    : " | Chưa có thông tin TK ngân hàng";
   const cells = [
     `#${schedule.id ?? "-"}`,
     `${schedule.customerName || schedule.customerUsername || "Khách hàng"}${schedule.customerUsername ? ` · @${schedule.customerUsername}` : ""}`,
@@ -95,11 +131,33 @@ function createPaymentRow(schedule) {
     confirmButton.addEventListener("click", () => markPaymentReceived(schedule.id));
     actionCell.appendChild(confirmButton);
   } else {
-    actionCell.textContent = schedule.payment?.paidAt
+    const wrapper = document.createElement("div");
+    wrapper.style.display = "flex";
+    wrapper.style.flexDirection = "column";
+    wrapper.style.gap = "4px";
+    const paidText = document.createElement("span");
+    paidText.textContent = schedule.payment?.paidAt
       ? new Date(schedule.payment.paidAt).toLocaleDateString("vi-VN")
       : "Đã xác nhận";
+    const revokeButton = document.createElement("button");
+    revokeButton.type = "button";
+    revokeButton.className = "care-btn payment-confirm-button";
+    revokeButton.textContent = "Thu hồi xác nhận";
+    revokeButton.addEventListener("click", () => revokePaymentReceivedAction(schedule.id));
+    wrapper.append(paidText, revokeButton);
+    actionCell.appendChild(wrapper);
   }
   row.appendChild(actionCell);
+  if (showDetails) {
+    const detailRow = document.createElement("tr");
+    const detailCell = document.createElement("td");
+    detailCell.colSpan = 7;
+    detailCell.style.fontSize = "13px";
+    detailCell.style.color = "var(--muted)";
+    detailCell.textContent = `Người dùng: ${schedule.customerUsername || "-"} | SĐT: ${schedule.customerPhone || "-"} | Ngày: ${schedule.date || "-"} ${schedule.time || ""}${bankInfo}`;
+    detailRow.appendChild(detailCell);
+    row.insertAdjacentElement("afterend", detailRow);
+  }
   return row;
 }
 
@@ -119,6 +177,26 @@ function markPaymentReceived(scheduleId) {
     return;
   }
   showMessage(`Đã xác nhận thanh toán cho lịch #${scheduleId}.`, "success");
+  render();
+}
+
+function revokePaymentReceivedAction(scheduleId) {
+  if (!confirm("Bạn có chắc muốn thu hồi xác nhận thanh toán của lịch này?")) return;
+  const schedules = loadSchedules();
+  const target = schedules.find((schedule) => String(schedule.id) === String(scheduleId));
+  if (!target) {
+    showMessage("Không tìm thấy lịch cần cập nhật. Hãy tải lại trang.", "error");
+    return;
+  }
+
+  const updatedSchedules = schedules.map((schedule) =>
+    String(schedule.id) === String(scheduleId) ? revokePaymentReceived(schedule) : schedule,
+  );
+  if (!saveSchedules(updatedSchedules)) {
+    showMessage("Không thể thu hồi xác nhận thanh toán. Vui lòng thử lại.", "error");
+    return;
+  }
+  showMessage(`Đã thu hồi xác nhận thanh toán cho lịch #${scheduleId}.`, "success");
   render();
 }
 

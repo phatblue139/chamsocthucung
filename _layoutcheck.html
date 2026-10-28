@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Layout check</title>
+    <style>
+      body { font-family: Consolas, monospace; margin: 12px; }
+      iframe { display: block; width: 1366px; height: 1300px; border: 1px solid #999; }
+      pre { white-space: pre-wrap; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <pre id="out">running</pre>
+    <iframe id="frame"></iframe>
+    <script>
+      const width = Number(new URLSearchParams(location.search).get("w") || 1366);
+      const frame = document.getElementById("frame");
+      const out = document.getElementById("out");
+      frame.style.width = width + "px";
+
+      const schedules = [
+        {
+          id: 101,
+          petName: "Milu",
+          careType: "Tắm",
+          date: "2026-10-30",
+          time: "08:00",
+          note: "Khách dặn ghi chú rất dài để kiểm tra xuống dòng trong ô ghi chú của bảng quản lý.",
+          customerUsername: "sample",
+          customerName: "Nguyễn Minh Anh với tên khách hàng dài để kiểm tra xuống dòng",
+          customerPhone: "0901234567",
+          status: "pending",
+          source: "user",
+          createdAt: "2026-10-20T08:00:00.000Z",
+        },
+        {
+          id: 102,
+          petName: "Misa",
+          careType: "Tiêm phòng",
+          date: "2026-10-31",
+          time: "10:00",
+          note: "Đã xác nhận",
+          customerUsername: "sample",
+          customerName: "Nguyễn Minh Anh",
+          customerPhone: "0901234567",
+          status: "confirmed",
+          source: "user",
+          createdAt: "2026-10-20T08:00:00.000Z",
+        },
+        {
+          id: 103,
+          petName: "Lucky",
+          careType: "Trông coi thú cưng",
+          petServices: [
+            { petName: "Lucky", services: ["Tắm", "Cắt móng", "Cho ăn"], cageType: "large" },
+          ],
+          date: "2026-11-01",
+          endDate: "2026-11-02",
+          time: "09:00",
+          endTime: "17:00",
+          note: "Đã hủy",
+          customerUsername: "sample",
+          customerName: "Nguyễn Minh Anh",
+          customerPhone: "0901234567",
+          status: "cancelled",
+          source: "user",
+          createdAt: "2026-10-20T08:00:00.000Z",
+        },
+      ];
+
+      function fmt(rect) {
+        return rect ? `${Math.round(rect.left)}..${Math.round(rect.right)} (${Math.round(rect.width)})` : "none";
+      }
+
+      function measure() {
+        const doc = frame.contentDocument;
+        const win = frame.contentWindow;
+        const wrapper = doc.querySelector(".admin-care-table")?.closest(".care-table-wrapper");
+        const table = doc.querySelector(".admin-care-table");
+        if (!wrapper || !table) return null;
+        const rows = [...doc.querySelectorAll("#careList tr")];
+        if (rows.length < 3) return null;
+
+        const wrapperRect = wrapper.getBoundingClientRect();
+        const tableRect = table.getBoundingClientRect();
+        const headers = [...doc.querySelectorAll(".admin-care-table thead th")].map((th) => th.textContent.trim());
+        const actionHeader = doc.querySelector(".admin-care-table thead th:last-child");
+        const actionHeaderRect = actionHeader.getBoundingClientRect();
+        const rowInfo = rows.map((row) => {
+          const status = row.querySelector(".care-status-badge")?.textContent.trim() || "";
+          const actionCell = row.lastElementChild;
+          const buttons = [...actionCell.querySelectorAll("button")].map((button) => {
+            const style = win.getComputedStyle(button);
+            const rect = button.getBoundingClientRect();
+            return {
+              text: button.textContent.trim(),
+              hidden: button.hidden,
+              display: style.display,
+              visibility: style.visibility,
+              rect: fmt(rect),
+              width: Math.round(rect.width),
+              inWrapper: rect.left >= wrapperRect.left - 1 && rect.right <= wrapperRect.right + 1,
+            };
+          });
+          return {
+            id: row.cells[0].textContent.trim(),
+            status,
+            actionCell: fmt(actionCell.getBoundingClientRect()),
+            buttons,
+          };
+        });
+
+        return {
+          viewport: `${win.innerWidth}x${win.innerHeight}`,
+          wrapper: fmt(wrapperRect),
+          wrapperClientWidth: wrapper.clientWidth,
+          wrapperScrollWidth: wrapper.scrollWidth,
+          table: fmt(tableRect),
+          tableWidth: Math.round(tableRect.width),
+          actionHeaderRect: fmt(actionHeaderRect),
+          actionHeaderInWrapper: actionHeaderRect.left >= wrapperRect.left - 1 && actionHeaderRect.right <= wrapperRect.right + 1,
+          headers,
+          rowInfo,
+          hasHorizontalScroll: wrapper.scrollWidth > wrapper.clientWidth + 1,
+        };
+      }
+
+      localStorage.setItem("neko:admin", "true");
+      localStorage.setItem("careSchedules", JSON.stringify(schedules));
+      frame.src = "/src/careSchedules.html";
+
+      const started = Date.now();
+      const timer = setInterval(() => {
+        let result = null;
+        try {
+          result = measure();
+        } catch (error) {
+          result = { error: String(error) };
+        }
+        if (result && !result.error) {
+          clearInterval(timer);
+          out.textContent = `RESULT ${width}\n` + JSON.stringify(result, null, 2);
+          document.title = `DONE-${width}`;
+        } else if (Date.now() - started > 8000) {
+          clearInterval(timer);
+          out.textContent = `TIMEOUT ${width}\n` + JSON.stringify(result, null, 2);
+        }
+      }, 250);
+    </script>
+  </body>
+</html>
