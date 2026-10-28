@@ -146,6 +146,7 @@ function initUserView(user) {
   shipToggle?.addEventListener("change", () => {
     if (shipPanel) shipPanel.hidden = !shipToggle.checked;
     if (returnAddressGroup) returnAddressGroup.hidden = shipTypeSelect?.value !== "round-trip";
+    renderShipmentPetChoices();
     syncShippingRequirements();
     updateShipQuote();
   });
@@ -187,7 +188,10 @@ function initUserView(user) {
   returnTimeInput?.addEventListener("change", updateScheduleTotal);
   petSelect?.addEventListener("change", syncPetSittingFields);
   petServicesContainer?.addEventListener("change", (event) => {
-    if (event.target.matches('input[name="careTypes"]')) syncPetSittingFields();
+    if (!event.target.matches('input[name="careTypes"]')) return;
+    syncPetSittingFields();
+    renderShipmentPetChoices();
+    updateShipQuote();
   });
 
   function populateShipControls() {
@@ -249,7 +253,31 @@ function initUserView(user) {
       return;
     }
 
-    pets.forEach((pet) => {
+    const scheduledPetIds = getSelectedPetIds();
+    const scheduledPets = pets.filter((pet) => scheduledPetIds.has(String(pet.id)));
+    if (!scheduledPets.length) {
+      const empty = document.createElement("p");
+      empty.className = "user-pet-choice-empty";
+      empty.textContent = "Chọn thú cưng cho lịch chăm sóc để chọn bé cần ship.";
+      shipmentPetsContainer.appendChild(empty);
+      return;
+    }
+
+    const servicedPetIds = new Set(
+      Array.from(petServicesContainer?.querySelectorAll(".user-pet-service-group") || [])
+        .filter((group) => scheduledPetIds.has(group.dataset.petId) && getCheckedCareTypes(group).length > 0)
+        .map((group) => group.dataset.petId),
+    );
+    const shippablePets = scheduledPets.filter((pet) => servicedPetIds.has(String(pet.id)));
+    if (!shippablePets.length) {
+      const empty = document.createElement("p");
+      empty.className = "user-pet-choice-empty";
+      empty.textContent = "Chọn dịch vụ cho thú cưng để chọn bé cần ship.";
+      shipmentPetsContainer.appendChild(empty);
+      return;
+    }
+
+    shippablePets.forEach((pet) => {
       const choice = document.createElement("label");
       choice.className = "user-pet-choice";
       const checkbox = document.createElement("input");
@@ -546,6 +574,7 @@ function initUserView(user) {
         input.checked = wanted.includes(input.value);
       });
     });
+    renderShipmentPetChoices();
 
     if (dateInput) dateInput.value = schedule.date || "";
     if (returnDateInput) returnDateInput.value = schedule.endDate || "";
@@ -578,9 +607,10 @@ function initUserView(user) {
       if (typeof form?.reset === "function") form.reset();
       setBookingPaymentMethod(defaultPaymentMethod);
       renderPetServiceChoices();
+      renderShipmentPetChoices();
       syncPetSittingFields();
       applyScheduleLimits();
-      updateScheduleTotal();
+      updateShipQuote();
     }
   }
 
@@ -1507,6 +1537,8 @@ function initUserView(user) {
       activePetId = checkbox.value;
     }
     renderPetServiceChoices();
+    renderShipmentPetChoices();
+    updateShipQuote();
   }
 
   function renderPetServiceChoices() {
