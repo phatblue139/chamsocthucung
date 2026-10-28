@@ -35,17 +35,29 @@
         </section>
 
         <section class="admin-metrics admin-payment-metrics" aria-label="Tổng quan thanh toán">
-          <article class="admin-metric metric-open">
-            <span>Chưa thanh toán</span>
-            <strong id="unpaidCount">0</strong>
-          </article>
           <article class="admin-metric metric-done">
-            <span>Đã thanh toán</span>
-            <strong id="paidCount">0</strong>
+            <span>Tổng doanh thu đã thu</span>
+            <strong id="receivedRevenue">0đ</strong>
+          </article>
+          <article class="admin-metric metric-open">
+            <span>Tổng tiền chưa thu</span>
+            <strong id="outstandingAmount">0đ</strong>
           </article>
           <article class="admin-metric metric-pets">
-            <span>Tổng giá trị lịch</span>
-            <strong id="paymentTotal">0đ</strong>
+            <span>Số giao dịch đã thanh toán</span>
+            <strong id="paidCount">0</strong>
+          </article>
+          <article class="admin-metric">
+            <span>Số giao dịch chờ thanh toán</span>
+            <strong id="unpaidCount">0</strong>
+          </article>
+          <article class="admin-metric metric-open">
+            <span>Thanh toán thất bại</span>
+            <strong id="failedCount">0</strong>
+          </article>
+          <article class="admin-metric metric-done">
+            <span>Đã hoàn tiền</span>
+            <strong id="refundedCount">0</strong>
           </article>
         </section>
 
@@ -53,10 +65,28 @@
           <input type="search" id="paymentSearch" class="care-search" placeholder="Tìm khách hàng, tài khoản, thú cưng..." aria-label="Tìm thanh toán" />
           <select id="paymentFilter" class="care-search" aria-label="Lọc theo trạng thái thanh toán">
             <option value="all">Tất cả thanh toán</option>
-            <option value="unpaid">Chưa thanh toán</option>
+            <option value="pending">Chờ thanh toán</option>
             <option value="paid">Đã thanh toán</option>
+            <option value="failed">Thanh toán thất bại</option>
+            <option value="refunded">Đã hoàn tiền</option>
           </select>
-          <button type="button" id="paymentDetailToggle" class="care-btn">Xem chi tiết</button>
+          <select id="paymentMethodFilter" class="care-search" aria-label="Lọc theo phương thức thanh toán">
+            <option value="all">Tất cả phương thức</option>
+            <option value="wallet">Ví NEKO</option>
+            <option value="bank-transfer">Chuyển khoản</option>
+            <option value="at-center">Tại trung tâm</option>
+            <option value="unknown">Chưa xác định</option>
+          </select>
+          <label class="sr-only" for="paymentDateField">Lọc ngày theo</label>
+          <select id="paymentDateField" class="care-search" aria-label="Lọc ngày theo">
+            <option value="booking">Ngày đặt lịch</option>
+            <option value="payment">Ngày thanh toán</option>
+          </select>
+          <label class="sr-only" for="paymentDateFrom">Từ ngày</label>
+          <input type="date" id="paymentDateFrom" class="care-search" aria-label="Từ ngày" />
+          <label class="sr-only" for="paymentDateTo">Đến ngày</label>
+          <input type="date" id="paymentDateTo" class="care-search" aria-label="Đến ngày" />
+          <button id="exportPaymentsCsv" type="button" class="care-btn care-btn-add">Xuất CSV</button>
         </div>
 
         <p id="paymentMessage" class="user-form-message" role="status" aria-live="polite"></p>
@@ -65,11 +95,17 @@
             <thead>
               <tr>
                 <th>Mã lịch</th>
+                <th>Mã giao dịch</th>
+                <th>Ngày đặt lịch</th>
+                <th>Ngày thanh toán</th>
                 <th>Khách hàng</th>
+                <th>Số điện thoại</th>
                 <th>Thú cưng / dịch vụ</th>
                 <th>Phương thức</th>
+                <th>Chi tiết giá</th>
                 <th>Số tiền</th>
                 <th>Trạng thái</th>
+                <th>Người xác nhận</th>
                 <th>Thao tác</th>
               </tr>
             </thead>
@@ -77,9 +113,19 @@
           </table>
         </div>
         <p id="paymentEmpty" class="care-empty" hidden>Không có khoản thanh toán phù hợp.</p>
-        <p class="admin-payment-note">Ứng dụng mẫu tạo mã QR chuyển khoản; trạng thái thanh toán vẫn được admin xác nhận thủ công.</p>
+        <p class="admin-payment-note">Mã giao dịch là mã nội bộ được tạo khi admin xác nhận đã thu. Ứng dụng mẫu chưa kết nối ngân hàng hoặc cổng thanh toán.</p>
       </div>
     </main>
+    <dialog id="paymentDetailsDialog" class="admin-payment-details-dialog" aria-labelledby="paymentDetailsTitle">
+      <div class="admin-payment-details-header">
+        <h2 id="paymentDetailsTitle">Chi tiết hóa đơn</h2>
+        <div class="admin-payment-details-actions">
+          <button id="paymentDetailsPrint" type="button" class="care-btn care-btn-add">In hóa đơn / biên nhận</button>
+          <button id="paymentDetailsClose" type="button" class="care-btn care-btn-cancel" aria-label="Đóng chi tiết hóa đơn">Đóng</button>
+        </div>
+      </div>
+      <div id="paymentDetailsContent" class="admin-payment-details-content"></div>
+    </dialog>
     <script type="module" src="./adminPayments.js"></script>
   </body>
 </html>
