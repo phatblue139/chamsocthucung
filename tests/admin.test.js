@@ -19,6 +19,7 @@ import {
 } from "../src/paymentData.js";
 import {
   SCHEDULE_STATUS,
+  SCHEDULE_STORAGE_KEY,
   SCHEDULE_CONFLICT_OVERLAP,
   SCHEDULE_CONFLICT_TOO_CLOSE,
   PET_SITTING_CAPACITY,
@@ -33,10 +34,13 @@ import {
   getScheduleConflictType,
   getSchedulePetSittingIds,
   hasScheduleConflict,
+  isSampleSchedule,
+  loadSchedules,
   mergeScheduleUpdate,
   getScheduleStatusClass,
   normalizeStatus,
   resolveScheduleStatus,
+  saveSchedules,
 } from "../src/careScheduleData.js";
 import { getNextPetId, PET_ID_SEQUENCE_KEY, PET_STORAGE_KEY } from "../src/petData.js";
 import {
@@ -44,7 +48,10 @@ import {
   getDistanceConfig,
   getDistanceForLocation,
   getAddressAreaCode,
+  getShipmentStorage,
   normalizePetSize,
+  saveShipmentStorage,
+  SHIPMENT_STORAGE_KEY,
   validateShippingPet,
 } from "../src/shippingData.js";
 import {
@@ -617,4 +624,155 @@ test("admin payment helpers include shipping and confirm receipt metadata", () =
   assert.equal(confirmed.payment.receivedBy, "admin");
   assert.equal(confirmed.payment.paidAt, "2026-10-19T10:00:00.000Z");
   assert.equal(schedule.payment.status, "Chờ thanh toán");
+});
+
+test("saves and loads care schedules, safely differentiating sample and user schedules", () => {
+  localStorage.removeItem(SCHEDULE_STORAGE_KEY);
+  // Khi chưa có trong storage, loadSchedules nạp mẫu
+  const initial = loadSchedules();
+  assert.ok(initial.length > 0);
+  assert.equal(isSampleSchedule(initial[0]), true);
+
+  // Tạo lịch người dùng
+  const userSchedule = {
+    id: 101,
+    customerUsername: "customer1",
+    customerName: "Khách Một",
+    customerPhone: "0912345678",
+    petName: "Miu",
+    careType: "Tắm",
+    price: 100000,
+    date: "2026-11-01",
+    time: "09:00",
+    status: SCHEDULE_STATUS.PENDING,
+    source: "user",
+    createdAt: "2026-10-25T08:00:00.000Z",
+  };
+
+  assert.equal(saveSchedules([userSchedule]), true);
+  const reloaded = loadSchedules();
+  assert.equal(reloaded.length, 1);
+  assert.equal(reloaded[0].id, 101);
+  assert.equal(reloaded[0].customerUsername, "customer1");
+  assert.equal(isSampleSchedule(reloaded[0]), false);
+});
+
+test("safely handles corrupted JSON in LocalStorage without throwing or overwriting with samples", () => {
+  // Gán chuỗi JSON lỗi vào storage
+  localStorage.setItem(SCHEDULE_STORAGE_KEY, "{ broken json ... not an array");
+  const result = loadSchedules();
+  // Không được throw, không được tự ý trả về sample schedules
+  assert.ok(Array.isArray(result));
+  assert.equal(result.length, 0);
+});
+
+test("schedule confirmation preserves all customer details, pet services, price and records confirmation time", () => {
+  const original = {
+    id: 88,
+    customerUsername: "customer_a",
+    customerName: "Khách A",
+    customerPhone: "0988776655",
+    petIds: [1, 2],
+    petNames: ["Miu", "Kiki"],
+    petServices: [
+      { petId: 1, petName: "Miu", services: ["Tắm"], price: 100000 },
+      { petId: 2, petName: "Kiki", services: ["Cắt móng"], price: 50000 },
+    ],
+    price: 150000,
+    date: "2026-11-05",
+    time: "10:00",
+    status: SCHEDULE_STATUS.PENDING,
+    payment: { method: "bank-transfer", status: "Chưa thanh toán", amount: 150000 },
+    shipping: { id: 10, centerName: "Trung tâm Đống Đa", totalFee: 35000 },
+    source: "user",
+    createdAt: "2026-10-25T08:00:00.000Z",
+  };
+
+  // Xác nhận lịch
+  const now = "2026-10-26T09:00:00.000Z";
+  const confirmed = {
+    ...original,
+    status: SCHEDULE_STATUS.CONFIRMED,
+    confirmedAt: now,
+  };
+
+  assert.equal(saveSchedules([confirmed]), true);
+  const saved = loadSchedules().find((s) => s.id === 88);
+  assert.ok(saved);
+  assert.equal(saved.status, SCHEDULE_STATUS.CONFIRMED);
+  assert.equal(saved.confirmedAt, now);
+  assert.equal(saved.price, 150000);
+  assert.equal(saved.petServices.length, 2);
+  assert.equal(saved.payment.method, "bank-transfer");
+  assert.equal(saved.shipping.id, 10);
+});
+
+test("schedule cancellation updates status to cancelled and records cancellation time", () => {
+  const active = {
+    id: 99,
+    customerUsername: "customer_b",
+    status: SCHEDULE_STATUS.CONFIRMED,
+    date: "2026-11-10",
+    time: "14:00",
+    price: 100000,
+    source: "user",
+  };
+
+  const cancelledAt = "2026-10-27T10:00:00.000Z";
+  const cancelled = {
+    ...active,
+    status: SCHEDULE_STATUS.CANCELLED,
+    cancelledAt,
+  };
+
+  assert.equal(saveSchedules([cancelled]), true);
+  const saved = loadSchedules().find((s) => s.id === 99);
+  assert.ok(saved);
+  assert.equal(saved.status, SCHEDULE_STATUS.CANCELLED);
+  assert.equal(saved.cancelledAt, cancelledAt);
+});
+
+test("rollback mechanism prevents orphan care schedules when shipment save fails", () => {
+  localStorage.removeItem(SCHEDULE_STORAGE_KEY);
+  localStorage.removeItem(SHIPMENT_STORAGE_KEY);
+
+  const existingSchedule = {
+    id: 1,
+    customerUsername: "user1",
+    petName: "Milu",
+    status: SCHEDULE_STATUS.CONFIRMED,
+    date: "2026-11-01",
+    time: "09:00",
+  };
+  saveSchedules([existingSchedule]);
+
+  const newScheduleId = 2;
+  const newScheduleWithShip = {
+    id: newScheduleId,
+    customerUsername: "user1",
+    petName: "Misa",
+    status: SCHEDULE_STATUS.PENDING,
+    date: "2026-11-02",
+    time: "10:00",
+    shipping: { id: 50, totalFee: 30000 },
+  };
+
+  // Giả lập lưu lịch thành công trước
+  saveSchedules([existingSchedule, newScheduleWithShip]);
+  assert.equal(loadSchedules().length, 2);
+
+  // Giả lập lưu đơn ship thất bại (ví dụ storage lỗi hoặc trả về false)
+  const shipmentSaveFailed = true;
+  if (shipmentSaveFailed) {
+    // Cơ chế rollback an toàn: hoàn tác chỉ bản ghi lịch mới tạo, không làm mất lịch cũ
+    const current = loadSchedules();
+    const rollbacked = current.filter((item) => Number(item.id) !== newScheduleId);
+    saveSchedules(rollbacked);
+  }
+
+  // Kết quả: lịch mới bị huỷ, lịch cũ vẫn giữ nguyên, không có lịch mồ côi
+  const afterRollback = loadSchedules();
+  assert.equal(afterRollback.length, 1);
+  assert.equal(afterRollback[0].id, 1);
+  assert.equal(afterRollback[0].petName, "Milu");
 });

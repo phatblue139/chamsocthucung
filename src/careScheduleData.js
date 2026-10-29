@@ -364,6 +364,10 @@ export function mergeScheduleUpdate(schedule, changes) {
   return next;
 }
 
+export function isSampleSchedule(schedule) {
+  return String(schedule?.source || "").trim().toLowerCase() === "sample";
+}
+
 export function getSampleSchedules() {
   return clone(SAMPLE_SCHEDULES).map(normalizeSchedule);
 }
@@ -373,16 +377,18 @@ export function loadSchedules() {
   if (!storage) return getSampleSchedules();
 
   const stored = storage.getItem(SCHEDULE_STORAGE_KEY);
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed)) return parsed.map(normalizeSchedule);
-    } catch (error) {
-      return getSampleSchedules();
-    }
+  if (stored === null) {
+    return getSampleSchedules();
   }
 
-  return getSampleSchedules();
+  try {
+    const parsed = JSON.parse(stored);
+    if (Array.isArray(parsed)) return parsed.map(normalizeSchedule);
+    return [];
+  } catch (error) {
+    // Khi dữ liệu JSON lỗi, không tự ý thay dữ liệu thật bằng dữ liệu mẫu để tránh ghi đè dữ liệu cũ
+    return [];
+  }
 }
 
 export function saveSchedules(schedules) {
@@ -414,9 +420,10 @@ export function getScheduleOwner(schedule) {
  * schedule of another customer even when both records reuse the same pet id.
  */
 function isSameScheduleOwner(schedule, candidateOwner) {
-  const scheduleOwner = getScheduleOwner(schedule);
-  if (!scheduleOwner || !candidateOwner) return true;
-  return scheduleOwner === candidateOwner;
+  const scheduleOwner = getScheduleOwner(schedule).toLowerCase();
+  const targetOwner = String(candidateOwner || "").trim().toLowerCase();
+  if (!scheduleOwner || !targetOwner) return true;
+  return scheduleOwner === targetOwner;
 }
 
 export function findScheduleConflicts(schedules, candidate, bufferMinutes = SCHEDULE_BUFFER_MINUTES) {

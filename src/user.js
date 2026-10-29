@@ -33,6 +33,7 @@ import {
   getPetSittingPrice,
   findScheduleConflicts,
   isKnownCareType,
+  isSampleSchedule,
   loadSchedules,
   resolveScheduleStatus,
   saveSchedules,
@@ -105,7 +106,7 @@ function initUserView(user) {
   const petList = document.getElementById("userPetList");
   const petEmpty = document.getElementById("userPetEmpty");
   const petCount = document.getElementById("userPetCount");
-  let pets = loadPets().filter((pet) => String(pet.ownerUsername) === String(user.username));
+  let pets = loadPets().filter((pet) => String(pet.ownerUsername || "").trim().toLowerCase() === String(user.username || "").trim().toLowerCase());
 
   const petSelect = document.getElementById("userPetSelect");
   const petServicesContainer = document.getElementById("userPetServices");
@@ -195,7 +196,7 @@ function initUserView(user) {
   });
 
   function populateShipControls() {
-    const addresses = getAddressStorage().filter((address) => String(address.ownerUsername) === String(user.username));
+    const addresses = getAddressStorage().filter((address) => String(address.ownerUsername || "").trim().toLowerCase() === String(user.username || "").trim().toLowerCase());
     const emptyAddressMessage = document.getElementById("userShipAddressEmpty");
     if (emptyAddressMessage) emptyAddressMessage.hidden = addresses.length > 0;
     const populate = (select, options, placeholderText) => {
@@ -327,7 +328,7 @@ function initUserView(user) {
     }
 
     const shipmentPets = getSelectedShipmentPets();
-    const addresses = getAddressStorage().filter((item) => String(item.ownerUsername) === String(user.username));
+    const addresses = getAddressStorage().filter((item) => String(item.ownerUsername || "").trim().toLowerCase() === String(user.username || "").trim().toLowerCase());
     const address = addresses.find((item) => String(item.id) === String(pickupAddressSelect?.value || ""));
     const center = SHIPMENT_CENTERS.find((item) => item.code === String(shipCenterSelect?.value || ""));
     if (!shipmentPets.length || !address || !center) {
@@ -405,7 +406,7 @@ function initUserView(user) {
     if (!shipToggle?.checked) return null;
 
     const shipmentPets = getSelectedShipmentPets();
-    const addresses = getAddressStorage().filter((item) => String(item.ownerUsername) === String(user.username));
+    const addresses = getAddressStorage().filter((item) => String(item.ownerUsername || "").trim().toLowerCase() === String(user.username || "").trim().toLowerCase());
     const pickupAddress = addresses.find((item) => String(item.id) === String(pickupAddressSelect?.value || ""));
     const center = SHIPMENT_CENTERS.find((item) => item.code === String(shipCenterSelect?.value || ""));
     const transportType = shipTypeSelect?.value || "one-way";
@@ -793,16 +794,17 @@ function initUserView(user) {
   }
 
   let isSubmitting = false;
+  let isCommitting = false;
   form?.addEventListener("submit", (event) => {
     event.preventDefault();
-    if (isSubmitting) return;
+    if (isSubmitting || isCommitting) return;
     isSubmitting = true;
     const submitButton = form.querySelector('button[type="submit"]');
     if (submitButton) submitButton.disabled = true;
     try {
       submitSchedule();
     } finally {
-      if (!pendingConfirmation) {
+      if (!pendingConfirmation && !isCommitting) {
         isSubmitting = false;
         if (submitButton) submitButton.disabled = false;
       }
@@ -810,22 +812,37 @@ function initUserView(user) {
   });
 
   confirmSubmitButton?.addEventListener("click", () => {
+    if (isCommitting) return;
     const payload = pendingConfirmation;
+    if (!payload) return;
+
+    isCommitting = true;
+    if (confirmSubmitButton) confirmSubmitButton.disabled = true;
     closeScheduleConfirm();
     pendingConfirmation = null;
-    if (payload) commitSchedule(payload);
+
+    try {
+      commitSchedule(payload);
+    } finally {
+      isCommitting = false;
+      if (confirmSubmitButton) confirmSubmitButton.disabled = false;
+      setSubmittingState(false);
+    }
   });
   confirmCancelButton?.addEventListener("click", () => {
+    if (isCommitting) return;
     closeScheduleConfirm();
     pendingConfirmation = null;
     setSubmittingState(false);
   });
   confirmDialog?.addEventListener("close", () => {
+    if (isCommitting) return;
     pendingConfirmation = null;
     setSubmittingState(false);
   });
   confirmDialog?.addEventListener("click", (event) => {
     if (event.target !== confirmDialog) return;
+    if (isCommitting) return;
     closeScheduleConfirm();
     pendingConfirmation = null;
     setSubmittingState(false);
@@ -936,10 +953,11 @@ function initUserView(user) {
     const endDate = String(formData.get("endDate") || "").trim();
     const endTime = String(formData.get("endTime") || "").trim();
     const latestSchedules = loadSchedules();
+    const currentUsername = String(user.username || "").trim().toLowerCase();
     const editingSchedule = editingScheduleId
       ? latestSchedules.find((item) =>
         Number(item.id) === Number(editingScheduleId) &&
-        (item.customerUsername || item.ownerUsername) === user.username &&
+        String(item.customerUsername || item.ownerUsername || "").trim().toLowerCase() === currentUsername &&
         !item.deletedAt,
       )
       : null;
@@ -1150,10 +1168,35 @@ function initUserView(user) {
       return;
     }
 
+    if (shipToggle?.checked) {
+      const scheduledIds = (Array.isArray(schedule.petIds) ? schedule.petIds : []).map(String);
+      const testShipment = createShippingRecord(scheduledIds, schedule.id);
+      if (testShipment === false) {
+        return;
+      }
+    }
+
     requestScheduleConfirmation({ schedule, editingSchedule, latestSchedules });
   }
 
   function commitSchedule({ schedule, editingSchedule, latestSchedules }) {
+    const currentSchedules = loadSchedules();
+
+    // Kiểm tra xung đột và sức chứa chuồng trên dữ liệu mới nhất
+    if (!editingSchedule) {
+      const conflicts = findScheduleConflicts(currentSchedules, schedule);
+      if (conflicts.length) {
+        showMessage("Không thể lưu lịch: " + describeScheduleConflicts(conflicts, schedule), "error");
+        return;
+      }
+      const cageUsage = getPetSittingCageUsage(currentSchedules, schedule, { pets });
+      if (cageUsage.used > cageUsage.capacity) {
+        showMessage("Không thể lưu lịch: Trung tâm đã hết chỗ trong khoảng thời gian này.", "error");
+        return;
+      }
+      schedule.id = getNextScheduleId(currentSchedules);
+    }
+
     let shippingRecord = null;
     if (editingSchedule) {
       schedule.payment.amount = schedule.price;
@@ -1167,7 +1210,6 @@ function initUserView(user) {
         schedule.id,
       );
       if (shippingRecord === false) {
-        setSubmittingState(false);
         return;
       }
       if (shippingRecord) {
@@ -1185,7 +1227,6 @@ function initUserView(user) {
         const wallet = loadWallet(user.username);
         if (wallet.balance < schedule.payment.amount) {
           showMessage(`Số dư ví ${formatCurrency(wallet.balance) || "0đ"} chưa đủ. Cần ${formatCurrency(schedule.payment.amount)} để thanh toán lịch này.`, "error");
-          setSubmittingState(false);
           return;
         }
         schedule.payment.status = "Đã thanh toán";
@@ -1193,32 +1234,42 @@ function initUserView(user) {
     }
 
     const nextSchedules = editingSchedule
-      ? latestSchedules.map((item) =>
+      ? currentSchedules.map((item) =>
         Number(item.id) === Number(editingSchedule.id) ? schedule : item,
       )
-      : [...latestSchedules, schedule];
+      : [...currentSchedules, schedule];
+
     if (!saveSchedules(nextSchedules)) {
-      showMessage("Không thể lưu lịch. Vui lòng thử lại.", "error");
-      setSubmittingState(false);
+      showMessage("Không thể lưu lịch vào hệ thống. Vui lòng kiểm tra bộ nhớ trình duyệt.", "error");
       return;
     }
 
     const shipmentsBeforeBooking = getShipmentStorage();
-    if (shippingRecord && !saveShipmentStorage([...shipmentsBeforeBooking, shippingRecord])) {
-      saveSchedules(latestSchedules);
-      showMessage("Không thể lưu đơn ship. Lịch chưa được tạo; vui lòng thử lại.", "error");
-      setSubmittingState(false);
-      return;
+    if (shippingRecord) {
+      const nextShipments = [...shipmentsBeforeBooking, shippingRecord];
+      if (!saveShipmentStorage(nextShipments)) {
+        // Hoàn tác đúng bản ghi vừa thêm để không để lại lịch mồ côi hoặc ghi đè nhầm lịch khác
+        const rollbackSchedules = currentSchedules.filter((item) => Number(item.id) !== Number(schedule.id));
+        saveSchedules(rollbackSchedules);
+        schedules = loadSchedules();
+        render();
+        showMessage("Không thể lưu đơn ship. Lịch chăm sóc đã được huỷ để tránh đơn mồ côi. Vui lòng thử lại.", "error");
+        return;
+      }
     }
 
-    if (!editingSchedule && schedule.payment.method === "wallet" && !chargeWallet(user.username, schedule.payment.amount, `Thanh toán lịch #${schedule.id}`)) {
-      saveSchedules(latestSchedules);
-      if (shippingRecord) saveShipmentStorage(shipmentsBeforeBooking);
-      showMessage("Không thể trừ số dư ví. Lịch chưa được tạo; vui lòng kiểm tra lại số dư.", "error");
-      setSubmittingState(false);
-      return;
+    if (!editingSchedule && schedule.payment.method === "wallet") {
+      if (!chargeWallet(user.username, schedule.payment.amount, `Thanh toán lịch #${schedule.id}`)) {
+        const rollbackSchedules = currentSchedules.filter((item) => Number(item.id) !== Number(schedule.id));
+        saveSchedules(rollbackSchedules);
+        if (shippingRecord) saveShipmentStorage(shipmentsBeforeBooking);
+        schedules = loadSchedules();
+        render();
+        showMessage("Không thể trừ số dư ví. Lịch chưa được tạo; vui lòng kiểm tra lại số dư.", "error");
+        return;
+      }
+      window.dispatchEvent(new Event("neko:wallet-updated"));
     }
-    if (schedule.payment.method === "wallet") window.dispatchEvent(new Event("neko:wallet-updated"));
 
     schedules = nextSchedules;
     const wasEditing = Boolean(editingSchedule);
@@ -1229,7 +1280,6 @@ function initUserView(user) {
     syncPetSittingFields();
     applyScheduleLimits();
     render();
-    setSubmittingState(false);
     showMessage(
       wasEditing
         ? `Đã cập nhật lịch #${schedule.id}.`
@@ -1624,9 +1674,10 @@ function initUserView(user) {
 
   function cancelUserSchedule(id) {
     const latestSchedules = loadSchedules();
+    const currentUsername = String(user.username || "").trim().toLowerCase();
     const schedule = latestSchedules.find((item) =>
       Number(item.id) === Number(id) &&
-      (item.customerUsername || item.ownerUsername) === user.username &&
+      String(item.customerUsername || item.ownerUsername || "").trim().toLowerCase() === currentUsername &&
       !item.deletedAt,
     );
 
@@ -1651,7 +1702,7 @@ function initUserView(user) {
     const linkedShipment = schedule.shipping?.id
       ? shipmentsBefore.find((item) =>
         String(item.id) === String(schedule.shipping.id) &&
-        String(item.customerUsername) === String(user.username),
+        String(item.customerUsername || "").trim().toLowerCase() === currentUsername,
       )
       : null;
     if (schedule.shipping && !linkedShipment) {
@@ -1680,7 +1731,7 @@ function initUserView(user) {
 
     const nextSchedules = latestSchedules.map((item) =>
       Number(item.id) === Number(id) &&
-      (item.customerUsername || item.ownerUsername) === user.username
+      String(item.customerUsername || item.ownerUsername || "").trim().toLowerCase() === currentUsername
         ? { ...item, status: SCHEDULE_STATUS.CANCELLED, cancelledAt: new Date().toISOString() }
         : item,
     );
@@ -1719,7 +1770,7 @@ function initUserView(user) {
 
   window.addEventListener("storage", (event) => {
     if (event.key !== PET_STORAGE_KEY) return;
-    pets = loadPets().filter((pet) => String(pet.ownerUsername) === String(user.username));
+    pets = loadPets().filter((pet) => String(pet.ownerUsername || "").trim().toLowerCase() === String(user.username || "").trim().toLowerCase());
     renderPets();
     renderPetSelect();
     populateShipControls();
@@ -1729,8 +1780,9 @@ function initUserView(user) {
   function render() {
     if (!list || !empty || !count || !historyList || !historyEmpty || !historyCount) return;
 
+    const currentUsername = String(user.username || "").trim().toLowerCase();
     const userSchedules = schedules
-      .filter((schedule) => !schedule.deletedAt && (schedule.customerUsername || schedule.ownerUsername) === user.username)
+      .filter((schedule) => !schedule.deletedAt && String(schedule.customerUsername || schedule.ownerUsername || "").trim().toLowerCase() === currentUsername)
       .sort((first, second) => {
         const firstValue = `${first.date || ""} ${first.time || ""}`;
         const secondValue = `${second.date || ""} ${second.time || ""}`;
@@ -1805,11 +1857,11 @@ function initUserView(user) {
       const scheduleShipment = schedule.shipping
         ? getShipmentStorage().find((item) =>
           String(item.id) === String(schedule.shipping.id) &&
-          String(item.customerUsername) === String(user.username),
+          String(item.customerUsername || "").trim().toLowerCase() === currentUsername,
         )
         : null;
       status.className = `user-schedule-status ${getScheduleStatusClass(statusValue)}`;
-      status.textContent = statusValue;
+      status.textContent = isSampleSchedule(schedule) ? `${statusValue} (Mẫu)` : statusValue;
       heading.appendChild(status);
 
       const details = document.createElement("div");
@@ -1871,7 +1923,14 @@ function initUserView(user) {
 
       more.append(
         createScheduleRow("Tổng thanh toán", price || "Theo yêu cầu"),
-        createScheduleRow("Phương thức thanh toán", schedule.payment?.method === "bank-transfer" ? "Chuyển khoản sau khi xác nhận" : "Thanh toán tại trung tâm"),
+        createScheduleRow(
+          "Phương thức thanh toán",
+          schedule.payment?.method === "bank-transfer"
+            ? "Chuyển khoản sau khi xác nhận"
+            : schedule.payment?.method === "wallet"
+              ? "Ví NEKO"
+              : "Thanh toán tại trung tâm",
+        ),
         createScheduleRow("Trạng thái thanh toán", schedule.payment?.status || "Chưa thanh toán"),
         createScheduleRow("Trạng thái", statusValue),
         createScheduleRow("Ghi chú", schedule.note || "Không có"),

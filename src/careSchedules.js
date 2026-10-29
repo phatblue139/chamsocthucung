@@ -11,6 +11,7 @@ import {
     mergeScheduleUpdate,
     getTimeOptions,
     isKnownCareType,
+    isSampleSchedule,
     loadSchedules,
     resolveScheduleStatus,
     saveSchedules,
@@ -262,7 +263,14 @@ function render() {
 
     rows.forEach((schedule) => {
         const row = document.createElement("tr");
-        const customer = schedule.customerName || schedule.customerUsername || "Dữ liệu mẫu";
+        let customer = "Khách hàng";
+        if (schedule.source === "sample" || isSampleSchedule(schedule)) {
+            customer = `${schedule.customerName || schedule.customerUsername || "Khách"} (Dữ liệu mẫu)`;
+        } else if (schedule.source === "admin") {
+            customer = "Quản trị viên (Tại quầy)";
+        } else {
+            customer = `${schedule.customerName || "Khách hàng"}${schedule.customerUsername ? ` (@${schedule.customerUsername})` : ""}`;
+        }
         const phone = schedule.customerPhone || "—";
         const status = getScheduleStatus(schedule);
         const isDeleted = Boolean(schedule.deletedAt);
@@ -644,9 +652,10 @@ function setStatus(id, nextStatus, extra = {}) {
     let shipmentsAfter = null;
     if (schedule.shipping) {
         shipmentsBefore = getShipmentStorage();
+        const customerLower = String(schedule.customerUsername || schedule.ownerUsername || "").trim().toLowerCase();
         const linkedShipment = shipmentsBefore.find((item) =>
             String(item.id) === String(schedule.shipping.id) &&
-            String(item.customerUsername) === String(schedule.customerUsername || schedule.ownerUsername),
+            String(item.customerUsername || "").trim().toLowerCase() === customerLower,
         );
         if (!linkedShipment) {
             showMessage("Không tìm thấy đơn vận chuyển liên kết. Lịch chưa được cập nhật.", "error");
