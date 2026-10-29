@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quản lý dịch vụ | NEKO Admin</title>
+    <link rel="stylesheet" href="./style.css" />
+    <script>
+      try {
+        if (localStorage.getItem("neko:admin") !== "true") location.replace("/");
+      } catch (error) {
+        location.replace("/");
+      }
+    </script>
+  </head>
+  <body>
+    <main class="care-page admin-page">
+      <div class="container">
+        <header class="admin-topbar">
+          <a class="admin-brand" href="/src/admin.html">NEKO <span>ADMIN</span></a>
+          <nav class="admin-nav" aria-label="Quản trị">
+            <a href="/src/admin.html">Tổng quan</a>
+            <a href="/src/adminPets.html">Thú cưng</a>
+            <a href="/src/careSchedules.html">Lịch chăm sóc</a>
+            <a href="/src/adminServices.html" class="is-current" aria-current="page">Dịch vụ</a>
+            <a href="/src/adminPayments.html">Thanh toán</a>
+            <a href="/src/adminReviews.html">Đánh giá</a>
+          </nav>
+          <button type="button" class="care-btn care-btn-reset" id="logoutBtn">Đăng xuất</button>
+        </header>
+
+        <section class="admin-heading">
+          <p class="admin-kicker">NEKO · QUẢN TRỊ</p>
+          <h1>Quản lý dịch vụ</h1>
+          <p id="serviceCount">0 dịch vụ</p>
+        </section>
+
+        <form id="serviceForm" class="care-form admin-service-form">
+          <input type="hidden" id="serviceId" />
+          <div class="care-form-group">
+            <label for="serviceName">Tên dịch vụ</label>
+            <input id="serviceName" maxlength="80" required placeholder="Ví dụ: Cắt tỉa lông" />
+          </div>
+          <div class="care-form-group">
+            <label for="servicePrice">Giá mỗi lần (đ)</label>
+            <input id="servicePrice" type="number" min="0" max="100000000" step="1000" required />
+          </div>
+          <div class="care-form-group">
+            <label for="serviceIcon">Biểu tượng</label>
+            <input id="serviceIcon" maxlength="8" placeholder="🐾" />
+          </div>
+          <div class="care-form-group">
+            <label for="serviceActive">Trạng thái</label>
+            <select id="serviceActive">
+              <option value="true">Đang hoạt động</option>
+              <option value="false">Tạm ẩn</option>
+            </select>
+          </div>
+          <div class="care-form-group user-form-full">
+            <label for="serviceDescription">Mô tả</label>
+            <textarea id="serviceDescription" rows="3" maxlength="300" required placeholder="Mô tả ngắn về dịch vụ"></textarea>
+          </div>
+          <p class="user-pet-choice-hint user-form-full">Thay đổi sẽ áp dụng cho danh mục, bảng giá và lịch đặt mới. Lịch đã tạo giữ nguyên thông tin và giá cũ. Dịch vụ trông coi thú cưng được quản lý riêng do cách tính phí theo thời gian và chuồng.</p>
+          <div class="care-form-actions">
+            <button type="submit" class="care-btn care-btn-add" id="serviceSaveButton">Thêm dịch vụ</button>
+            <button type="button" class="care-btn care-btn-cancel" id="serviceCancelButton" hidden>Hủy sửa</button>
+          </div>
+        </form>
+
+        <p id="serviceMessage" class="user-form-message" role="status" aria-live="polite"></p>
+        <div class="care-table-wrapper">
+          <table class="care-table">
+            <thead>
+              <tr>
+                <th>Dịch vụ</th>
+                <th>Mô tả</th>
+                <th>Giá</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="serviceList"></tbody>
+          </table>
+        </div>
+        <p id="serviceEmpty" class="care-empty" hidden>Chưa có dịch vụ nào.</p>
+      </div>
+    </main>
+    <script type="module" src="./adminServices.js"></script>
+  </body>
+</html>

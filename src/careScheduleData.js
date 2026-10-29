@@ -1,3 +1,25 @@
+import {
+  CARE_TYPE_PET_SITTING,
+  CARE_TYPES,
+  getCareTypePrice,
+  isKnownCareType,
+  PET_SITTING_CAGE_TYPES,
+  PET_SITTING_DAILY_RATE,
+  PET_SITTING_HOURLY_RATE,
+  SERVICE_CATALOG,
+} from "./serviceCatalogData.js";
+
+export {
+  CARE_TYPE_PET_SITTING,
+  CARE_TYPES,
+  getCareTypePrice,
+  isKnownCareType,
+  PET_SITTING_CAGE_TYPES,
+  PET_SITTING_DAILY_RATE,
+  PET_SITTING_HOURLY_RATE,
+  SERVICE_CATALOG,
+} from "./serviceCatalogData.js";
+
 const SAMPLE_SCHEDULES = [
   {
     id: 1,
@@ -86,21 +108,6 @@ export const SCHEDULE_STATUS = {
 };
 
 export const CARE_TYPE_OTHER = "Khác";
-export const CARE_TYPE_PET_SITTING = "Trông coi thú cưng";
-export const PET_SITTING_HOURLY_RATE = 10000;
-export const PET_SITTING_DAILY_RATE = 150000;
-
-/*
- * The centre keeps 10 cages for pet sitting: 3 small, 5 medium and 2 large.
- * Every stay is priced with the same hourly rate, each cage type adds its own
- * one-off cage fee.
- */
-export const PET_SITTING_CAGE_TYPES = [
-  { code: "small", label: "Chuồng nhỏ", capacity: 3, fee: 20000 },
-  { code: "medium", label: "Chuồng vừa", capacity: 5, fee: 30000 },
-  { code: "large", label: "Chuồng lớn", capacity: 2, fee: 50000 },
-];
-
 export const DEFAULT_PET_SITTING_CAGE = "medium";
 export const PET_SITTING_CAPACITY = PET_SITTING_CAGE_TYPES.reduce(
   (total, cage) => total + cage.capacity,
@@ -120,90 +127,6 @@ export function getCageTypeForPetSize(size) {
   if (["small", "nhỏ", "tiny"].includes(code)) return "small";
   if (["large", "lớn", "big"].includes(code)) return "large";
   return DEFAULT_PET_SITTING_CAGE;
-}
-
-export const SERVICE_CATALOG = [
-  {
-    id: "bath",
-    value: "Tắm",
-    name: "Tắm",
-    description: "Làm sạch lông và chăm sóc vệ sinh cho thú cưng.",
-    icon: "🛁",
-    price: 100000,
-    unit: "lần",
-    active: true,
-  },
-  {
-    id: "nail-trim",
-    value: "Cắt móng",
-    name: "Cắt móng",
-    description: "Cắt và chăm sóc móng gọn gàng cho thú cưng.",
-    icon: "✂️",
-    price: 50000,
-    unit: "lần",
-    active: true,
-  },
-  {
-    id: "vaccination",
-    value: "Tiêm phòng",
-    name: "Tiêm phòng",
-    description: "Đặt lịch tiêm phòng theo nhu cầu chăm sóc của thú cưng.",
-    icon: "💉",
-    price: 200000,
-    unit: "lần",
-    active: true,
-  },
-  {
-    id: "deworming",
-    value: "Tẩy giun",
-    name: "Tẩy giun",
-    description: "Hỗ trợ chăm sóc sức khỏe định kỳ cho thú cưng.",
-    icon: "🩺",
-    price: 150000,
-    unit: "lần",
-    active: true,
-  },
-  {
-    id: "feeding",
-    value: "Cho ăn",
-    name: "Cho ăn",
-    description: "Chuẩn bị bữa ăn và chăm sóc thú cưng theo lịch.",
-    icon: "🥣",
-    price: 50000,
-    unit: "lần",
-    active: true,
-  },
-  {
-    id: "pet-sitting",
-    value: CARE_TYPE_PET_SITTING,
-    name: CARE_TYPE_PET_SITTING,
-    description: "Trông nom thú cưng trong chuồng riêng theo thời gian nhận và trả đã đăng ký.",
-    icon: "🏠",
-    hourlyRate: PET_SITTING_HOURLY_RATE,
-    dailyRate: PET_SITTING_DAILY_RATE,
-    cageTypes: PET_SITTING_CAGE_TYPES,
-    active: true,
-  },
-];
-
-export const CARE_TYPES = SERVICE_CATALOG
-  .filter((service) => service.active && Number.isFinite(service.price))
-  .map(({ value, price }) => ({ value, price }));
-
-const CARE_TYPE_PRICES = CARE_TYPES.reduce((map, item) => {
-  map[item.value] = item.price;
-  return map;
-}, {});
-
-export function getCareTypePrice(careType) {
-  const services = Array.isArray(careType)
-    ? careType
-    : String(careType || "").split(" · ");
-  return services.reduce((total, service) => total + (CARE_TYPE_PRICES[String(service || "").trim()] ?? 0), 0);
-}
-
-export function isKnownCareType(careType) {
-  return Object.prototype.hasOwnProperty.call(CARE_TYPE_PRICES, String(careType || "").trim());
 }
 
 /*

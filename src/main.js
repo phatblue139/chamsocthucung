@@ -52,6 +52,7 @@ function renderPriceCatalog(container) {
 }
 
 document.querySelectorAll('[data-service-catalog]').forEach(renderPriceCatalog)
+document.querySelectorAll('[data-service-grid]').forEach(renderServiceGrid)
 document.querySelectorAll('[data-service-code]').forEach((card) => {
   const service = SERVICE_CATALOG.find((item) => item.id === card.dataset.serviceCode && item.active)
   if (!service) return
@@ -61,6 +62,31 @@ document.querySelectorAll('[data-service-code]').forEach((card) => {
   price.textContent = getPriceLabel(service)
   card.appendChild(price)
 })
+
+function renderServiceGrid(container) {
+  container.replaceChildren()
+  SERVICE_CATALOG.filter((service) => service.active).forEach((service) => {
+    const card = document.createElement('article')
+    card.className = 'service-card'
+
+    const link = document.createElement('a')
+    link.className = 'service-icon service-icon-link'
+    link.href = '/user.html#userScheduleForm'
+    link.dataset.bookingCta = 'true'
+    link.setAttribute('aria-label', `Đăng ký dịch vụ ${service.name}`)
+    link.textContent = service.icon || '🐾'
+
+    const title = document.createElement('h3')
+    title.textContent = service.name
+    const description = document.createElement('p')
+    description.textContent = service.description
+    const price = document.createElement('p')
+    price.className = 'service-price'
+    price.textContent = getPriceLabel(service)
+    card.append(link, title, description, price)
+    container.appendChild(card)
+  })
+}
 
 function renderHomeReviews() {
   const list = document.querySelector('#homeReviewList')

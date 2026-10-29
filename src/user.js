@@ -118,6 +118,7 @@ function initUserView(user) {
   const petEmpty = document.getElementById("userPetEmpty");
   const petCount = document.getElementById("userPetCount");
   let pets = loadPets().filter((pet) => String(pet.ownerUsername) === String(user.username));
+  syncPetOwnerFields();
 
   const petSelect = document.getElementById("userPetSelect");
   const petServicesContainer = document.getElementById("userPetServices");
@@ -150,6 +151,8 @@ function initUserView(user) {
   const qrDialog = document.getElementById("userBankTransferQrDialog");
   const qrContent = document.getElementById("userBankTransferQrContent");
   const qrCloseButton = document.getElementById("userBankTransferQrClose");
+  const scheduleAddressLink = document.getElementById("userScheduleAddressLink");
+  const scheduleDraftKey = `neko:scheduleDraft:${user.username}`;
   let editingScheduleId = null;
   let editingScheduleSnapshot = null;
   let pendingConfirmation = null;
@@ -208,6 +211,73 @@ function initUserView(user) {
     renderShipmentPetChoices();
     updateShipQuote();
   });
+  scheduleAddressLink?.addEventListener("click", (event) => {
+    try {
+      const controls = Array.from(form.elements)
+        .filter((control) => control.name)
+        .map((control) => ({
+          name: control.name,
+          type: control.type,
+          value: control.value,
+          checked: "checked" in control ? control.checked : undefined,
+        }));
+      sessionStorage.setItem(scheduleDraftKey, JSON.stringify(controls));
+    } catch (error) {
+      event.preventDefault();
+      showMessage("Không thể lưu thông tin lịch đang nhập. Vui lòng thử lại trước khi chuyển sang trang địa chỉ.", "error");
+    }
+  });
+  restoreScheduleDraft();
+
+  function restoreScheduleDraft() {
+    let savedDraft;
+    try {
+      const rawDraft = sessionStorage.getItem(scheduleDraftKey);
+      if (!rawDraft) return;
+      savedDraft = JSON.parse(rawDraft);
+      sessionStorage.removeItem(scheduleDraftKey);
+    } catch (error) {
+      sessionStorage.removeItem(scheduleDraftKey);
+      showMessage("Không thể khôi phục thông tin lịch đã nhập.", "error");
+      return;
+    }
+    if (!Array.isArray(savedDraft)) return;
+
+    const restoreControls = (name) => {
+      const savedControls = savedDraft.filter((item) => item.name === name);
+      const currentControls = Array.from(form.elements).filter((control) => control.name === name);
+      currentControls.forEach((control) => {
+        const saved = savedControls.find((item) =>
+          item.type === control.type &&
+          (control.type !== "checkbox" && control.type !== "radio" || item.value === control.value),
+        );
+        if (!saved) return;
+        if (control.type === "checkbox" || control.type === "radio") control.checked = Boolean(saved.checked);
+        else control.value = saved.value;
+      });
+    };
+
+    restoreControls("petIds");
+    const selectedPet = petSelect?.querySelector('input[name="petIds"]:checked');
+    activePetId = selectedPet?.value || "";
+    renderPetServiceChoices();
+    restoreControls("ship");
+    renderShipmentPetChoices();
+    savedDraft
+      .filter((item) => !["petIds", "ship", "careTypes", "shipmentPetIds"].includes(item.name))
+      .map((item) => item.name)
+      .filter((name, index, names) => names.indexOf(name) === index)
+      .forEach(restoreControls);
+    restoreControls("careTypes");
+    renderShipmentPetChoices();
+    restoreControls("shipmentPetIds");
+    syncPetSittingFields();
+    if (shipPanel) shipPanel.hidden = !shipToggle?.checked;
+    if (returnAddressGroup) returnAddressGroup.hidden = shipTypeSelect?.value !== "round-trip";
+    syncShippingRequirements();
+    updateShipQuote();
+    updateScheduleTotal();
+  }
 
   function populateShipControls() {
     const addresses = getAddressStorage().filter((address) => String(address.ownerUsername) === String(user.username));
@@ -1344,6 +1414,7 @@ function initUserView(user) {
       showPetMessage("Không tìm thấy hồ sơ thú cưng thuộc tài khoản của bạn.", "error");
       return;
     }
+    const firstPet = pets[0];
     const petId = editId ? Number(editId) : getNextPetId();
     const pet = {
       ...(previousPet || {}),
@@ -1355,8 +1426,12 @@ function initUserView(user) {
         : petSpeciesInput?.value || "Chó",
       breed: String(petForm.elements.namedItem("breed")?.value || "").trim(),
       size,
-      owner: String(petForm.elements.namedItem("owner")?.value || "").trim() || user.fullName || user.username,
-      ownerPhone: String(petForm.elements.namedItem("ownerPhone")?.value || "").trim(),
+      owner: editId
+        ? String(petForm.elements.namedItem("owner")?.value || "").trim()
+        : firstPet?.owner || String(petForm.elements.namedItem("owner")?.value || "").trim(),
+      ownerPhone: editId
+        ? String(petForm.elements.namedItem("ownerPhone")?.value || "").trim()
+        : firstPet?.ownerPhone || String(petForm.elements.namedItem("ownerPhone")?.value || "").trim(),
       ownerUsername: user.username,
       status: "Chờ lịch",
       createdAt: previousPet ? previousPet.createdAt || "" : new Date().toISOString(),
@@ -1377,6 +1452,7 @@ function initUserView(user) {
     if (editInput) editInput.value = "";
     const submitButton = petForm.querySelector('button[type="submit"]');
     if (submitButton) submitButton.textContent = "Đăng ký thú cưng";
+    syncPetOwnerFields();
     syncPetSpeciesOther();
     renderPets();
     renderPetSelect();
@@ -1388,6 +1464,24 @@ function initUserView(user) {
     if (!petMessage) return;
     petMessage.textContent = text;
     petMessage.className = `user-form-message ${type}`;
+  }
+
+  function syncPetOwnerFields() {
+    if (!petForm) return;
+    const ownerInput = petForm.elements.namedItem("owner");
+    const ownerPhoneInput = petForm.elements.namedItem("ownerPhone");
+    const isEditing = Boolean(document.getElementById("userPetEditId")?.value);
+    const showOwnerFields = pets.length === 0 || isEditing;
+    const ownerGroup = document.getElementById("userPetOwnerGroup");
+    const ownerPhoneGroup = document.getElementById("userPetOwnerPhoneGroup");
+    if (ownerGroup) ownerGroup.hidden = !showOwnerFields;
+    if (ownerPhoneGroup) ownerPhoneGroup.hidden = !showOwnerFields;
+    if (ownerInput) ownerInput.required = showOwnerFields;
+    if (ownerPhoneInput) ownerPhoneInput.required = showOwnerFields;
+    if (!isEditing && pets.length > 0) {
+      if (ownerInput) ownerInput.value = pets[0].owner || "";
+      if (ownerPhoneInput) ownerPhoneInput.value = pets[0].ownerPhone || "";
+    }
   }
 
   function syncPetSpeciesOther() {
@@ -1407,13 +1501,14 @@ function initUserView(user) {
     petForm.elements.namedItem("species").value = ["Chó", "Mèo"].includes(pet.species) ? pet.species : "Khác";
     petSpeciesOtherInput.value = ["Chó", "Mèo", "Khác"].includes(pet.species) ? "" : pet.species || "";
     petForm.elements.namedItem("breed").value = pet.breed || "";
-    petForm.elements.namedItem("owner").value = pet.owner || user.fullName || user.username;
-    petForm.elements.namedItem("ownerPhone").value = pet.ownerPhone || user.phone || "";
+    petForm.elements.namedItem("owner").value = pet.owner || "";
+    petForm.elements.namedItem("ownerPhone").value = pet.ownerPhone || "";
     petForm.querySelectorAll('input[name="size"]').forEach((input) => {
       input.checked = input.value === String(pet.size || "").toLowerCase();
     });
     const submitButton = petForm.querySelector('button[type="submit"]');
     if (submitButton) submitButton.textContent = "Lưu thay đổi";
+    syncPetOwnerFields();
     syncPetSpeciesOther();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }

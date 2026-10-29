@@ -9,6 +9,7 @@ export default defineConfig({
         about: resolve(import.meta.dirname, 'about.html'),
         admin: resolve(import.meta.dirname, 'src/admin.html'),
         adminPets: resolve(import.meta.dirname, 'src/adminPets.html'),
+        adminServices: resolve(import.meta.dirname, 'src/adminServices.html'),
         adminPayments: resolve(import.meta.dirname, 'src/adminPayments.html'),
         adminReviews: resolve(import.meta.dirname, 'src/adminReviews.html'),
         services: resolve(import.meta.dirname, 'services.html'),

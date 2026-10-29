@@ -56,7 +56,7 @@
           </div>
           <form id="userPetForm" class="care-form user-pet-form">
             <input type="hidden" id="userPetEditId" />
-            <p class="user-pet-form-intro">Điền thông tin cơ bản để NEKO lưu hồ sơ và giúp bạn đặt lịch chăm sóc phù hợp.</p>
+            <p class="user-pet-form-intro">Khi đăng ký thú cưng đầu tiên, vui lòng nhập tên và số điện thoại chủ nuôi. Các thú cưng đăng ký sau sẽ dùng lại thông tin này.</p>
             <div class="care-form-group">
               <label for="userPetName">Tên thú cưng <span class="required-mark">*</span></label>
               <input type="text" id="userPetName" name="name" placeholder="Ví dụ: Miu" required maxlength="60" />
@@ -73,11 +73,11 @@
               <label for="userPetBreed">Giống <span class="user-pet-optional">(không bắt buộc)</span></label>
               <input type="text" id="userPetBreed" name="breed" placeholder="Ví dụ: Corgi" maxlength="80" />
             </div>
-            <div class="care-form-group">
-              <label for="userPetOwner">Tên chủ nuôi <span class="user-pet-optional">(không bắt buộc)</span></label>
-              <input type="text" id="userPetOwner" name="owner" placeholder="Ví dụ: Nguyễn Văn A" maxlength="80" />
+            <div class="care-form-group" id="userPetOwnerGroup">
+              <label for="userPetOwner">Tên chủ nuôi <span class="required-mark">*</span></label>
+              <input type="text" id="userPetOwner" name="owner" placeholder="Ví dụ: Nguyễn Văn A" maxlength="80" required />
             </div>
-            <div class="care-form-group">
+            <div class="care-form-group" id="userPetOwnerPhoneGroup">
               <label for="userPetOwnerPhone">Số điện thoại chủ nuôi <span class="required-mark">*</span></label>
               <input type="tel" id="userPetOwnerPhone" name="ownerPhone" placeholder="Ví dụ: 0901234567" maxlength="20" required />
             </div>
@@ -174,7 +174,7 @@
                     <p id="userShipAddressEmpty" class="user-ship-address-empty" hidden>
                       Tài khoản chưa có địa chỉ đã lưu. Hãy thêm địa chỉ trước khi đặt ship.
                     </p>
-                    <a href="/addresses.html" class="btn btn-outline address-link">Quản lý / thêm địa chỉ</a>
+                    <a href="/addresses.html?return=userSchedule" class="btn btn-outline address-link" id="userScheduleAddressLink">Quản lý / thêm địa chỉ</a>
                   </div>
                   <div class="care-form-group user-form-full user-ship-summary" id="userShipQuoteBox">
                     <div class="user-ship-summary-inner">

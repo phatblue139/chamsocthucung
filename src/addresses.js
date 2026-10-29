@@ -109,6 +109,9 @@ function initAddressManager(user) {
     populateWardOptions();
     showMessage(editingId ? "Đã cập nhật địa chỉ." : "Đã thêm địa chỉ mới.", "success");
     renderAddresses();
+    if (!editingId && new URLSearchParams(location.search).get("return") === "userSchedule") {
+      location.assign("/user.html#userScheduleForm");
+    }
   });
 
   list?.addEventListener("click", (event) => {

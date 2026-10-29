@@ -361,7 +361,7 @@ function markPaymentReceived(scheduleId) {
     showMessage("Không tìm thấy lịch cần cập nhật. Hãy tải lại trang.", "error");
     return;
   }
-  if (getPaymentStatus(target) !== PAYMENT_STATUS_PENDING) {
+  if (getPaymentStatus(currentTarget) !== PAYMENT_STATUS_PENDING) {
     showMessage("Giao dịch đã được cập nhật ở nơi khác. Hãy tải lại danh sách trước khi xác nhận.", "error");
     render();
     return;
@@ -369,14 +369,7 @@ function markPaymentReceived(scheduleId) {
   const amount = formatCurrency(getPaymentAmount(currentTarget)) || "0đ";
   if (!confirm(`Xác nhận đã thực nhận ${amount} cho lịch #${scheduleId}? Chỉ tiếp tục nếu tiền đã được nhận thực tế.`)) return;
 
-  const schedules = loadSchedules();
-  const target = schedules.find((schedule) => String(schedule.id) === String(scheduleId));
-  if (!target) {
-    showMessage("Không tìm thấy lịch cần cập nhật. Hãy tải lại trang.", "error");
-    return;
-  }
-
-  const updatedSchedules = schedules.map((schedule) =>
+  const updatedSchedules = currentSchedules.map((schedule) =>
     String(schedule.id) === String(scheduleId) ? confirmPaymentReceived(schedule) : schedule,
   );
   if (!saveSchedules(updatedSchedules)) {
