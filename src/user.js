@@ -34,10 +34,15 @@ import {
   isKnownCareType,
   loadSchedules,
   resolveScheduleStatus,
-  saveSchedules,
+    saveSchedules,
 } from "./careScheduleData.js";
 import {
+  getQrPaymentInfo,
+  buildQrPaymentUrl,
+} from "./paymentQr.js";
+import {
   canReviewSchedule,
+
   createReviewRecord,
   getNextReviewId,
   getReviewForSchedule,
@@ -833,6 +838,7 @@ function initUserView(user) {
   });
   qrDialog?.addEventListener("click", (event) => {
     if (event.target === qrDialog) {
+    
       if (qrDialog.open) qrDialog.close();
       else qrDialog.removeAttribute("open");
     }
@@ -1176,7 +1182,7 @@ function initUserView(user) {
 
   function commitSchedule({ schedule, editingSchedule, latestSchedules }) {
     let shippingRecord = null;
-    if (editingSchedule) {
+      if (editingSchedule) {
       const methodChanged = editingSchedule.payment?.method !== schedule.payment.method;
       schedule.payment.amount = schedule.price;
       if (methodChanged) {
@@ -1206,19 +1212,18 @@ function initUserView(user) {
         };
       }
       schedule.payment.amount = schedule.price + (shippingRecord?.totalFee || 0);
-
-      if (schedule.payment.method === "bank-transfer") {
-        schedule.payment.status = "Chưa thanh toán";
-      } else {
-        schedule.payment.status = "Đã thanh toán";
-      }
+      // Đảm bảo trạng thái ban đầu luôn là Chưa thanh toán
+      schedule.payment.status = "Chưa thanh toán";
     }
 
+    // Tải lại dữ liệu mới nhất để tránh ghi đè nếu có thay đổi từ tab khác
+    const currentSchedulesFromStorage = loadSchedules();
     const nextSchedules = editingSchedule
-      ? latestSchedules.map((item) =>
+      ? currentSchedulesFromStorage.map((item) =>
         Number(item.id) === Number(editingSchedule.id) ? schedule : item,
       )
-      : [...latestSchedules, schedule];
+      : [...currentSchedulesFromStorage, schedule];
+
     if (!saveSchedules(nextSchedules)) {
       showMessage("Không thể lưu lịch. Vui lòng thử lại.", "error");
       setSubmittingState(false);
@@ -1999,10 +2004,22 @@ function initUserView(user) {
     return row;
   }
 
-  function createQrPaymentBlock(schedule, statusValue) {
+    function createQrPaymentBlock(schedule, statusValue) {
     if (statusValue === SCHEDULE_STATUS.CANCELLED) return null;
+    if (schedule.payment?.method === "at-center") {
+       const section = document.createElement("section");
+       section.className = "user-schedule-qr user-payment-at-center-info";
+       const heading = document.createElement("strong");
+       heading.textContent = "Thanh toán tại trung tâm";
+       const note = document.createElement("p");
+       note.className = "user-schedule-qr-note";
+       note.textContent = "Bạn đã chọn thanh toán trực tiếp. Vui lòng thanh toán khi đưa hoặc đón bé tại NEKO.";
+       section.append(heading, note);
+       return section;
+    }
 
     const section = document.createElement("section");
+
     section.className = "user-schedule-qr";
 
     const heading = document.createElement("strong");
