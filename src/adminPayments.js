@@ -1,4 +1,9 @@
-import { formatCurrency, loadSchedules, saveSchedules } from "./careScheduleData.js";
+import {
+  formatCurrency,
+  loadSchedules,
+  saveSchedules,
+  SCHEDULE_STORAGE_KEY,
+} from "./careScheduleData.js";
 import { logout } from "./auth.js";
 import {
   confirmPaymentReceived,
@@ -70,13 +75,18 @@ dateFieldInput?.addEventListener("change", render);
 dateFromInput?.addEventListener("change", render);
 dateToInput?.addEventListener("change", render);
 exportButton?.addEventListener("click", exportPayments);
-window.addEventListener("storage", () => {
+window.addEventListener("storage", (event) => {
+  if (event.key && event.key !== SCHEDULE_STORAGE_KEY) return;
   render();
   if (detailsDialog.open && detailsDialog.dataset.scheduleId) {
     const schedule = loadSchedules().find((item) => String(item.id) === detailsDialog.dataset.scheduleId);
     if (schedule) renderPaymentDetails(schedule);
     else detailsDialog.close();
   }
+});
+window.addEventListener("focus", render);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") render();
 });
 detailsCloseButton.addEventListener("click", () => detailsDialog.close());
 detailsPrintButton.addEventListener("click", () => window.print());
@@ -182,16 +192,6 @@ function createPaymentRow(schedule) {
   }
   row.appendChild(confirmerCell);
   row.appendChild(actionCell);
-  if (showDetails) {
-    const detailRow = document.createElement("tr");
-    const detailCell = document.createElement("td");
-    detailCell.colSpan = 7;
-    detailCell.style.fontSize = "13px";
-    detailCell.style.color = "var(--muted)";
-    detailCell.textContent = `Người dùng: ${schedule.customerUsername || "-"} | SĐT: ${schedule.customerPhone || "-"} | Ngày: ${schedule.date || "-"} ${schedule.time || ""}${bankInfo}`;
-    detailRow.appendChild(detailCell);
-    row.insertAdjacentElement("afterend", detailRow);
-  }
   return row;
 }
 

@@ -42,6 +42,7 @@ import {
   getPetSittingCageUsage,
   getPetSittingPeakLoad,
   getScheduleConflictType,
+  getScheduleCompletionBlocker,
   getSchedulePetSittingIds,
   hasScheduleConflict,
   mergeScheduleUpdate,
@@ -73,6 +74,7 @@ import {
   PAYMENT_STATUS_PENDING,
   PAYMENT_STATUS_REFUNDED,
   PAYMENT_STATUS_UNPAID,
+  prepareSchedulePayment,
 } from "../src/paymentAdminData.js";
 import {
   canReviewSchedule,
@@ -740,6 +742,38 @@ test("payment breakdown separates service, shipping, and additional fees", () =>
     additionalFees: 10000,
     totalAmount: 135000,
   });
+});
+
+test("schedule completion requires confirmed payment and completed shipping when requested", () => {
+  const unpaid = { payment: { status: PAYMENT_STATUS_PENDING } };
+  assert.match(getScheduleCompletionBlocker(unpaid), /xác nhận đã thu tiền/);
+
+  const paid = { payment: { status: PAYMENT_STATUS_PAID } };
+  assert.equal(getScheduleCompletionBlocker(paid), "");
+
+  const shippingSchedule = { ...paid, shipping: { id: 8 } };
+  assert.match(getScheduleCompletionBlocker(shippingSchedule), /đơn vận chuyển liên kết/);
+  assert.match(getScheduleCompletionBlocker(shippingSchedule, { status: "Đã xác nhận" }), /hoàn tất đơn vận chuyển/);
+  assert.equal(getScheduleCompletionBlocker(shippingSchedule, { status: "Hoàn thành" }), "");
+});
+
+test("confirmed schedules have a payment record that is visible to admin payments", () => {
+  const schedule = {
+    id: 41,
+    price: 100000,
+    shipping: { totalFee: 25000 },
+    payment: { method: "bank-transfer", status: "Chưa thanh toán" },
+  };
+  const prepared = prepareSchedulePayment(schedule);
+  assert.equal(prepared.payment.method, "bank-transfer");
+  assert.equal(getPaymentStatus(prepared), PAYMENT_STATUS_PENDING);
+  assert.equal(prepared.payment.amount, 125000);
+  assert.equal(schedule.payment.amount, undefined);
+
+  const adminSchedule = prepareSchedulePayment({ id: 42, price: 50000 });
+  assert.equal(adminSchedule.payment.method, "at-center");
+  assert.equal(adminSchedule.payment.status, PAYMENT_STATUS_PENDING);
+  assert.equal(adminSchedule.payment.amount, 50000);
 });
 
 test("payment filters apply method, date range, status, and search", () => {
