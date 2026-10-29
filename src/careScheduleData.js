@@ -8,6 +8,11 @@ import {
   PET_SITTING_HOURLY_RATE,
   SERVICE_CATALOG,
 } from "./serviceCatalogData.js";
+import {
+  getPaymentStatus,
+  PAYMENT_STATUS_PAID,
+} from "./paymentAdminData.js";
+import { SHIPMENT_STATUS } from "./shippingData.js";
 
 export {
   CARE_TYPE_PET_SITTING,
@@ -227,6 +232,18 @@ export function resolveScheduleStatus(schedule) {
   const customer = String(item.customerUsername || item.ownerUsername || "").trim();
 
   return normalizeStatus(item.status, item.source || (customer ? "user" : "admin"));
+}
+
+export function getScheduleCompletionBlocker(schedule, shipment = null) {
+  if (getPaymentStatus(schedule) !== PAYMENT_STATUS_PAID) {
+    return "Cần xác nhận đã thu tiền trước khi hoàn thành.";
+  }
+  if (!schedule?.shipping) return "";
+  if (!shipment) return "Cần có đơn vận chuyển liên kết trước khi hoàn thành.";
+  if (shipment.status !== SHIPMENT_STATUS.COMPLETED) {
+    return "Cần xác nhận và hoàn tất đơn vận chuyển trước khi hoàn thành lịch.";
+  }
+  return "";
 }
 
 export function getScheduleStatusClass(status) {

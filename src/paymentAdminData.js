@@ -31,6 +31,21 @@ export function getPaymentStatus(schedule) {
   return PAYMENT_STATUS_PENDING;
 }
 
+export function prepareSchedulePayment(schedule) {
+  const existingPayment = schedule?.payment && typeof schedule.payment === "object"
+    ? schedule.payment
+    : {};
+  return {
+    ...schedule,
+    payment: {
+      ...existingPayment,
+      method: existingPayment.method || "at-center",
+      status: existingPayment.status || PAYMENT_STATUS_PENDING,
+      amount: getPaymentAmount(schedule),
+    },
+  };
+}
+
 export function getPaymentStatusClass(status) {
   switch (status) {
     case PAYMENT_STATUS_PAID: return "is-paid";

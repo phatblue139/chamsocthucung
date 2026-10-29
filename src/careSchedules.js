@@ -8,6 +8,7 @@ import {
     getNextScheduleId,
     getPetSittingCageType,
     getScheduleStatusClass,
+    getScheduleCompletionBlocker,
     mergeScheduleUpdate,
     getTimeOptions,
     isKnownCareType,
@@ -26,6 +27,14 @@ import {
     saveShipmentStorage,
     updateShipmentStatus,
 } from "./shippingData.js";
+import {
+    confirmPaymentReceived,
+    getPaymentAmount,
+    getPaymentStatus,
+    getPaymentStatusClass,
+    PAYMENT_STATUS_PENDING,
+    prepareSchedulePayment,
+} from "./paymentAdminData.js";
 
 if (!isAdminLoggedIn()) {
     location.replace("/");
@@ -101,6 +110,8 @@ careList?.addEventListener("click", (event) => {
         confirmSchedule(id);
     } else if (button.dataset.action === "complete") {
         completeSchedule(id);
+    } else if (button.dataset.action === "payment-confirm") {
+        confirmPayment(id);
     } else if (button.dataset.action === "cancel") {
         cancelSchedule(id);
     } else if (button.dataset.action === "delete") {
@@ -259,6 +270,7 @@ function render() {
         deletedToggle.setAttribute("aria-pressed", String(showDeleted));
     }
     renderStats();
+    const shipments = getShipmentStorage();
 
     rows.forEach((schedule) => {
         const row = document.createElement("tr");
@@ -278,9 +290,11 @@ function render() {
             createCell(schedule.petName),
             createCareTypeCell(schedule),
             createCell(priceText),
+            createPaymentCell(schedule),
             createCell(schedule.endDate ? `${schedule.date} → ${schedule.endDate}` : schedule.date),
             createCell(schedule.endDate ? `${schedule.time} → ${schedule.endTime || ""}` : schedule.time),
             createCell(schedule.note),
+            createShipmentCell(schedule, shipments),
             createStatusCell(status),
         );
 
@@ -319,8 +333,16 @@ function render() {
             completeButton.dataset.action = "complete";
             completeButton.dataset.id = String(schedule.id);
             completeButton.textContent = "✔ Hoàn thành";
-            completeButton.title = "Đánh dấu lịch đã hoàn thành";
+            const completionBlocker = getCompletionBlocker(schedule, shipments);
+            completeButton.disabled = Boolean(completionBlocker);
+            completeButton.title = completionBlocker || "Đánh dấu lịch đã hoàn thành";
             completeButton.hidden = status !== STATUS_CONFIRMED;
+            if (completionBlocker && status === STATUS_CONFIRMED) {
+                const hint = document.createElement("small");
+                hint.className = "care-completion-hint";
+                hint.textContent = completionBlocker;
+                actionGroup.appendChild(hint);
+            }
 
             const cancelButton = document.createElement("button");
             cancelButton.type = "button";
@@ -347,6 +369,81 @@ function render() {
     emptyMsg.textContent = showDeleted ? "Thùng rác chưa có lịch nào." : "Không có lịch chăm sóc nào.";
     emptyMsg.hidden = rows.length > 0;
     renderShipments();
+}
+
+function createPaymentCell(schedule) {
+    const cell = document.createElement("td");
+    cell.className = "care-payment-cell";
+    const method = document.createElement("span");
+    method.textContent = getPaymentMethodLabel(schedule.payment?.method);
+    const amount = document.createElement("strong");
+    amount.textContent = formatCurrency(getPaymentAmount(schedule)) || "0đ";
+    const status = getPaymentStatus(schedule);
+    const badge = document.createElement("span");
+    badge.className = `payment-status-badge ${getPaymentStatusClass(status)}`;
+    badge.textContent = status;
+    cell.append(method, amount, badge);
+    if (status === PAYMENT_STATUS_PENDING) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "care-btn care-btn-add";
+        button.dataset.action = "payment-confirm";
+        button.dataset.id = String(schedule.id);
+        button.textContent = "Xác nhận đã thu";
+        cell.appendChild(button);
+    }
+    return cell;
+}
+
+function createShipmentCell(schedule, shipments) {
+    const cell = document.createElement("td");
+    cell.className = "care-shipment-cell";
+    if (!schedule.shipping) {
+        cell.textContent = "Không sử dụng";
+        return cell;
+    }
+
+    const shipment = getLinkedShipment(schedule, shipments);
+    if (!shipment) {
+        cell.textContent = "Không tìm thấy đơn vận chuyển";
+        return cell;
+    }
+
+    const status = shipment.status || SHIPMENT_STATUS.PENDING;
+    const badge = document.createElement("span");
+    badge.className = "care-status-badge";
+    badge.textContent = status;
+    cell.appendChild(badge);
+    if (status === SHIPMENT_STATUS.PENDING) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "care-btn-confirm";
+        button.dataset.action = "shipment-status";
+        button.dataset.shipmentId = String(shipment.id);
+        button.dataset.status = SHIPMENT_STATUS.CONFIRMED;
+        button.textContent = "Xác nhận ship";
+        cell.appendChild(button);
+    }
+    return cell;
+}
+
+function getLinkedShipment(schedule, shipments = getShipmentStorage()) {
+    return shipments.find((shipment) =>
+        (String(shipment.id) === String(schedule.shipping?.id) &&
+            String(shipment.customerUsername) === String(schedule.customerUsername || schedule.ownerUsername)) ||
+        String(shipment.scheduleId) === String(schedule.id),
+    );
+}
+
+function getCompletionBlocker(schedule, shipments = getShipmentStorage()) {
+    return getScheduleCompletionBlocker(schedule, getLinkedShipment(schedule, shipments));
+}
+
+function getPaymentMethodLabel(method) {
+    if (method === "wallet") return "Ví NEKO";
+    if (method === "bank-transfer") return "Chuyển khoản";
+    if (method === "at-center") return "Tại trung tâm";
+    return method ? String(method) : "—";
 }
 
 function renderShipments() {
@@ -639,27 +736,26 @@ function setStatus(id, nextStatus, extra = {}) {
         showMessage("Chuyển trạng thái lịch không hợp lệ.", "error");
         return false;
     }
+    if (nextStatus === STATUS_COMPLETED) {
+        const completionBlocker = getCompletionBlocker(schedule);
+        if (completionBlocker) {
+            showMessage(completionBlocker, "error");
+            return false;
+        }
+    }
 
     let shipmentsBefore = null;
     let shipmentsAfter = null;
     if (schedule.shipping) {
         shipmentsBefore = getShipmentStorage();
-        const linkedShipment = shipmentsBefore.find((item) =>
-            String(item.id) === String(schedule.shipping.id) &&
-            String(item.customerUsername) === String(schedule.customerUsername || schedule.ownerUsername),
-        );
+        const linkedShipment = getLinkedShipment(schedule, shipmentsBefore);
         if (!linkedShipment) {
             showMessage("Không tìm thấy đơn vận chuyển liên kết. Lịch chưa được cập nhật.", "error");
             return false;
         }
 
         let updatedShipment = linkedShipment;
-        if (nextStatus === STATUS_CONFIRMED && linkedShipment.status === SHIPMENT_STATUS.PENDING) {
-            updatedShipment = updateShipmentStatus(linkedShipment, SHIPMENT_STATUS.CONFIRMED, "admin");
-        } else if (nextStatus === STATUS_CONFIRMED && linkedShipment.status !== SHIPMENT_STATUS.CONFIRMED) {
-            showMessage("Trạng thái vận chuyển không phù hợp để xác nhận lịch.", "error");
-            return false;
-        } else if (nextStatus === STATUS_CANCELLED && linkedShipment.status !== SHIPMENT_STATUS.CANCELLED) {
+        if (nextStatus === STATUS_CANCELLED && linkedShipment.status !== SHIPMENT_STATUS.CANCELLED) {
             updatedShipment = updateShipmentStatus(linkedShipment, SHIPMENT_STATUS.CANCELLED, "admin");
         } else if (nextStatus === STATUS_COMPLETED && linkedShipment.status !== SHIPMENT_STATUS.COMPLETED) {
             showMessage("Hãy hoàn tất đơn vận chuyển trước khi hoàn thành lịch chăm sóc.", "error");
@@ -706,7 +802,10 @@ function confirmSchedule(id) {
         return;
     }
 
-    if (!setStatus(id, STATUS_CONFIRMED, { confirmedAt: new Date().toISOString() })) return;
+    if (!setStatus(id, STATUS_CONFIRMED, {
+        confirmedAt: new Date().toISOString(),
+        payment: prepareSchedulePayment(schedule).payment,
+    })) return;
 
     showMessage(`Đã xác nhận lịch #${id}. Người dùng sẽ thấy trạng thái mới.`, "success");
     render();
@@ -721,11 +820,45 @@ function completeSchedule(id) {
         showMessage("Chỉ lịch đã xác nhận mới có thể hoàn thành.", "error");
         return;
     }
+    const completionBlocker = getCompletionBlocker(schedule);
+    if (completionBlocker) {
+        showMessage(completionBlocker, "error");
+        render();
+        return;
+    }
 
     const saved = setStatus(id, STATUS_COMPLETED, { completedAt: new Date().toISOString() });
     if (!saved) return;
 
     showMessage(`Đã đánh dấu lịch #${id} hoàn thành.`, "success");
+    render();
+}
+
+function confirmPayment(id) {
+    const currentSchedules = loadSchedules();
+    const target = currentSchedules.find((schedule) => Number(schedule.id) === id);
+    if (!target) {
+        showMessage("Không tìm thấy lịch cần xác nhận thanh toán. Hãy tải lại danh sách.", "error");
+        return;
+    }
+    if (getPaymentStatus(target) !== PAYMENT_STATUS_PENDING) {
+        showMessage("Thanh toán đã được cập nhật ở nơi khác. Hãy tải lại danh sách.", "error");
+        schedules = currentSchedules;
+        render();
+        return;
+    }
+
+    const amount = formatCurrency(getPaymentAmount(target)) || "0đ";
+    if (!confirm(`Xác nhận đã thực nhận ${amount} cho lịch #${id}? Chỉ xác nhận sau khi đã nhận tiền thực tế.`)) return;
+    const nextSchedules = currentSchedules.map((schedule) =>
+        Number(schedule.id) === id ? confirmPaymentReceived(schedule) : schedule,
+    );
+    if (!saveSchedules(nextSchedules)) {
+        showMessage("Không thể lưu xác nhận thanh toán. Vui lòng thử lại.", "error");
+        return;
+    }
+    schedules = nextSchedules;
+    showMessage(`Đã xác nhận thanh toán cho lịch #${id}.`, "success");
     render();
 }
 
