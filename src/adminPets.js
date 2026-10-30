@@ -21,8 +21,6 @@ if (!isAdminLoggedIn()) {
   const nameInput = document.getElementById("petName");
   const speciesInput = document.getElementById("petSpecies");
   const breedInput = document.getElementById("petBreed");
-  const ageInput = document.getElementById("petAge");
-  const weightInput = document.getElementById("petWeight");
   const ownerInput = document.getElementById("petOwner");
   const statusInput = document.getElementById("petStatus");
   const avatarInput = document.getElementById("petAvatar");
@@ -61,11 +59,10 @@ if (!isAdminLoggedIn()) {
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const validationMessage = validatePetFormData(nameInput.value, ageInput.value);
+    const validationMessage = validatePetFormData(nameInput.value);
     if (validationMessage) {
       showMessage(validationMessage, "error");
-      if (!String(nameInput.value || "").trim()) nameInput.focus();
-      else ageInput.focus();
+      nameInput.focus();
       return;
     }
     if (!form.reportValidity()) return;
@@ -102,8 +99,6 @@ if (!isAdminLoggedIn()) {
       name: nameInput.value.trim(),
       species: speciesInput.value,
       breed: breedInput.value.trim(),
-      age: Number(ageInput.value),
-      weightKg: weightInput.value === "" ? "" : Number(weightInput.value),
       owner: ownerInput.value.trim(),
       status: statusInput.value,
       avatar: avatarData,
@@ -145,8 +140,6 @@ if (!isAdminLoggedIn()) {
       nameInput.value = pet.name || "";
       speciesInput.value = pet.species || "Chó";
       breedInput.value = pet.breed || "";
-      ageInput.value = String(pet.age ?? 0);
-      weightInput.value = pet.weightKg === "" || pet.weightKg === undefined ? "" : String(pet.weightKg);
       ownerInput.value = pet.owner || "";
       statusInput.value = pet.status || "Chờ lịch";
       createdAtInput.value = formatPetDate(pet.createdAt);
@@ -371,11 +364,7 @@ if (!isAdminLoggedIn()) {
     const schedulesSection = createDetailsSection(`Lịch chăm sóc liên quan (${relatedSchedules.length})`);
     schedulesSection.append(createScheduleList(relatedSchedules, pet));
 
-    const serviceHistory = relatedSchedules.filter((schedule) => resolveScheduleStatus(schedule) === "Đã hoàn thành");
-    const historySection = createDetailsSection(`Lịch sử dịch vụ đã sử dụng (${serviceHistory.length})`);
-    historySection.append(createScheduleList(serviceHistory, pet, true));
-
-    detailsContent.append(profileSection, ownerSection, schedulesSection, historySection);
+    detailsContent.append(profileSection, ownerSection, schedulesSection);
   }
 
   function createDetailsSection(title) {
@@ -400,13 +389,13 @@ if (!isAdminLoggedIn()) {
     return list;
   }
 
-  function createScheduleList(records, pet, isHistory = false) {
+  function createScheduleList(records, pet) {
     const list = document.createElement("div");
     list.className = "admin-pet-detail-schedules";
     if (!records.length) {
       const emptyText = document.createElement("p");
       emptyText.className = "admin-pet-detail-empty";
-      emptyText.textContent = isHistory ? "Chưa có dịch vụ hoàn thành." : "Chưa có lịch chăm sóc.";
+      emptyText.textContent = "Chưa có lịch chăm sóc.";
       list.append(emptyText);
       return list;
     }
@@ -479,8 +468,6 @@ if (!isAdminLoggedIn()) {
         nameCell,
         createCell(pet.species),
         createCell(pet.breed),
-        createCell(pet.age),
-        createCell(pet.weightKg),
         createCell(pet.owner),
         createCell(pet.status),
         createCell(formatPetDate(pet.createdAt)),

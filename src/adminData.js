@@ -93,6 +93,7 @@ export function getUnresolvedPetSchedules(pet, schedules) {
 
 export function validatePetFormData(name, age) {
   if (!String(name || "").trim()) return "Vui lòng nhập tên thú cưng.";
+  if (age === undefined) return "";
   if (String(age ?? "").trim() === "") return "Vui lòng nhập tuổi thú cưng.";
   const numericAge = Number(age);
   if (!Number.isFinite(numericAge)) return "Tuổi thú cưng phải là một số hợp lệ.";

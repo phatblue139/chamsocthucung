@@ -18,21 +18,13 @@ import {
 } from "./careScheduleData.js";
 import { isAdminLoggedIn, logout } from "./auth.js";
 import {
-    ADDRESS_STORAGE_KEY,
     SHIPMENT_STATUS,
     SHIPMENT_STORAGE_KEY,
-    getAddressStorage,
-    getShipmentNextStatuses,
     getShipmentStorage,
     saveShipmentStorage,
     updateShipmentStatus,
 } from "./shippingData.js";
 import {
-    confirmPaymentReceived,
-    getPaymentAmount,
-    getPaymentStatus,
-    getPaymentStatusClass,
-    PAYMENT_STATUS_PENDING,
     prepareSchedulePayment,
 } from "./paymentAdminData.js";
 
@@ -61,8 +53,6 @@ const timeInput = document.getElementById("time");
 const statusInput = document.getElementById("status");
 const noteInput = document.getElementById("note");
 const careStats = document.getElementById("careStats");
-const shipmentList = document.getElementById("shipmentList");
-const shipmentEmpty = document.getElementById("shipmentEmpty");
 let schedules = loadSchedules();
 let searchKeyword = "";
 let statusFilter = "";
@@ -110,16 +100,12 @@ careList?.addEventListener("click", (event) => {
         confirmSchedule(id);
     } else if (button.dataset.action === "complete") {
         completeSchedule(id);
-    } else if (button.dataset.action === "payment-confirm") {
-        confirmPayment(id);
     } else if (button.dataset.action === "cancel") {
         cancelSchedule(id);
     } else if (button.dataset.action === "delete") {
         deleteSchedule(id);
     } else if (button.dataset.action === "restore") {
         restoreSchedule(id);
-    } else if (button.dataset.action === "shipment-status") {
-        setAdminShipmentStatus(button.dataset.shipmentId, button.dataset.status);
     }
 });
 
@@ -156,7 +142,7 @@ window.addEventListener("storage", (event) => {
         schedules = loadSchedules();
         render();
     }
-    if (event.key === SHIPMENT_STORAGE_KEY || event.key === ADDRESS_STORAGE_KEY) renderShipments();
+    if (event.key === SHIPMENT_STORAGE_KEY) render();
 });
 
 render();
@@ -189,6 +175,17 @@ function getFiltered() {
             getScheduleStatus(schedule),
         ];
         return values.some((value) => String(value || "").toLowerCase().includes(keyword));
+    }).sort((first, second) => {
+        const firstCreatedAt = Date.parse(first.createdAt || "");
+        const secondCreatedAt = Date.parse(second.createdAt || "");
+        const hasFirstDate = Number.isFinite(firstCreatedAt);
+        const hasSecondDate = Number.isFinite(secondCreatedAt);
+
+        if (hasFirstDate && hasSecondDate && firstCreatedAt !== secondCreatedAt) {
+            return secondCreatedAt - firstCreatedAt;
+        }
+        if (hasFirstDate !== hasSecondDate) return hasFirstDate ? -1 : 1;
+        return Number(second.id) - Number(first.id);
     });
 }
 
@@ -271,7 +268,6 @@ function render() {
     }
     renderStats();
     const shipments = getShipmentStorage();
-
     rows.forEach((schedule) => {
         const row = document.createElement("tr");
         const customer = schedule.customerName || schedule.customerUsername || "Dữ liệu mẫu";
@@ -290,11 +286,9 @@ function render() {
             createCell(schedule.petName),
             createCareTypeCell(schedule),
             createCell(priceText),
-            createPaymentCell(schedule),
             createCell(schedule.endDate ? `${schedule.date} → ${schedule.endDate}` : schedule.date),
             createCell(schedule.endDate ? `${schedule.time} → ${schedule.endTime || ""}` : schedule.time),
             createCell(schedule.note),
-            createShipmentCell(schedule, shipments),
             createStatusCell(status),
         );
 
@@ -368,63 +362,6 @@ function render() {
 
     emptyMsg.textContent = showDeleted ? "Thùng rác chưa có lịch nào." : "Không có lịch chăm sóc nào.";
     emptyMsg.hidden = rows.length > 0;
-    renderShipments();
-}
-
-function createPaymentCell(schedule) {
-    const cell = document.createElement("td");
-    cell.className = "care-payment-cell";
-    const method = document.createElement("span");
-    method.textContent = getPaymentMethodLabel(schedule.payment?.method);
-    const amount = document.createElement("strong");
-    amount.textContent = formatCurrency(getPaymentAmount(schedule)) || "0đ";
-    const status = getPaymentStatus(schedule);
-    const badge = document.createElement("span");
-    badge.className = `payment-status-badge ${getPaymentStatusClass(status)}`;
-    badge.textContent = status;
-    cell.append(method, amount, badge);
-    if (status === PAYMENT_STATUS_PENDING) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "care-btn care-btn-add";
-        button.dataset.action = "payment-confirm";
-        button.dataset.id = String(schedule.id);
-        button.textContent = "Xác nhận đã thu";
-        cell.appendChild(button);
-    }
-    return cell;
-}
-
-function createShipmentCell(schedule, shipments) {
-    const cell = document.createElement("td");
-    cell.className = "care-shipment-cell";
-    if (!schedule.shipping) {
-        cell.textContent = "Không sử dụng";
-        return cell;
-    }
-
-    const shipment = getLinkedShipment(schedule, shipments);
-    if (!shipment) {
-        cell.textContent = "Không tìm thấy đơn vận chuyển";
-        return cell;
-    }
-
-    const status = shipment.status || SHIPMENT_STATUS.PENDING;
-    const badge = document.createElement("span");
-    badge.className = "care-status-badge";
-    badge.textContent = status;
-    cell.appendChild(badge);
-    if (status === SHIPMENT_STATUS.PENDING) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "care-btn-confirm";
-        button.dataset.action = "shipment-status";
-        button.dataset.shipmentId = String(shipment.id);
-        button.dataset.status = SHIPMENT_STATUS.CONFIRMED;
-        button.textContent = "Xác nhận ship";
-        cell.appendChild(button);
-    }
-    return cell;
 }
 
 function getLinkedShipment(schedule, shipments = getShipmentStorage()) {
@@ -437,134 +374,6 @@ function getLinkedShipment(schedule, shipments = getShipmentStorage()) {
 
 function getCompletionBlocker(schedule, shipments = getShipmentStorage()) {
     return getScheduleCompletionBlocker(schedule, getLinkedShipment(schedule, shipments));
-}
-
-function getPaymentMethodLabel(method) {
-    if (method === "wallet") return "Ví NEKO";
-    if (method === "bank-transfer") return "Chuyển khoản";
-    if (method === "at-center") return "Tại trung tâm";
-    return method ? String(method) : "—";
-}
-
-function renderShipments() {
-    if (!shipmentList || !shipmentEmpty) return;
-    const shipments = getShipmentStorage();
-    const addresses = getAddressStorage();
-    shipmentList.replaceChildren();
-
-    shipments.forEach((shipment) => {
-        const row = document.createElement("tr");
-        const customer = `${shipment.customerName || shipment.customerUsername || "Khách hàng"}${shipment.customerPhone ? ` · ${shipment.customerPhone}` : ""}`;
-        const linkedSchedule = schedules.find((schedule) =>
-            String(schedule.id) === String(shipment.scheduleId) ||
-            String(schedule.shipping?.id) === String(shipment.id),
-        );
-        const pickup = addresses.find((address) =>
-            String(address.id) === String(shipment.pickupAddressId) &&
-            String(address.ownerUsername) === String(shipment.customerUsername),
-        );
-        const returnAddress = addresses.find((address) =>
-            String(address.id) === String(shipment.returnAddressId) &&
-            String(address.ownerUsername) === String(shipment.customerUsername),
-        );
-        const routeParts = [
-            pickup ? [pickup.houseNumber, pickup.district, pickup.city].filter(Boolean).join(", ") : "Không tìm thấy địa chỉ đón",
-            shipment.centerName || "Trung tâm",
-        ];
-        if (shipment.transportType === "round-trip") {
-            routeParts.push(returnAddress
-                ? [returnAddress.houseNumber, returnAddress.district, returnAddress.city].filter(Boolean).join(", ")
-                : "Không tìm thấy địa chỉ trả");
-        }
-        const route = routeParts.join(" → ");
-        const petLabel = Array.isArray(shipment.petNames) && shipment.petNames.length
-            ? shipment.petNames.join(", ")
-            : shipment.petName || "Thú cưng";
-        const fields = [
-            `#${shipment.id} · lịch #${shipment.scheduleId || linkedSchedule?.id || "—"}`,
-            customer,
-            petLabel,
-            route,
-            `${shipment.distanceKm ?? "—"} km (mô phỏng) · ${formatCurrency(shipment.totalFee) || "—"}`,
-        ];
-        fields.forEach((value) => {
-            const cell = document.createElement("td");
-            cell.textContent = value;
-            row.appendChild(cell);
-        });
-
-        const statusCell = document.createElement("td");
-        const badge = document.createElement("span");
-        badge.className = "care-status-badge";
-        badge.textContent = shipment.status || SHIPMENT_STATUS.PENDING;
-        statusCell.appendChild(badge);
-        (shipment.statusHistory || []).forEach((entry) => {
-            const history = document.createElement("small");
-            history.className = "shipment-history-entry";
-            history.textContent = `${entry.status} · ${formatDateTime(entry.changedAt)}`;
-            statusCell.appendChild(history);
-        });
-        row.appendChild(statusCell);
-
-        const actions = document.createElement("td");
-        getShipmentNextStatuses(shipment.status || SHIPMENT_STATUS.PENDING).forEach((status) => {
-            const button = document.createElement("button");
-            button.type = "button";
-            button.className = status === SHIPMENT_STATUS.CANCELLED ? "care-btn-delete" : "care-btn-confirm";
-            button.dataset.action = "shipment-status";
-            button.dataset.shipmentId = String(shipment.id);
-            button.dataset.status = status;
-            button.textContent = status;
-            actions.appendChild(button);
-        });
-        if (!actions.childElementCount) actions.textContent = "Không còn bước tiếp theo";
-        row.appendChild(actions);
-        shipmentList.appendChild(row);
-    });
-
-    shipmentEmpty.hidden = shipments.length > 0;
-}
-
-function setAdminShipmentStatus(shipmentId, nextStatus) {
-    const shipments = getShipmentStorage();
-    const shipment = shipments.find((item) => String(item.id) === String(shipmentId));
-    if (!shipment) {
-        showMessage("Không tìm thấy đơn vận chuyển. Hãy tải lại danh sách.", "error");
-        return;
-    }
-    const updated = updateShipmentStatus(shipment, nextStatus, "admin");
-    if (!updated) {
-        showMessage("Chuyển trạng thái vận chuyển không hợp lệ. Hãy tải lại danh sách.", "error");
-        return;
-    }
-    const nextShipments = shipments.map((item) =>
-        String(item.id) === String(shipmentId) ? updated : item,
-    );
-    if (!saveShipmentStorage(nextShipments)) {
-        showMessage("Không thể lưu trạng thái vận chuyển. Vui lòng thử lại.", "error");
-        return;
-    }
-    if (nextStatus === SHIPMENT_STATUS.CANCELLED) {
-        const linkedSchedule = schedules.find((item) =>
-            String(item.id) === String(shipment.scheduleId) ||
-            String(item.shipping?.id) === String(shipment.id),
-        );
-        if (linkedSchedule && [STATUS_PENDING, STATUS_CONFIRMED].includes(getScheduleStatus(linkedSchedule))) {
-            const nextSchedules = schedules.map((item) =>
-                item === linkedSchedule
-                    ? { ...item, status: STATUS_CANCELLED, cancelledAt: new Date().toISOString() }
-                    : item,
-            );
-            if (!saveSchedules(nextSchedules)) {
-                saveShipmentStorage(shipments);
-                showMessage("Không thể đồng bộ trạng thái lịch. Đơn vận chuyển đã được khôi phục.", "error");
-                return;
-            }
-            schedules = nextSchedules;
-        }
-    }
-    showMessage(`Đã cập nhật vận chuyển #${shipmentId}: ${nextStatus}.`, "success");
-    render();
 }
 
 function createStatusCell(status) {
@@ -831,34 +640,6 @@ function completeSchedule(id) {
     if (!saved) return;
 
     showMessage(`Đã đánh dấu lịch #${id} hoàn thành.`, "success");
-    render();
-}
-
-function confirmPayment(id) {
-    const currentSchedules = loadSchedules();
-    const target = currentSchedules.find((schedule) => Number(schedule.id) === id);
-    if (!target) {
-        showMessage("Không tìm thấy lịch cần xác nhận thanh toán. Hãy tải lại danh sách.", "error");
-        return;
-    }
-    if (getPaymentStatus(target) !== PAYMENT_STATUS_PENDING) {
-        showMessage("Thanh toán đã được cập nhật ở nơi khác. Hãy tải lại danh sách.", "error");
-        schedules = currentSchedules;
-        render();
-        return;
-    }
-
-    const amount = formatCurrency(getPaymentAmount(target)) || "0đ";
-    if (!confirm(`Xác nhận đã thực nhận ${amount} cho lịch #${id}? Chỉ xác nhận sau khi đã nhận tiền thực tế.`)) return;
-    const nextSchedules = currentSchedules.map((schedule) =>
-        Number(schedule.id) === id ? confirmPaymentReceived(schedule) : schedule,
-    );
-    if (!saveSchedules(nextSchedules)) {
-        showMessage("Không thể lưu xác nhận thanh toán. Vui lòng thử lại.", "error");
-        return;
-    }
-    schedules = nextSchedules;
-    showMessage(`Đã xác nhận thanh toán cho lịch #${id}.`, "success");
     render();
 }
 

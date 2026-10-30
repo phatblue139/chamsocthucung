@@ -84,9 +84,6 @@ function initUserView(user) {
   const list = document.getElementById("userScheduleList");
   const empty = document.getElementById("userScheduleEmpty");
   const count = document.getElementById("userScheduleCount");
-  const historyList = document.getElementById("userScheduleHistoryList");
-  const historyEmpty = document.getElementById("userScheduleHistoryEmpty");
-  const historyCount = document.getElementById("userScheduleHistoryCount");
   const petStat = document.getElementById("userStatPetCount");
   const pendingStat = document.getElementById("userStatPendingCount");
   const completedStat = document.getElementById("userStatCompletedCount");
@@ -1868,7 +1865,7 @@ function initUserView(user) {
   });
 
   function render() {
-    if (!list || !empty || !count || !historyList || !historyEmpty || !historyCount) return;
+    if (!list || !empty || !count) return;
 
     const userSchedules = schedules
       .filter((schedule) => !schedule.deletedAt && (schedule.customerUsername || schedule.ownerUsername) === user.username)
@@ -1899,17 +1896,12 @@ function initUserView(user) {
     const activeSchedules = userSchedules
       .filter((schedule) => !historySchedules.includes(schedule))
       .sort(sortByAppointment);
-    historySchedules.sort((first, second) => sortByAppointment(second, first));
 
     list.replaceChildren();
-    historyList.replaceChildren();
     count.textContent = `${activeSchedules.length} lịch`;
     empty.hidden = activeSchedules.length > 0;
-    historyCount.textContent = `${historySchedules.length} lịch`;
-    historyEmpty.hidden = historySchedules.length > 0;
 
     renderScheduleCards(list, activeSchedules);
-    renderScheduleCards(historyList, historySchedules);
 
     function renderScheduleCards(targetList, scheduleItems) {
       scheduleItems.forEach((schedule) => {

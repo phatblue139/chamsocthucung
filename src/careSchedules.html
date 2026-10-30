@@ -24,6 +24,7 @@
             <a href="/src/admin.html">Tổng quan</a>
             <a href="/src/adminPets.html">Thú cưng</a>
             <a class="is-current" href="/src/careSchedules.html" aria-current="page">Lịch chăm sóc</a>
+            <a href="/src/adminShipping.html">Vận chuyển</a>
             <a href="/src/adminServices.html">Dịch vụ</a>
             <a href="/src/adminPayments.html">Thanh toán</a>
             <a href="/src/adminReviews.html">Đánh giá</a>
@@ -35,6 +36,7 @@
           <p class="admin-kicker">NEKO · QUẢN TRỊ</p>
           <h1>Lịch chăm sóc</h1>
           <p id="careCount">0 lịch</p>
+          <a class="care-btn care-btn-confirm" href="/src/adminShipping.html">Mở quản lý vận chuyển</a>
         </section>
 
         <form id="careForm" class="care-form admin-care-form">
@@ -135,11 +137,9 @@
               <col class="col-pet" />
               <col class="col-care-type" />
               <col class="col-price" />
-              <col class="col-payment" />
               <col class="col-date" />
               <col class="col-time" />
               <col class="col-note" />
-              <col class="col-shipping" />
               <col class="col-status" />
               <col class="col-actions" />
             </colgroup>
@@ -151,11 +151,9 @@
                 <th>Thú cưng</th>
                 <th>Loại chăm sóc</th>
                 <th>Giá</th>
-                <th>Thanh toán</th>
                 <th>Ngày</th>
                 <th>Giờ</th>
                 <th>Ghi chú</th>
-                <th>Vận chuyển</th>
                 <th>Trạng thái</th>
                 <th>Thao tác</th>
               </tr>
@@ -166,29 +164,6 @@
 
         <p id="emptyMsg" class="care-empty" hidden>Không có lịch chăm sóc nào.</p>
 
-        <section class="admin-shipping-section" aria-labelledby="shipmentHeading">
-          <header class="admin-section-heading">
-            <h2 id="shipmentHeading">Vận chuyển mô phỏng</h2>
-            <p>Khoảng cách theo khu vực dùng để tham khảo phí trong bản demo, không phải quãng đường thực tế.</p>
-          </header>
-          <div class="care-table-wrapper">
-            <table class="care-table admin-shipping-table">
-              <thead>
-                <tr>
-                  <th>Đơn / lịch</th>
-                  <th>Khách hàng</th>
-                  <th>Thú cưng</th>
-                  <th>Lộ trình</th>
-                  <th>Khoảng cách / phí</th>
-                  <th>Trạng thái / lịch sử</th>
-                  <th>Cập nhật</th>
-                </tr>
-              </thead>
-              <tbody id="shipmentList"></tbody>
-            </table>
-          </div>
-          <p id="shipmentEmpty" class="care-empty">Chưa có đơn vận chuyển nào.</p>
-        </section>
       </div>
     </main>
 

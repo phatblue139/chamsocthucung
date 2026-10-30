@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quản lý vận chuyển | NEKO Admin</title>
+    <link rel="stylesheet" href="./style.css" />
+    <script>
+      try {
+        if (localStorage.getItem("neko:admin") !== "true") location.replace("/");
+      } catch (error) {
+        location.replace("/");
+      }
+    </script>
+  </head>
+  <body>
+    <main class="care-page admin-page">
+      <div class="container">
+        <header class="admin-topbar">
+          <a class="admin-brand" href="/src/admin.html">NEKO <span>ADMIN</span></a>
+          <nav class="admin-nav" aria-label="Quản trị">
+            <a href="/src/admin.html">Tổng quan</a>
+            <a href="/src/adminPets.html">Thú cưng</a>
+            <a href="/src/careSchedules.html">Lịch chăm sóc</a>
+            <a href="/src/adminShipping.html" class="is-current" aria-current="page">Vận chuyển</a>
+            <a href="/src/adminServices.html">Dịch vụ</a>
+            <a href="/src/adminPayments.html">Thanh toán</a>
+            <a href="/src/adminReviews.html">Đánh giá</a>
+          </nav>
+          <button type="button" class="care-btn care-btn-reset" id="logoutBtn">Đăng xuất</button>
+        </header>
+
+        <section class="admin-heading">
+          <p class="admin-kicker">NEKO · QUẢN TRỊ</p>
+          <h1>Quản lý vận chuyển</h1>
+          <p id="shipmentCount">0 đơn vận chuyển</p>
+        </section>
+
+        <p id="shipmentMessage" class="user-form-message" role="status" aria-live="polite"></p>
+        <section class="admin-shipping-section" aria-labelledby="shipmentHeading">
+          <header class="admin-section-heading">
+            <h2 id="shipmentHeading">Danh sách đơn vận chuyển</h2>
+            <p>Thao tác trạng thái vận chuyển độc lập tại đây. Trạng thái đơn ship được theo dõi riêng với trạng thái lịch chăm sóc.</p>
+          </header>
+          <div class="care-table-wrapper">
+            <table class="care-table admin-shipping-table">
+              <thead>
+                <tr>
+                  <th>Đơn vận chuyển</th>
+                  <th>Khách hàng</th>
+                  <th>Thú cưng</th>
+                  <th>Lộ trình</th>
+                  <th>Khoảng cách / phí</th>
+                  <th>Trạng thái / lịch sử</th>
+                  <th>Cập nhật</th>
+                </tr>
+              </thead>
+              <tbody id="shipmentList"></tbody>
+            </table>
+          </div>
+          <p id="shipmentEmpty" class="care-empty" hidden>Chưa có đơn vận chuyển nào.</p>
+        </section>
+      </div>
+    </main>
+    <script type="module" src="./adminShipping.js"></script>
+  </body>
+</html>

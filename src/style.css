@@ -2458,6 +2458,18 @@ body.user-page {
   font-size: 12px;
   font-weight: 700;
 }
+.user-schedule-status-group {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.user-schedule-review-button {
+  padding: 7px 10px;
+  font-size: 13px;
+  white-space: nowrap;
+}
 
 .user-schedule-status.pending {
   background: #fff3d6;
@@ -3224,7 +3236,7 @@ body.user-page {
 .admin-pet-detail-status.is-confirmed { color: #a65d16; }
 .admin-pet-detail-empty { margin: 0; color: var(--muted); }
 .admin-pet-form input[readonly] { background: #f5f7f6; color: var(--muted); }
-.admin-care-table { min-width: 1500px; }
+.admin-care-table { min-width: 1250px; }
 .admin-shipping-section { margin-top: 52px; }
 .admin-section-heading { margin: 0 auto 18px; }
 .admin-section-heading h2 { margin-bottom: 8px; }
@@ -3431,11 +3443,6 @@ body.user-page {
 .admin-care-table td:nth-child(5),
 .admin-care-table td:nth-child(9) { white-space: normal; overflow-wrap: anywhere; }
 .admin-care-table .care-status-badge { white-space: normal; text-align: center; line-height: 1.3; }
-.admin-care-table .care-payment-cell,
-.admin-care-table .care-shipment-cell { min-width: 145px; }
-.admin-care-table .care-payment-cell > *,
-.admin-care-table .care-shipment-cell > * { display: block; margin-bottom: 6px; }
-.admin-care-table .care-payment-cell .payment-status-badge { width: fit-content; }
 .admin-care-table .care-completion-hint { display: block; max-width: 180px; color: var(--muted); line-height: 1.4; }
 .admin-care-table .care-actions button:disabled { cursor: not-allowed; opacity: .55; }
 .admin-care-table .care-actions {

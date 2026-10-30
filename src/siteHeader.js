@@ -8,6 +8,7 @@ const NAV_ITEMS = [
 
 const ROLE_ITEMS = [
   { href: '/user.html', label: 'Lịch đăng ký', className: 'user-link' },
+  { href: '/history.html', label: 'Lịch sử dịch vụ', className: 'user-link' },
   { href: '/addresses.html', label: 'Sổ địa chỉ', className: 'user-link' },
   { href: '/src/admin.html', label: 'Dashboard Admin', className: 'admin-link' },
 ]
